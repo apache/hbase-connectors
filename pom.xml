@@ -18,15 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-  ON MVN COMPILE NOT WORKING
-
-  If you wondering why 'mvn compile' does not work building HBase
-  (in particular, if you are doing it for the first time), instead do
-  'mvn package'.  If you are interested in the full story, see
-  https://issues.apache.org/jira/browse/HBASE-6795.
-
 -->
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -36,7 +27,7 @@
     <relativePath/>
     <!-- no parent resolution -->
   </parent>
-  <groupId>org.apache.hbase</groupId>
+  <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>hbase-connectors</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <name>Apache HBase Connectors</name>
@@ -54,8 +45,8 @@
     </license>
   </licenses>
   <modules>
-    <module>hbase-kafka-model</module>
-    <module>hbase-kafka-proxy</module>
+    <module>kafka/hbase-kafka-model</module>
+    <module>kafka/hbase-kafka-proxy</module>
   </modules>
   <scm>
     <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
@@ -181,6 +172,11 @@
         <artifactId>hbase-kafka-model</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.hbase.connectors</groupId>
+        <artifactId>hbase-kafka-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>
@@ -227,39 +223,14 @@
           <version>0.11</version>
           <configuration>
             <excludes>
-              <exclude>**/*.versionsBackup</exclude>
-              <exclude>**/*.log</exclude>
-              <exclude>**/.*</exclude>
-              <exclude>**/*.tgz</exclude>
-              <exclude>**/*.orig</exclude>
+              <exclude>target/*</exclude>
               <exclude>**/.idea/**</exclude>
               <exclude>**/*.iml</exclude>
-              <exclude>**/CHANGES.txt</exclude>
-              <exclude>**/generated/**</exclude>
-              <exclude>**/gen-*/**</exclude>
-              <exclude>**/*.avpr</exclude>
-              <exclude>**/*.svg</exclude>
-              <!-- vector graphics -->
-              <exclude>**/*.vm</exclude>
-              <!-- apache doxia generated -->
-              <exclude>**/control</exclude>
-              <exclude>**/conffile</exclude>
-              <!-- auto-gen docs -->
-              <exclude>docs/*</exclude>
-              <exclude>logs/*</exclude>
               <!--  exclude source control files -->
               <exclude>.git/**</exclude>
-              <exclude>.svn/**</exclude>
               <exclude>**/.settings/**</exclude>
               <exclude>**/patchprocess/**</exclude>
-              <exclude>**/dependency-reduced-pom.xml</exclude>
-              <exclude>**/rat.txt</exclude>
-              <!-- exclude the shaded protobuf files -->
-              <exclude>**/src/main/patches/**</exclude>
-              <!--Exclude the unpacked google src-->
-              <exclude>**/src/main/java/com/google/protobuf/**</exclude>
-              <exclude>**/src/main/java/google/**</exclude>
-              <exclude>**/src/main/java/META-INF/**</exclude>
+              <exclude>README.md</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -280,31 +251,12 @@
             <timestampPropertyName>build.year</timestampPropertyName>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>3.0.0</version>
-        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
       <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>${basedir}</directory>
-              <includes>
-                <include>dependency-reduced-pom.xml</include>
-              </includes>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.4</version>
         <dependencies>
           <dependency>
             <groupId>org.codehaus.mojo</groupId>
@@ -349,15 +301,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.0.0</version>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/src.xml</descriptor>
-          </descriptors>
-        </configuration>
       </plugin>
     </plugins>
   </build>
