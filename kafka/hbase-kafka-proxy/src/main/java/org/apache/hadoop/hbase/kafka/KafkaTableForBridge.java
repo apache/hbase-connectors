@@ -177,6 +177,11 @@ public class KafkaTableForBridge implements Table {
   }
 
   @Override
+  public void close() {
+    this.producer.flush();
+  }
+
+  @Override
   public TableName getName() {
     return this.tableName;
   }
