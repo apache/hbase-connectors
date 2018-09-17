@@ -1,0 +1,292 @@
+#! /usr/bin/env bash
+#
+#/**
+# * Licensed to the Apache Software Foundation (ASF) under one
+# * or more contributor license agreements.  See the NOTICE file
+# * distributed with this work for additional information
+# * regarding copyright ownership.  The ASF licenses this file
+# * to you under the Apache License, Version 2.0 (the
+# * "License"); you may not use this file except in compliance
+# * with the License.  You may obtain a copy of the License at
+# *
+# *     http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# */
+#
+# The hbase command script.  Based on the hadoop command script putting
+# in hbase classes, libs and configurations ahead of hadoop's.
+#
+# TODO: Narrow the amount of duplicated code.
+#
+# Environment Variables:
+#
+#   JAVA_HOME        The java implementation to use.  Overrides JAVA_HOME.
+#   HBASE_CONNECTOR_CLASSPATH_PREFIX Extra Java CLASSPATH entries that should be
+#                    prefixed to the system classpath.
+#
+#   HBASE_CONNECTOR_HEAPSIZE   The maximum amount of heap to use.
+#                    Default is unset and uses the JVMs default setting
+#                    (usually 1/4th of the available memory).
+#
+#   HBASE_CONNECTOR_LIBRARY_PATH  HBase additions to JAVA_LIBRARY_PATH for adding
+#                    native libraries.
+#
+#   HBASE_CONNECTOR_OPTS       Extra Java runtime options.
+#
+#   HBASE_CONNECTOR_CONF_DIR   Alternate conf dir. Default is ${HBASE_CONNECTOR_HOME}/conf.
+#
+#   HBASE_CONNECTOR_ROOT_LOGGER The root appender. Default is INFO,console
+#
+
+
+bin=`dirname "$0"`
+bin=`cd "$bin">/dev/null; pwd`
+
+# This will set HBASE_CONNECTOR_HOME etc.
+. "$bin"/hbase-connectors-config.sh
+
+
+cygwin=false
+case "`uname`" in
+CYGWIN*) cygwin=true;;
+esac
+
+# Detect if we are in hbase sources dir
+in_dev_env=false
+if [ -d "${HBASE_CONNECTOR_HOME}/target" ]; then
+  in_dev_env=true
+fi
+
+# Detect if we are in the omnibus tarball
+in_omnibus_tarball="false"
+if [ -f "${HBASE_CONNECTOR_HOME}/bin/hbase-connectors-daemon.sh" ]; then
+  in_omnibus_tarball="true"
+fi
+
+# if no args specified, show usage
+if [ $# = 0 ]; then
+  echo "Usage: hbase-connectors [<options>] <command> [<args>]"
+  echo ""
+  echo "Commands:"
+
+  if [ "${in_omnibus_tarball}" = "true" ]; then
+    echo "  kafkaproxy      Run the HBase Kafka Proxy server"
+    echo "  kafkaproxytest  Run the HBase Kafka Proxy sample kafka listener"
+  fi
+
+  echo "  CLASSNAME       Run the class named CLASSNAME"
+  exit 1
+fi
+
+# get arguments
+COMMAND=$1
+shift
+
+JAVA=$JAVA_HOME/bin/java
+
+# override default settings for this command, if applicable
+if [ -f "$HBASE_CONNECTOR_HOME/conf/hbase-connector-env-$COMMAND.sh" ]; then
+  . "$HBASE_CONNECTOR_HOME/conf/hbase-connector-env-$COMMAND.sh"
+fi
+
+add_size_suffix() {
+    # add an 'm' suffix if the argument is missing one, otherwise use whats there
+    local val="$1"
+    local lastchar=${val: -1}
+    if [[ "mMgG" == *$lastchar* ]]; then
+        echo $val
+    else
+        echo ${val}m
+    fi
+}
+
+
+
+#if [[ -n "$HBASE_CONNECTOR_HEAPSIZE" ]]; then
+#    JAVA_HEAP_MAX="-Xmx$(add_size_suffix $HBASE_CONNECTOR_HEAPSIZE)"
+#fi
+#
+#if [[ -n "$HBASE_CONNECTOR_OFFHEAPSIZE" ]]; then
+#    JAVA_OFFHEAP_MAX="-XX:MaxDirectMemorySize=$(add_size_suffix $HBASE_OFFHEAPSIZE)"
+#fi
+
+
+
+
+
+# so that filenames w/ spaces are handled correctly in loops below
+ORIG_IFS=$IFS
+IFS=
+
+# CLASSPATH initially contains $HBASE_CONNECTOR_CONF_DIR
+PASS_CLASSPATH="${HBASE_CONNECTOR_CONF_DIR}"
+
+#CLASSPATH=${PASS_CLASSPATH}:$JAVA_HOME/lib/tools.jar
+
+
+HBASE_IN_PATH=$(which hbase 2>/dev/null)
+
+# default log directory & file
+if [ "$HBASE_CONNECTOR_LOG_DIR" = "" ]; then
+  HBASE_CONNECTOR_LOG_DIR="$HBASE_CONNECTOR_HOME/logs"
+fi
+if [ "$HBASE_CONNECTOR_LOGFILE" = "" ]; then
+  HBASE_CONNECTOR_LOGFILE='hbase-connector.log'
+fi
+
+function append_path() {
+  if [ -z "$1" ]; then
+    echo "$2"
+  else
+    echo "$1:$2"
+  fi
+}
+
+JAVA_PLATFORM=""
+
+# if HBASE_CONNECTOR_LIBRARY_PATH is defined lets use it as first or second option
+if [ "$HBASE_CONNECTOR_LIBRARY_PATH" != "" ]; then
+  JAVA_LIBRARY_PATH=$(append_path "$JAVA_LIBRARY_PATH" "$HBASE_CONNECTOR_LIBRARY_PATH")
+fi
+
+
+# Add user-specified CLASSPATH last
+if [ "$HBASE_CONNECTOR_CLASSPATH" != "" ]; then
+  PASS_CLASSPATH=${PASS_CLASSPATH}:${HBASE_CONNECTOR_CLASSPATH}
+fi
+
+# Add user-specified CLASSPATH prefix first
+if [ "$HBASE_CONNECTOR_CLASSPATH_PREFIX" != "" ]; then
+  PASS_CLASSPATH=${HBASE_CONNECTOR_CLASSPATH_PREFIX}:${PASS_CLASSPATH}
+fi
+
+# cygwin path translation
+if $cygwin; then
+  PASS_CLASSPATH=`cygpath -p -w "$PASS_CLASSPATH"`
+  HBASE_CONNECTOR_HOME=`cygpath -d "$HBASE_CONNECTOR_HOME"`
+  HBASE_CONNECTOR_LOG_DIR=`cygpath -d "$HBASE_CONNECTOR_LOG_DIR"`
+fi
+
+# cygwin path translation
+if $cygwin; then
+  JAVA_LIBRARY_PATH=`cygpath -p "$JAVA_LIBRARY_PATH"`
+fi
+
+# restore ordinary behaviour
+unset IFS
+
+#Set the right GC options based on the what we are running
+declare -a server_cmds=("kafkaproxy")
+for cmd in ${server_cmds[@]}; do
+	if [[ $cmd == $COMMAND ]]; then
+		server=true
+		break
+	fi
+done
+
+if [[ $server ]]; then
+	HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS $SERVER_GC_OPTS"
+else
+	HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS $CLIENT_GC_OPTS"
+fi
+
+if [ "$AUTH_AS_SERVER" == "true" ]; then
+   if [ -n "$HBASE_CONNECTOR_SERVER_JAAS_OPTS" ]; then
+       HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS $HBASE_CONNECTOR_SERVER_JAAS_OPTS"
+   fi
+fi
+
+
+add_maven_deps_to_classpath() {
+  f="${HBASE_CONNECTOR_HOME}/target/$1"
+
+  if [ ! -f "${f}" ]; then
+      echo "As this is a development environment, we need ${f} to be generated from maven (command: mvn install -DskipTests)"
+      exit 1
+  fi
+  PASS_CLASSPATH=${PASS_CLASSPATH}:$(cat "${f}")
+}
+
+
+add_connector_jars_to_classpath() {
+  connector_dir="${HBASE_CONNECTOR_HOME}/$1"
+
+  if [ -d "${connector_dir}" ]; then
+      for f in $connector_dir/*.jar; do
+	  PASS_CLASSPATH="${PASS_CLASSPATH}:${f}"
+      done
+  fi
+}
+
+
+#Add the development env class path stuff
+if $in_dev_env; then
+  add_maven_deps_to_classpath "cached_classpath.txt"
+fi
+
+# figure out which class to run
+if [ "$COMMAND" = "kafkaproxy" ] ; then
+  CLASS='org.apache.hadoop.hbase.kafka.KafkaProxy'
+  if [ "$1" != "stop" ] ; then
+    HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS $HBASE_KAFKA_OPTS"
+  fi
+
+  # add the kafka proxy jars
+  add_connector_jars_to_classpath "hbase-kafka-proxy"
+
+elif [ "$COMMAND" = "kafkaproxytest" ] ; then
+  CLASS='org.apache.hadoop.hbase.kafka.DumpToStringListener'
+  if [ "$1" != "stop" ] ; then
+    HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS $HBASE_KAFKA_TEST_OPTS"
+  fi
+
+  # add the kafka proxy jars
+  add_connector_jars_to_classpath "hbase-kafka-proxy"
+
+else
+  CLASS=$COMMAND
+fi
+
+HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.log.dir=$HBASE_CONNECTOR_LOG_DIR"
+HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.log.file=$HBASE_CONNECTOR_LOGFILE"
+HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.home.dir=$HBASE_CONNECTOR_HOME"
+HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.id.str=$HBASE_CONNECTOR_IDENT_STRING"
+HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.root.logger=${HBASE_CONNECTOR_ROOT_LOGGER:-INFO,console}"
+
+
+if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+  HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Djava.library.path=$JAVA_LIBRARY_PATH"
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_LIBRARY_PATH"
+fi
+
+#HEAP_SETTINGS="$JAVA_HEAP_MAX $JAVA_OFFHEAP_MAX"
+
+
+
+
+
+# by now if we're running a command it means we need logging
+for f in ${HBASE_CONNECTOR_HOME}/lib/client-facing-thirdparty/slf4j-*.jar; do
+  if [ -f "${f}" ]; then
+    PASS_CLASSPATH="${PASS_CLASSPATH}:${f}"
+    break
+  fi
+done
+
+
+
+CLASSPATH=$PASS_CLASSPATH:`$HBASE_IN_PATH classpath`
+
+export CLASSPATH
+
+
+if [ "${HBASE_CONNECTOR_NOEXEC}" != "" ]; then
+  "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $HEAP_SETTINGS $HBASE_CONNECTOR_OPTS $CLASS "$@"
+else
+  exec "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $HEAP_SETTINGS $HBASE_CONNECTOR_OPTS $CLASS "$@"
+fi

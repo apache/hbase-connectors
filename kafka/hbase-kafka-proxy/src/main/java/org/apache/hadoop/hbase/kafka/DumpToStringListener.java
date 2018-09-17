@@ -60,9 +60,9 @@ public final class DumpToStringListener {
     VersionInfo.logVersion();
 
     Options options = new Options();
-    options.addOption("k", "kafkabrokers", true, "Kafka Brokers " +
+    options.addRequiredOption("k", "kafkabrokers", true, "Kafka Brokers " +
             "(comma delimited)");
-    options.addOption("t", "kafkatopics", true,"Kafka Topics "
+    options.addRequiredOption("t", "kafkatopics", true,"Kafka Topics "
         + "to subscribe to (comma delimited)");
     CommandLine commandLine = null;
     try {
