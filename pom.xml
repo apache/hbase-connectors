@@ -133,16 +133,6 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-common</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-annotations</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-annotations</artifactId>
         <version>${hbase.version}</version>
         <type>test-jar</type>
@@ -155,36 +145,25 @@
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <artifactId>hbase-zookeeper</artifactId>
-        <groupId>org.apache.hbase</groupId>
-        <version>${hbase.version}</version>
-      </dependency>
+
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
+        <scope>provided</scope>
       </dependency>
+
       <dependency>
-        <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-client</artifactId>
-        <version>${hbase.version}</version>
+        <groupId>org.apache.hbase.connectors</groupId>
+        <artifactId>hbase-kafka-proxy</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
-
-         <dependency>
-      <groupId>org.apache.hbase.connectors</groupId>
-      <artifactId>hbase-kafka-proxy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.hbase.connectors</groupId>
-      <artifactId>hbase-kafka-model</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-
+      <dependency>
+        <groupId>org.apache.hbase.connectors</groupId>
+        <artifactId>hbase-kafka-model</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>

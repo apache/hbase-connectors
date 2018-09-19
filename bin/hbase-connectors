@@ -107,17 +107,13 @@ add_size_suffix() {
 
 
 
-#if [[ -n "$HBASE_CONNECTOR_HEAPSIZE" ]]; then
-#    JAVA_HEAP_MAX="-Xmx$(add_size_suffix $HBASE_CONNECTOR_HEAPSIZE)"
-#fi
-#
-#if [[ -n "$HBASE_CONNECTOR_OFFHEAPSIZE" ]]; then
-#    JAVA_OFFHEAP_MAX="-XX:MaxDirectMemorySize=$(add_size_suffix $HBASE_OFFHEAPSIZE)"
-#fi
+if [[ -n "$HBASE_CONNECTOR_HEAPSIZE" ]]; then
+    JAVA_HEAP_MAX="-Xmx$(add_size_suffix $HBASE_CONNECTOR_HEAPSIZE)"
+fi
 
-
-
-
+if [[ -n "$HBASE_CONNECTOR_OFFHEAPSIZE" ]]; then
+    JAVA_OFFHEAP_MAX="-XX:MaxDirectMemorySize=$(add_size_suffix $HBASE_OFFHEAPSIZE)"
+fi
 
 # so that filenames w/ spaces are handled correctly in loops below
 ORIG_IFS=$IFS
@@ -126,10 +122,14 @@ IFS=
 # CLASSPATH initially contains $HBASE_CONNECTOR_CONF_DIR
 PASS_CLASSPATH="${HBASE_CONNECTOR_CONF_DIR}"
 
-#CLASSPATH=${PASS_CLASSPATH}:$JAVA_HOME/lib/tools.jar
-
+CLASSPATH=${PASS_CLASSPATH}:$JAVA_HOME/lib/tools.jar
 
 HBASE_IN_PATH=$(which hbase 2>/dev/null)
+
+if [ "$HBASE_IN_PATH" = "" ]; then
+    echo "hbase command must be in the path.. aborting"
+    exit 1
+fi
 
 # default log directory & file
 if [ "$HBASE_CONNECTOR_LOG_DIR" = "" ]; then
@@ -258,17 +258,12 @@ HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.home.dir=$HBASE_CO
 HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.id.str=$HBASE_CONNECTOR_IDENT_STRING"
 HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Dhbase.connector.root.logger=${HBASE_CONNECTOR_ROOT_LOGGER:-INFO,console}"
 
-
 if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
   HBASE_CONNECTOR_OPTS="$HBASE_CONNECTOR_OPTS -Djava.library.path=$JAVA_LIBRARY_PATH"
   export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_LIBRARY_PATH"
 fi
 
-#HEAP_SETTINGS="$JAVA_HEAP_MAX $JAVA_OFFHEAP_MAX"
-
-
-
-
+HEAP_SETTINGS="$JAVA_HEAP_MAX $JAVA_OFFHEAP_MAX"
 
 # by now if we're running a command it means we need logging
 for f in ${HBASE_CONNECTOR_HOME}/lib/client-facing-thirdparty/slf4j-*.jar; do
@@ -278,12 +273,9 @@ for f in ${HBASE_CONNECTOR_HOME}/lib/client-facing-thirdparty/slf4j-*.jar; do
   fi
 done
 
-
-
 CLASSPATH=$PASS_CLASSPATH:`$HBASE_IN_PATH classpath`
 
 export CLASSPATH
-
 
 if [ "${HBASE_CONNECTOR_NOEXEC}" != "" ]; then
   "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $HEAP_SETTINGS $HBASE_CONNECTOR_OPTS $CLASS "$@"

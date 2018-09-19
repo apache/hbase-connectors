@@ -44,7 +44,6 @@ import org.apache.hadoop.hbase.replication.ReplicationPeerDescription;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.apache.hbase.thirdparty.org.apache.commons.cli.OptionGroup;
 import org.apache.yetus.audience.InterfaceAudience;
 
 import org.slf4j.Logger;
