@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <!--
+    /**
+     * Licensed to the Apache Software Foundation (ASF) under one
+     * or more contributor license agreements.  See the NOTICE file
+     * distributed with this work for additional information
+     * regarding copyright ownership.  The ASF licenses this file
+     * to you under the Apache License, Version 2.0 (the
+     * "License"); you may not use this file except in compliance
+     * with the License.  You may obtain a copy of the License at
+     *
+     *   http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+    -->
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>hbase-connectors</artifactId>
+    <groupId>org.apache.hbase.connectors</groupId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>hbase-connectors-assembly</artifactId>
+  <name>Apache HBase Connectors - Assembly</name>
+  <description>
+    Module that does project assembly and that is all that it does.
+  </description>
+  <packaging>pom</packaging>
+  <properties>
+    <license.bundles.dependencies>true</license.bundles.dependencies>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.hbase.connectors</groupId>
+      <artifactId>hbase-kafka-proxy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.hbase.connectors</groupId>
+      <artifactId>hbase-kafka-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>distro-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>hbase-connectors-${project.version}</finalName>
+              <skipAssembly>false</skipAssembly>
+              <appendAssemblyId>true</appendAssemblyId>
+              <tarLongFileMode>gnu</tarLongFileMode>
+
+              <descriptors>
+                <descriptor>src/main/assembly/hbase-connectors-bin.xml</descriptor>
+
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <!-- generates the file that will be used by the bin/hbase script in the dev env -->
+            <id>create-hbase-connectors-generated-classpath</id>
+            <phase>test</phase>
+            <goals>
+              <goal>build-classpath</goal>
+            </goals>
+            <configuration>
+              <outputFile>${project.parent.basedir}/target/cached_classpath.txt</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+
+      <!-- licensing info from our dependencies -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>aggregate-licenses</id>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <copyright-end-year>${build.year}</copyright-end-year>
+                <debug-print-included-work-info>${license.debug.print.included}
+                </debug-print-included-work-info>
+                <bundled-dependencies>${license.bundles.dependencies}</bundled-dependencies>
+                <bundled-jquery>${license.bundles.jquery}</bundled-jquery>
+                <bundled-logo>${license.bundles.logo}</bundled-logo>
+                <bundled-bootstrap>${license.bundles.bootstrap}</bundled-bootstrap>
+              </properties>
+              <resourceBundles>
+                <resourceBundle>org.apache.hbase:hbase-resource-bundle:${hbase.version}</resourceBundle>
+              </resourceBundles>
+              <supplementalModelArtifacts>
+                <supplementalModelArtifact>org.apache.hbase:hbase-resource-bundle:${hbase.version}
+                </supplementalModelArtifact>
+              </supplementalModelArtifacts>
+              <supplementalModels>
+                <supplementalModel>supplemental-models.xml</supplementalModel>
+              </supplementalModels>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec.maven.version}</version>
+        <executions>
+          <execution>
+            <id>concat-NOTICE-files</id>
+            <phase>package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>env</executable>
+              <arguments>
+                <argument>bash</argument>
+                <argument>-c</argument>
+                <argument>cat maven-shared-archive-resources/META-INF/NOTICE \
+                  `find ${project.build.directory}/dependency -iname NOTICE -or -iname NOTICE.txt`
+                </argument>
+              </arguments>
+              <outputFile>${project.build.directory}/NOTICE.aggregate</outputFile>
+              <workingDirectory>${project.build.directory}</workingDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- /end building aggregation of NOTICE files -->
+    </plugins>
+  </build>
+</project>

@@ -40,8 +40,10 @@ import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.regionserver.HRegionServerCommandLine;
 import org.apache.hadoop.hbase.replication.ReplicationPeerConfig;
 import org.apache.hadoop.hbase.replication.ReplicationPeerConfigBuilder;
+import org.apache.hadoop.hbase.replication.ReplicationPeerDescription;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.yetus.audience.InterfaceAudience;
 
 import org.slf4j.Logger;
@@ -71,11 +73,12 @@ public final class KafkaProxy {
   public static final String KAFKA_PROXY_KAFKA_BROKERS = "kafkaproxy.kafka.brokers";
 
   private static Map<String,String> DEFAULT_PROPERTIES = new HashMap<>();
+  private static Map<String,String> CAN_OVERRIDE_DEFAULT_PROPERTIES = new HashMap<>();
+
 
   static {
     DEFAULT_PROPERTIES.put("hbase.cluster.distributed","true");
     DEFAULT_PROPERTIES.put("zookeeper.znode.parent","/kafkaproxy");
-    DEFAULT_PROPERTIES.put("hbase.regionserver.port","17020");
     DEFAULT_PROPERTIES.put("hbase.regionserver.info.port","17010");
     DEFAULT_PROPERTIES.put("hbase.client.connection.impl",
             "org.apache.hadoop.hbase.kafka.KafkaBridgeConnection");
@@ -91,33 +94,25 @@ public final class KafkaProxy {
     DEFAULT_PROPERTIES.put("hbase.regionserver.replication.handler.count","1");
     DEFAULT_PROPERTIES.put("hbase.regionserver.handler.count","1");
     DEFAULT_PROPERTIES.put("hbase.ipc.server.read.threadpool.size","3");
+
+    CAN_OVERRIDE_DEFAULT_PROPERTIES.put("hbase.regionserver.port","17020");
   }
 
   private static void printUsageAndExit(Options options, int exitCode) {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp("hbase kafkaproxy start", "", options,
       "\nTo run the kafka proxy as a daemon, execute " +
-        "hbase-daemon.sh start|stop kafkaproxy " +
-        "[--kafkabrokers <kafka brokers (comma delmited)>] " +
-        "[-b <kafka brokers (comma delmited)>] " +
-        "[--routerulesfile <file with rules to route to kafka "
-        + "(defaults to kafka-route-rules.xm)>] " +
-        "[-r <file with rules to route to kafka "
-        + "(defaults to kafka-route-rules.xml)>] " +
-        "[--kafkaproperties <Path to properties file that "
-        + "has the kafka connection properties>] " +
-        "[-f <Path to properties file that has the kafka "
-        + "connection properties>] " +
-        "[--peername name of hbase peer to use (defaults to hbasekafka)]  " +
-        "[-p name of hbase peer to use (defaults to hbasekafka)]  " +
-        "[--znode root znode (defaults to /kafkaproxy)]  " +
-        "[-z root znode (defaults to /kafkaproxy)]  " +
-
-        "[--enablepeer enable peer on startup (defaults to false)]  " +
-        "[-e enable peer on startup (defaults to false)]  " +
-
-        "[--auto auto create peer]  " +
-        "[-a auto create peer] \n", true);
+        "hbase-connectors-daemon.sh start|stop kafkaproxy \n" +
+        "[--kafkabrokers (or -b) <kafka brokers (comma delmited)>] \n" +
+        "[--routerulesfile (or -r) <file with rules to route to kafka "
+        + "(defaults to kafka-route-rules.xm)>] \n" +
+        "[--kafkaproperties (or -f) <Path to properties file that "
+        + "has the kafka connection properties>] \n" +
+        "[--peername (or -p) name of hbase peer to use (defaults to hbasekafka)]\n  " +
+        "[--znode (or -z) root znode (defaults to /kafkaproxy)]  \n" +
+        "[--enablepeer (or -e) enable peer on startup (defaults to false)]\n  " +
+        "[--auto (or -a) auto create peer]  " +
+        "\n", true);
     System.exit(exitCode);
   }
 
@@ -139,13 +134,13 @@ public final class KafkaProxy {
 
     Options options = new Options();
 
-    options.addOption("b", "kafkabrokers", true,
+    options.addRequiredOption("b", "kafkabrokers", true,
       "Kafka Brokers (comma delimited)");
     options.addOption("r", "routerulesfile", true,
       "file that has routing rules (defaults to conf/kafka-route-rules.xml");
     options.addOption("f", "kafkaproperties", true,
       "Path to properties file that has the kafka connection properties");
-    options.addOption("p", "peername", true,
+    options.addRequiredOption("p", "peername", true,
         "Name of hbase peer");
     options.addOption("z", "znode", true,
         "root zode to use in zookeeper (defaults to /kafkaproxy)");
@@ -154,18 +149,27 @@ public final class KafkaProxy {
     options.addOption("e", "enablepeer", false,
         "enable peer on startup (defaults to false)");
 
-
     LOG.info("STARTING executorService " + HRegionServer.class.getSimpleName());
     VersionInfo.logVersion();
 
     Configuration conf = HBaseConfiguration.create();
     CommandLine commandLine = null;
+
+    Configuration commandLineConf = new Configuration();
+    commandLineConf.clear();
+
+    GenericOptionsParser parser = new GenericOptionsParser(commandLineConf, args);
+    String restArgs[] =parser.getRemainingArgs();
+
+
+
     try {
-      commandLine = new BasicParser().parse(options, args);
+      commandLine = new BasicParser().parse(options, restArgs);
     } catch (ParseException e) {
       LOG.error("Could not parse: ", e);
       printUsageAndExit(options, -1);
     }
+
 
     String peer="";
     if (!commandLine.hasOption('p')){
@@ -231,15 +235,28 @@ public final class KafkaProxy {
         .map((argKey)->("-D"+argKey+"="+ DEFAULT_PROPERTIES.get(argKey)))
         .collect(Collectors.toList());
 
+    allArgs.addAll(CAN_OVERRIDE_DEFAULT_PROPERTIES.keySet().stream()
+            .filter((argKey)->commandLineConf.get(argKey,"").equalsIgnoreCase(""))
+            .map((argKey)->("-D"+argKey+"="+ CAN_OVERRIDE_DEFAULT_PROPERTIES.get(argKey)))
+            .collect(Collectors.toList()));
+
+    for (Map.Entry<String,String> k : commandLineConf){
+      allArgs.add("-D"+k.getKey()+"="+k.getValue());
+    }
+
     otherProps.keySet().stream()
         .map((argKey)->("-D"+argKey+"="+ otherProps.get(argKey)))
         .forEach((item)->allArgs.add(item));
 
-    Arrays.stream(args)
+    Arrays.stream(restArgs)
         .filter((arg)->(arg.startsWith("-D")||arg.equals("start")))
         .forEach((arg)->allArgs.add(arg));
 
-    LOG.info("Args passed to region server "+allArgs);
+    // is start there?
+    if (allArgs.stream()
+            .filter((arg)->arg.equalsIgnoreCase("start")).count() < 1){
+      allArgs.add("start");
+    }
 
     String[] newArgs=new String[allArgs.size()];
     allArgs.toArray(newArgs);
@@ -262,8 +279,10 @@ public final class KafkaProxy {
     byte []uuidBytes = Bytes.toBytes(newValue);
     String idPath=rootZnode+"/hbaseid";
     if (zk.checkExists().forPath(idPath) == null) {
-      zk.create().creatingParentsIfNeeded().forPath(rootZnode +
-          "/hbaseid",uuidBytes);
+     // zk.create().creatingParentsIfNeeded().forPath(rootZnode +
+     //     "/hbaseid",uuidBytes);
+        zk.create().forPath(rootZnode);
+        zk.create().forPath(rootZnode +"/hbaseid",uuidBytes);
     } else {
       // If the znode is there already make sure it has the
       // expected value for the peer name.
@@ -322,7 +341,13 @@ public final class KafkaProxy {
         if (peerThere) {
           if (enablePeer){
             LOG.info("enable peer," + peerName);
-            admin.enableReplicationPeer(peerName);
+              List<ReplicationPeerDescription> peers = admin.listReplicationPeers().stream()
+                      .filter((peer)->peer.getPeerId().equals(peerName))
+                      .filter((peer)->peer.isEnabled()==false)
+                      .collect(Collectors.toList());
+              if (!peers.isEmpty()){
+                admin.enableReplicationPeer(peerName);
+              }
           }
           break;
         } else {

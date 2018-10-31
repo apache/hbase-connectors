@@ -47,7 +47,8 @@
   <modules>
     <module>kafka/hbase-kafka-model</module>
     <module>kafka/hbase-kafka-proxy</module>
-  </modules>
+    <module>hbase-connectors-assembly</module>
+    </modules>
   <scm>
     <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
@@ -119,6 +120,8 @@
     <avro.version>1.7.7</avro.version>
     <hbase.version>2.1.0</hbase.version>
     <maven.compiler.version>3.6.1</maven.compiler.version>
+    <exec.maven.version>1.6.0</exec.maven.version>
+    <audience-annotations.version>0.5.0</audience-annotations.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -130,16 +133,6 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-common</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-annotations</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-annotations</artifactId>
         <version>${hbase.version}</version>
         <type>test-jar</type>
@@ -152,29 +145,23 @@
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <artifactId>hbase-zookeeper</artifactId>
-        <groupId>org.apache.hbase</groupId>
-        <version>${hbase.version}</version>
-      </dependency>
+
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
+        <scope>provided</scope>
       </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-client</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase.connectors</groupId>
-        <artifactId>hbase-kafka-model</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+
       <dependency>
         <groupId>org.apache.hbase.connectors</groupId>
         <artifactId>hbase-kafka-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.hbase.connectors</groupId>
+        <artifactId>hbase-kafka-model</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -182,6 +169,14 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <configuration>
+            <!--Defer to the hbase-connector-assembly sub-module.  It
+             does all assembly-->
+            <skipAssembly>true</skipAssembly>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
