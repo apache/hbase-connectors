@@ -1,6 +1,6 @@
 # Apache HBase&trade; Kafka Proxy
 
-Welcome to the hbase kafka proxy. The purpose of this proxy is to act as a _fake peer_'.
+Welcome to the hbase kafka proxy. The purpose of this proxy is to act as a _fake peer_.
 It receives replication events from a peer cluster and applies a set of rules (stored in
 a _kafka-route-rules.xml_ file) to determine if the event should be forwarded to a 
 kafka topic. If the mutation matches a rule, the mutation is converted to an avro object
@@ -12,17 +12,17 @@ pass them as properties on the command line; i.e `-Dkey=value`.
 
 ## Usage
 
-  # Make sure the hbase command is in your path. The proxy runs `hbase classpath` to find hbase libraries.
-  # Create any topics in your kafka broker that you wish to use.
-  # set up _kafka-route-rules.xml_.  This file controls how the mutations are routed.  There are two kinds of rules: _route_ and _drop_.
-  ## _drop_: any mutation that matches this rule will be dropped.
-  ## _route_: any mutation that matches this rule will be routed to the configured topic.
+1. Make sure the hbase command is in your path. The proxy runs `hbase classpath` to find hbase libraries.
+2. Create any topics in your kafka broker that you wish to use.
+3. set up _kafka-route-rules.xml_.  This file controls how the mutations are routed.  There are two kinds of rules: _route_ and _drop_.
+ * _drop_: any mutation that matches this rule will be dropped.
+ * _route_: any mutation that matches this rule will be routed to the configured topic.
 
 Each rule has the following parameters:
 
-  * table
-  * columnFamily
-  * qualifier
+* table
+* columnFamily
+* qualifier
 
 The qualifier parameter can contain simple wildcard expressions (start and end only).
 
@@ -30,28 +30,25 @@ The qualifier parameter can contain simple wildcard expressions (start and end o
 
 ```
 <rules>
-	<rule action="route" table="default:mytable" topic="foo" />
+ <rule action="route" table="default:mytable" topic="foo" />
 </rules>
 ```
 
 This causes all mutations to `default:mytable` to be routed to the kafka topic `foo`.
 
-
 ```
 <rules>
-	<rule action="route" table="default:mytable" columnFamily="mycf" qualifier="myqualifier"
-	topic="mykafkatopic"/>
+ <rule action="route" table="default:mytable" columnFamily="mycf" qualifier="myqualifier" topic="mykafkatopic"/>
 </rules>
 ```
 
 This will cause all mutations to `default:mytable` columnFamily `mycf` and qualifier `myqualifier`
 to be routed to `mykafkatopic`.
 
-
 ```
 <rules>
-	<rule action="drop" table="default:mytable" columnFamily="mycf" qualifier="secret*"/>
-	<rule action="route" table="default:mytable" columnFamily="mycf" topic="mykafkatopic"/>
+ <rule action="drop" table="default:mytable" columnFamily="mycf" qualifier="secret*"/>
+ <rule action="route" table="default:mytable" columnFamily="mycf" topic="mykafkatopic"/>
 </rules>
 ```
 
@@ -74,25 +71,25 @@ to the `mykafka` topic.
 
 
 ## Starting the Service.
-  * make sure the hbase command is in your path
-  * by default, the service looks for route-rules.xml in the conf directory. You can specify a different file or location with the `-r` argument
+* make sure the hbase command is in your path
+* by default, the service looks for route-rules.xml in the conf directory. You can specify a different file or location with the `-r` argument
 
 
 ### Example
 ```
-bin/hbase-connectors-daemon.sh start kafkaproxy -a -e -p wootman -b localhost:9092 -r ~/kafka-route-rules.xml
+$ bin/hbase-connectors-daemon.sh start kafkaproxy -a -e -p wootman -b localhost:9092 -r ~/kafka-route-rules.xml
 ```
 
 This:
- * starts the kafka proxy
- * passes -a so proxy will create the replication peer specified by -p if it does not exist (not required, but it saves some busy work).
- * enables the peer (-e) when the service starts (not required, you can manually enable the peer in the hbase shell)
+* starts the kafka proxy
+* passes -a so proxy will create the replication peer specified by -p if it does not exist (not required, but it saves some busy work).
+* enables the peer (-e) when the service starts (not required, you can manually enable the peer in the hbase shell)
 
 ## Notes
 
-  # The proxy will connect to the zookeeper in `hbase-site.xml` by default.  You can override this by passing `-Dhbase.zookeeper.quorum`
-  # Route rules only support unicode characters.
-  # I do not have access to a secured hadoop clsuter to test this on.
+1. The proxy will connect to the zookeeper in `hbase-site.xml` by default.  You can override this by passing `-Dhbase.zookeeper.quorum`
+2. Route rules only support unicode characters.
+3. I do not have access to a secured hadoop clsuter to test this on.
 
 ### Message Format
 
@@ -110,23 +107,23 @@ Messages are in avro format, this is the schema:
     {"name": "family", "type": "bytes"},
     {"name": "table", "type": "bytes"}
  ]
-}```
+}
+```
 
 Any language that supports Avro should be able to consume the messages off the topic.
-
 
 ## Testing Utility
 
 A utility is included to test the routing rules.
 
 ```
-bin/hbase-connectors-daemon.sh start kafkaproxytest -k <kafka.broker> -t <topic to listen to>
+$ bin/hbase-connectors-daemon.sh start kafkaproxytest -k <kafka.broker> -t <topic to listen to>
 ```
 
 The messages will be dumped in string format under `logs/`
 
 ## TODO:
-  # Some properties passed into the region server are hard-coded.
-  # The avro objects should be generic
-  # Allow rules to be refreshed without a restart
-  # Get this tested on a secure (TLS & Kerberos) enabled cluster.
+1. Some properties passed into the region server are hard-coded.
+2. The avro objects should be generic
+3. Allow rules to be refreshed without a restart
+4. Get this tested on a secure (TLS & Kerberos) enabled cluster.
