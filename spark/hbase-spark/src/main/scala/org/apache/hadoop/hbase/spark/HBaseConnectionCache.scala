@@ -268,5 +268,3 @@ class HBaseConnectionKey(c: Configuration) extends Logging {
 case class HBaseConnectionCacheStat(var numTotalRequests: Long,
                                     var numActualConnectionsCreated: Long,
                                     var numActiveConnections: Long)
-
-
