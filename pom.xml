@@ -29,7 +29,8 @@
   </parent>
   <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>hbase-connectors</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <!-- See https://maven.apache.org/maven-ci-friendly.html -->
+  <version>${revision}</version>
   <name>Apache HBase Connectors</name>
   <packaging>pom</packaging>
   <description>
@@ -45,10 +46,9 @@
     </license>
   </licenses>
   <modules>
-    <module>kafka/hbase-kafka-model</module>
-    <module>kafka/hbase-kafka-proxy</module>
+    <module>kafka</module>
     <module>hbase-connectors-assembly</module>
-    </modules>
+  </modules>
   <scm>
     <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
@@ -60,9 +60,14 @@
     <url>http://issues.apache.org/jira/browse/HBASE</url>
   </issueManagement>
   <ciManagement>
+    <!--TODO: Fix this. Hook up this module to travisci or some such-->
     <system>hudson</system>
     <url>http://hudson.zones.apache.org/hudson/view/HBase/job/HBase-TRUNK/</url>
   </ciManagement>
+  <!--Currently mail sent by this gitbox project goes to issues@hbase.
+       git comments are reflected in referenced JIRA issue.
+       https://issues.apache.org/jira/browse/INFRA-16887
+    -->
   <mailingLists>
     <mailingList>
       <name>User List</name>
@@ -106,18 +111,15 @@
     </mailingList>
   </mailingLists>
   <developers/>
-  <!--TODO-->
   <properties>
+    <!-- See https://maven.apache.org/maven-ci-friendly.html -->
+    <revision>1.0.0-SNAPSHOT</revision>
     <maven.javadoc.skip>true</maven.javadoc.skip>
-    <maven.build.timestamp.format>
-      yyyy-MM-dd'T'HH:mm
-    </maven.build.timestamp.format>
+    <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm</maven.build.timestamp.format>
     <buildDate>${maven.build.timestamp}</buildDate>
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
-    <maven.min.version>3.3.3</maven.min.version>
-    <rename.offset>org.apache.hadoop.hbase.shaded</rename.offset>
-    <avro.version>1.7.7</avro.version>
+    <maven.min.version>3.5.0</maven.min.version>
     <hbase.version>2.1.0</hbase.version>
     <maven.compiler.version>3.6.1</maven.compiler.version>
     <exec.maven.version>1.6.0</exec.maven.version>
@@ -125,12 +127,6 @@
   </properties>
   <dependencyManagement>
     <dependencies>
-      <!-- Avro dependencies we mostly get transitively, manual version coallescing -->
-      <dependency>
-        <groupId>org.apache.avro</groupId>
-        <artifactId>avro</artifactId>
-        <version>${avro.version}</version>
-      </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-annotations</artifactId>
@@ -145,30 +141,42 @@
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
-
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
         <scope>provided</scope>
       </dependency>
-
-      <dependency>
-        <groupId>org.apache.hbase.connectors</groupId>
-        <artifactId>hbase-kafka-proxy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.hbase.connectors</groupId>
-        <artifactId>hbase-kafka-model</artifactId>
-        <version>${project.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>
     <pluginManagement>
       <plugins>
+        <!-- See https://maven.apache.org/maven-ci-friendly.html-->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.0.1</version>
+          <configuration>
+            <updatePomFile>true</updatePomFile>
+          </configuration>
+          <executions>
+            <execution>
+              <id>flatten</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>flatten</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>flatten.clean</id>
+              <phase>clean</phase>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
           <configuration>
@@ -252,11 +260,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M2</version>
         <dependencies>
           <dependency>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>extra-enforcer-rules</artifactId>
-            <version>1.0-beta-6</version>
+            <version>1.0-beta-9</version>
           </dependency>
         </dependencies>
         <!-- version set by parent -->
