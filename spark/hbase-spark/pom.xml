@@ -85,6 +85,10 @@
           <groupId>xerces</groupId>
           <artifactId>xercesImpl</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -97,6 +101,12 @@
       <artifactId>spark-sql_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
@@ -269,13 +279,10 @@
           <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
         <exclusion>
-<<<<<<< HEAD
-=======
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
         <exclusion>
->>>>>>> HBASE-21430 [hbase-connectors] Move hbase-spark* modules to hbase-connectors repo
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>jsp-2.1</artifactId>
         </exclusion>
@@ -396,13 +403,6 @@
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-zookeeper</artifactId>
-<<<<<<< HEAD
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-zookeeper</artifactId>
-=======
->>>>>>> HBASE-21430 [hbase-connectors] Move hbase-spark* modules to hbase-connectors repo
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
@@ -518,10 +518,6 @@
       <plugin>
         <groupId>net.revelc.code</groupId>
         <artifactId>warbucks-maven-plugin</artifactId>
-<<<<<<< HEAD
-=======
-        <version>1.1.0</version>
->>>>>>> HBASE-21430 [hbase-connectors] Move hbase-spark* modules to hbase-connectors repo
         <!-- TODO: remove the following config if https://issues.scala-lang.org/browse/SI-3600 is resolved -->
         <!-- override the root config to add more filter -->
         <configuration>
@@ -619,6 +615,12 @@
           <artifactId>hadoop-minikdc</artifactId>
           <version>${hadoop-two.version}</version>
           <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.apache.directory.jdbm</groupId>
+              <artifactId>apacheds-jdbm1</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
       </dependencies>
     </profile>
