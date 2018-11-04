@@ -35,3 +35,5 @@ class DoubleSerDes extends SerDes {
     Bytes.toDouble(bytes, start)
   }
 }
+
+
