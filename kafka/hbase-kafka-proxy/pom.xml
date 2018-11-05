@@ -34,9 +34,7 @@
   <properties>
     <collections.version>4.1</collections.version>
     <commons-lang3.version>3.6</commons-lang3.version>
-    <commons-io.version>2.5</commons-io.version>
     <kafka-clients.version>2.0.0</kafka-clients.version>
-    <commons-io.version>2.5</commons-io.version>
   </properties>
   <build>
     <plugins>
@@ -73,6 +71,76 @@
   </build>
   <dependencies>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.yetus</groupId>
+      <artifactId>audience-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <!--Relying on hadoop2. Not messing with hadoop2/hadoop3 stuff
+           in here. Its just a proxy. Just needs hadoop-common for
+           Configuration stuff and some basics -->
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>${hadoop-two.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>stax</groupId>
+          <artifactId>stax-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+       <exclusion>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-core-asl</artifactId>
+       </exclusion>
+       <exclusion>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-mapper-asl</artifactId>
+       </exclusion>
+       <exclusion>
+         <groupId>org.apache.curator</groupId>
+         <artifactId>curator-client</artifactId>
+       </exclusion>
+       <exclusion>
+         <groupId>org.apache.curator</groupId>
+         <artifactId>curator-framework</artifactId>
+       </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase.thirdparty</groupId>
+      <artifactId>hbase-shaded-miscellaneous</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
     </dependency>
@@ -82,26 +150,16 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-common</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-annotations</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-common</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
@@ -114,18 +172,7 @@
       <artifactId>commons-lang3</artifactId>
       <version>${commons-lang3.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4</artifactId>
-      <version>${collections.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
-    </dependency>
   </dependencies>
-
   <profiles>
     <!-- Needs to make the profile in apache parent pom -->
     <profile>
