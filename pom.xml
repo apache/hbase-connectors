@@ -124,15 +124,45 @@
     <maven.compiler.version>3.6.1</maven.compiler.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
+    <junit.version>4.12</junit.version>
+    <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
+    <hadoop-two.version>2.7.7</hadoop-two.version>
+    <hadoop-three.version>3.0.3</hadoop-three.version>
+    <hadoop.version>${hadoop-two.version}</hadoop.version>
+    <compat.module>hbase-hadoop2-compat</compat.module>
+    <slf4j.version>1.7.25</slf4j.version>
   </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.yetus</groupId>
+        <artifactId>audience-annotations</artifactId>
+        <version>${audience-annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase.thirdparty</groupId>
+        <artifactId>hbase-shaded-miscellaneous</artifactId>
+        <version>${hbase-thirdparty.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-annotations</artifactId>
+        <artifactId>hbase-common</artifactId>
         <version>${hbase.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
@@ -143,9 +173,19 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-hadoop2-compat</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-client</artifactId>
+        <version>${hbase.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
