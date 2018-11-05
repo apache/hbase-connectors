@@ -35,6 +35,10 @@
     <collections.version>4.1</collections.version>
     <commons-lang3.version>3.6</commons-lang3.version>
     <kafka-clients.version>2.0.0</kafka-clients.version>
+    <!--This module makes use of curator to write kafka topices. Uses curator that is
+         transitively included from hadoop-common 2.7.x curator so just add it
+         as explicit dependency below.-->
+    <curator.version>2.7.1</curator.version>
   </properties>
   <build>
     <plugins>
@@ -56,17 +60,6 @@
           <skipAssembly>true</skipAssembly>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <name>listener</name>
-              <value>org.apache.hadoop.hbase.ResourceCheckerJUnitListener</value>
-            </property>
-          </properties>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -79,8 +72,17 @@
       <artifactId>audience-annotations</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-annotations</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase.thirdparty</groupId>
+      <artifactId>hbase-shaded-miscellaneous</artifactId>
     </dependency>
     <dependency>
       <!--Relying on hadoop2. Not messing with hadoop2/hadoop3 stuff
@@ -126,19 +128,19 @@
          <groupId>org.codehaus.jackson</groupId>
          <artifactId>jackson-mapper-asl</artifactId>
        </exclusion>
-       <exclusion>
-         <groupId>org.apache.curator</groupId>
-         <artifactId>curator-client</artifactId>
-       </exclusion>
-       <exclusion>
-         <groupId>org.apache.curator</groupId>
-         <artifactId>curator-framework</artifactId>
-       </exclusion>
       </exclusions>
     </dependency>
+    <!--See note on curator.version above for why we include
+         curator here -->
     <dependency>
-      <groupId>org.apache.hbase.thirdparty</groupId>
-      <artifactId>hbase-shaded-miscellaneous</artifactId>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-framework</artifactId>
+      <version>${curator.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-client</artifactId>
+      <version>${curator.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.avro</groupId>
