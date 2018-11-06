@@ -47,6 +47,7 @@
   </licenses>
   <modules>
     <module>kafka</module>
+    <module>spark</module>
     <module>hbase-connectors-assembly</module>
   </modules>
   <scm>
@@ -129,11 +130,44 @@
     <hadoop-two.version>2.7.7</hadoop-two.version>
     <hadoop-three.version>3.0.3</hadoop-three.version>
     <hadoop.version>${hadoop-two.version}</hadoop.version>
-    <compat.module>hbase-hadoop2-compat</compat.module>
     <slf4j.version>1.7.25</slf4j.version>
+    <checkstyle.version>8.11</checkstyle.version>
+    <maven.checkstyle.version>3.0.0</maven.checkstyle.version>
+    <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
+    <external.protobuf.version>2.5.0</external.protobuf.version>
+    <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
+    <commons-io.version>2.5</commons-io.version>
+    <avro.version>1.7.7</avro.version>
+    <commons-lang3.version>3.6</commons-lang3.version>
+    <!--This property is for hadoops netty. HBase netty
+         comes in via hbase-thirdparty hbase-shaded-netty-->
+    <netty.hadoop.version>3.6.2.Final</netty.hadoop.version>
+    <os.maven.version>1.6.1</os.maven.version>
+    <compat.module>hbase-hadoop2-compat</compat.module>
   </properties>
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${external.protobuf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <!-- Avro dependencies we mostly get transitively, manual version coallescing -->
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${avro.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
@@ -180,23 +214,85 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-protocol</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-hadoop2-compat</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-hadoop2-compat</artifactId>
+        <version>${hbase.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-hadoop-compat</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-hadoop-compat</artifactId>
+        <version>${hbase.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
         <version>${hbase.version}</version>
-        <scope>provided</scope>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-zookeeper</artifactId>
+        <version>${hbase.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-client</artifactId>
         <version>${hbase.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-mapreduce</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <artifactId>hbase-it</artifactId>
+        <groupId>org.apache.hbase</groupId>
+        <version>${hbase.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-testing-util</artifactId>
+        <version>${hbase.version}</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${os.maven.version}</version>
+      </extension>
+    </extensions>
     <pluginManagement>
       <plugins>
         <!-- See https://maven.apache.org/maven-ci-friendly.html-->
@@ -301,6 +397,31 @@
             <timestampPropertyName>build.year</timestampPropertyName>
           </configuration>
         </plugin>
+        <plugin>
+          <!-- Approach followed here is roughly the same as mentioned here:
+          https://maven.apache.org/plugins/maven-checkstyle-plugin/examples/multi-module-config.html
+          -->
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${maven.checkstyle.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.hbase</groupId>
+              <artifactId>hbase-checkstyle</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${checkstyle.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <configLocation>hbase/checkstyle.xml</configLocation>
+            <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -347,6 +468,38 @@
                     <exclude>xerces:xercesImpl</exclude>
                   </excludes>
                   <message>We avoid adding our own Xerces jars to the classpath, see HBASE-16340.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>banned-scala</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>org.scala-lang:scala-library</exclude>
+                  </excludes>
+                  <message>We don't allow Scala outside of the hbase-spark module, see HBASE-13992.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>banned-hbase-spark</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>org.apache.hbase:hbase-spark</exclude>
+                  </excludes>
+                  <message>We don't allow other modules to depend on hbase-spark, see HBASE-13992.</message>
                 </bannedDependencies>
               </rules>
             </configuration>

@@ -29,7 +29,7 @@
   </parent>
   <artifactId>kafka</artifactId>
   <packaging>pom</packaging>
-  <name>Apache HBase - Kafka Proxy</name>
+  <name>Apache HBase - Kafka</name>
   <description>Kafka Proxy for Apache HBase</description>
   <modules>
     <module>hbase-kafka-model</module>
