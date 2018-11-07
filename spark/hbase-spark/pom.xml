@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <!--
-
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
  distributed with this work for additional information
@@ -127,7 +126,7 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <version>2.2.4</version>
+      <version>3.0.5</version>
       <scope>test</scope>
       <exclusions>
        <exclusion>
@@ -737,7 +736,10 @@
           <scalaVersion>${scala.version}</scalaVersion>
           <args>
             <arg>-feature</arg>
+            <arg>-target:jvm-1.8</arg>
           </args>
+          <source>${compileSource}</source>
+          <target>${compileSource}</target>
         </configuration>
         <executions>
           <execution>
