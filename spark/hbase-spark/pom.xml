@@ -429,7 +429,7 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-reflect</artifactId>
-      <version>2.11.2</version>
+      <version>${scala.version}</version>
     </dependency>
      <dependency>
       <groupId>org.apache.spark</groupId>
@@ -727,62 +727,87 @@
       </activation>
       <build>
         <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>3.2.0</version>
-        <configuration>
-          <charset>${project.build.sourceEncoding}</charset>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <args>
-            <arg>-feature</arg>
-            <arg>-target:jvm-1.8</arg>
-          </args>
-          <source>${compileSource}</source>
-          <target>${compileSource}</target>
-        </configuration>
-        <executions>
-          <execution>
-            <id>scala-compile-first</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>add-source</goal>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>scala-test-compile</id>
-            <phase>process-test-resources</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>1.0</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <filereports>WDF TestSuite.txt</filereports>
-          <parallel>false</parallel>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
+          <!--This is ugly but saves having to mess with profiles.
+               This plugin uses groovy (yuck) just to set a single
+               variable, target.jvm, dependent on what the value of
+               scala version is.-->
+          <plugin>
+            <groupId>org.codehaus.gmaven</groupId>
+            <artifactId>gmaven-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <phase>validate</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+                <configuration>
+                  <source><![CDATA[
+                    pom.properties['target.jvm'] =
+                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';
+                    ]]></source>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>net.alchim31.maven</groupId>
+            <artifactId>scala-maven-plugin</artifactId>
+            <version>3.2.0</version>
             <configuration>
-              <argLine>-Xmx1536m -XX:ReservedCodeCacheSize=512m</argLine>
+              <charset>${project.build.sourceEncoding}</charset>
+              <scalaVersion>${scala.version}</scalaVersion>
+              <args>
+                <arg>-feature</arg>
+                <!--The target.jvm variable gets set above by the groovy
+                     snippet in the gmaven-plugin.-->
+                <arg>${target.jvm}</arg>
+              </args>
+              <source>${compileSource}</source>
+              <target>${compileSource}</target>
+            </configuration>
+            <executions>
+              <execution>
+                <id>scala-compile-first</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>add-source</goal>
+                  <goal>compile</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>scala-test-compile</id>
+                <phase>process-test-resources</phase>
+                <goals>
+                  <goal>testCompile</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest-maven-plugin</artifactId>
+            <version>1.0</version>
+            <configuration>
+              <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+              <junitxml>.</junitxml>
+              <filereports>WDF TestSuite.txt</filereports>
               <parallel>false</parallel>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
+            <executions>
+              <execution>
+                <id>test</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <argLine>-Xmx1536m -XX:ReservedCodeCacheSize=512m</argLine>
+                  <parallel>false</parallel>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
       </build>
     </profile>
