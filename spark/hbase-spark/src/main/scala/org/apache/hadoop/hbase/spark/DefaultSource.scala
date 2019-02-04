@@ -222,8 +222,11 @@ case class HBaseRelation (
       val put = timestamp.fold(new Put(rBytes))(new Put(rBytes, _))
 
       colsIdxedFields.foreach { case (x, y) =>
-        val b = Utils.toBytes(row(x), y)
-        put.addColumn(Bytes.toBytes(y.cf), Bytes.toBytes(y.col), b)
+        val r = row(x)
+        if (r != null) {
+          val b = Utils.toBytes(r, y)
+          put.addColumn(Bytes.toBytes(y.cf), Bytes.toBytes(y.col), b)
+        }
       }
       count += 1
       (new ImmutableBytesWritable, put)
