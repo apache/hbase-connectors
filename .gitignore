@@ -15,6 +15,7 @@ hbase-*/test
 *.ipr
 patchprocess/
 dependency-reduced-pom.xml
+.flattened-pom.xml
 link_report/
 linklint-*.zip
 linklint/
