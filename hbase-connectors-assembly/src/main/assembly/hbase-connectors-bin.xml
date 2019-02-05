@@ -26,7 +26,7 @@
   <formats>
     <format>tar.gz</format>
   </formats>
-  <baseDirectory>hbase-connectors-${project.version}</baseDirectory>
+  <baseDirectory>hbase-connectors-${revision}</baseDirectory>
   <componentDescriptors>
       <componentDescriptor>src/main/assembly/connector-components.xml</componentDescriptor>
   </componentDescriptors>
