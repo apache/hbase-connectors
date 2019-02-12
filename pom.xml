@@ -408,7 +408,7 @@
             <dependency>
               <groupId>org.apache.hbase</groupId>
               <artifactId>hbase-checkstyle</artifactId>
-              <version>${project.version}</version>
+              <version>${hbase.version}</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
