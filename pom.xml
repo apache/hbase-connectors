@@ -348,6 +348,8 @@
               <exclude>**/.settings/**</exclude>
               <exclude>**/patchprocess/**</exclude>
               <exclude>README.md</exclude>
+              <exclude>**/.flattened-pom.xml</exclude>
+              <exclude>**/src/main/resources/META-INF/LEGAL</exclude>
             </excludes>
           </configuration>
         </plugin>
