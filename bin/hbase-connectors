@@ -237,7 +237,7 @@ if [ "$COMMAND" = "kafkaproxy" ] ; then
   fi
 
   # add the kafka proxy jars
-  add_connector_jars_to_classpath "hbase-kafka-proxy"
+  add_connector_jars_to_classpath "lib"
 
 elif [ "$COMMAND" = "kafkaproxytest" ] ; then
   CLASS='org.apache.hadoop.hbase.kafka.DumpToStringListener'
@@ -246,7 +246,7 @@ elif [ "$COMMAND" = "kafkaproxytest" ] ; then
   fi
 
   # add the kafka proxy jars
-  add_connector_jars_to_classpath "hbase-kafka-proxy"
+  add_connector_jars_to_classpath "lib"
 
 else
   CLASS=$COMMAND

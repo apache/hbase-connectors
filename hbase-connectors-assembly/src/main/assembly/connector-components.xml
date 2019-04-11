@@ -36,9 +36,9 @@
       <outputDirectory>bin</outputDirectory>
       <includes>
         <include>hbase-connectors</include>
-	    <include>hbase-connectors-config.sh</include>
+        <include>hbase-connectors-config.sh</include>
         <include>hbase-connectors-daemon.sh</include>
-       </includes>
+      </includes>
       <fileMode>0755</fileMode>
       <directoryMode>0755</directoryMode>
     </fileSet>
