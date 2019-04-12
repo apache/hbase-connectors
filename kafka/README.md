@@ -1,6 +1,6 @@
 # Apache HBase&trade; Kafka Proxy
 
-Welcome to the hbase kafka proxy. The purpose of this proxy is to act as a _fake peer_.
+Welcome to the HBase kafka proxy. The purpose of this proxy is to act as a _fake peer_.
 It receives replication events from a peer cluster and applies a set of rules (stored in
 a _kafka-route-rules.xml_ file) to determine if the event should be forwarded to a 
 kafka topic. If the mutation matches a rule, the mutation is converted to an avro object
@@ -12,9 +12,9 @@ pass them as properties on the command line; i.e `-Dkey=value`.
 
 ## Usage
 
-1. Make sure the hbase command is in your path. The proxy runs `hbase classpath` to find hbase libraries.
+1. Make sure the `hbase` command is in your path. The proxy runs `hbase classpath` to find hbase libraries.
 2. Create any topics in your kafka broker that you wish to use.
-3. set up _kafka-route-rules.xml_.  This file controls how the mutations are routed.  There are two kinds of rules: _route_ and _drop_.
+3. Set up _kafka-route-rules.xml_.  This file controls how the mutations are routed.  There are two kinds of rules: _route_ and _drop_.
  * _drop_: any mutation that matches this rule will be dropped.
  * _route_: any mutation that matches this rule will be routed to the configured topic.
 
@@ -57,6 +57,17 @@ This combination will route all mutations from `default:mytable` columnFamily `m
 The way the rule is written, all other mutations for column family `mycf` will be routed
 to the `mykafka` topic.
 
+### Setting up HBase
+
+1. Enable replication `hbase.replication=true`.
+2. Enable table replication in shell. Table name is `table` and column family is `cf` in the
+following example:
+```
+disable 'table'
+alter 'table', {NAME => 'cf', REPLICATION_SCOPE => 1}
+enable 'table'
+```
+
 ## Service Arguments
 
 ```
@@ -69,27 +80,31 @@ to the `mykafka` topic.
 --auto            (or -a) auto create peer
 ```
 
+## Starting the Service
 
-## Starting the Service.
-* make sure the hbase command is in your path
-* by default, the service looks for route-rules.xml in the conf directory. You can specify a different file or location with the `-r` argument
+* Make sure the `hbase` command is in your path.
+* By default, the service looks for _kafka-route-rules.xml_ in the conf directory. You can
+specify a different file or location with the `-r` argument.
 
+For example:
 
-### Example
 ```
-$ bin/hbase-connectors-daemon.sh start kafkaproxy -a -e -p wootman -b localhost:9092 -r ~/kafka-route-rules.xml
+$ bin/hbase-connectors-daemon.sh start kafkaproxy -a -e -p <peer> -b <kafka.address>:<kafka.port>
 ```
 
 This:
-* starts the kafka proxy
-* passes -a so proxy will create the replication peer specified by -p if it does not exist (not required, but it saves some busy work).
-* enables the peer (-e) when the service starts (not required, you can manually enable the peer in the hbase shell)
+* Starts the kafka proxy.
+* Passes `-a` so proxy will create the replication peer specified by `-p` if it does not exist
+(not required, but it saves some busy work).
+* Enables the peer (`-e`) when the service starts (not required, you can manually enable the
+peer in the shell).
+* The proxy will use _conf/kafka-route-rules.xml_ by default.
 
 ## Notes
 
-1. The proxy will connect to the zookeeper in `hbase-site.xml` by default.  You can override this by passing `-Dhbase.zookeeper.quorum`
+1. The proxy will connect to the zookeeper in `hbase-site.xml` by default.  You can override this
+by passing `-Dhbase.zookeeper.quorum`.
 2. Route rules only support unicode characters.
-3. I do not have access to a secured hadoop clsuter to test this on.
 
 ### Message Format
 
@@ -120,10 +135,10 @@ A utility is included to test the routing rules.
 $ bin/hbase-connectors-daemon.sh start kafkaproxytest -k <kafka.broker> -t <topic to listen to>
 ```
 
-The messages will be dumped in string format under `logs/`
+The messages will be dumped in string format under `logs/`.
 
-## TODO:
+## TODO
 1. Some properties passed into the region server are hard-coded.
-2. The avro objects should be generic
-3. Allow rules to be refreshed without a restart
+2. The avro objects should be generic.
+3. Allow rules to be refreshed without a restart.
 4. Get this tested on a secure (TLS & Kerberos) enabled cluster.
