@@ -21,8 +21,7 @@
  * limitations under the License.
  */
 -->
-  <!--This 'all' id is not appended to the produced bundle because we do this: http://maven.apache.org/plugins/maven-assembly-plugin/faq.html#required-classifiers -->
-  <id>hbase-connectors-bin</id>
+  <id>bin</id>
   <formats>
     <format>tar.gz</format>
   </formats>
@@ -33,21 +32,18 @@
   <moduleSets>
     <moduleSet>
       <useAllReactorProjects>true</useAllReactorProjects>
-      <includes>
-	<include>org.apache.hbase.connectors:hbase-kafka-proxy</include>
-      </includes>
       <binaries>
         <unpack>false</unpack>
-        <outputDirectory>hbase-kafka-proxy</outputDirectory>
-      <dependencySets>
-        <dependencySet>
-          <excludes>
-            <exclude>org.apache.yetus:audience-annotations</exclude>
-            <exclude>org.slf4j:slf4j-api</exclude>
-            <exclude>org.slf4j:slf4j-log4j12</exclude>
-          </excludes>
-        </dependencySet>
-      </dependencySets>
+        <outputDirectory>lib</outputDirectory>
+        <dependencySets>
+          <dependencySet>
+            <excludes>
+              <exclude>org.apache.yetus:audience-annotations</exclude>
+              <exclude>org.slf4j:slf4j-api</exclude>
+              <exclude>org.slf4j:slf4j-log4j12</exclude>
+            </excludes>
+          </dependencySet>
+        </dependencySets>
       </binaries>
     </moduleSet>
  </moduleSets>

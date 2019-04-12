@@ -67,7 +67,6 @@
 
               <descriptors>
                 <descriptor>src/main/assembly/hbase-connectors-bin.xml</descriptor>
-
               </descriptors>
             </configuration>
           </execution>
@@ -90,7 +89,6 @@
           </execution>
         </executions>
       </plugin>
-
 
       <!-- licensing info from our dependencies -->
       <plugin>
