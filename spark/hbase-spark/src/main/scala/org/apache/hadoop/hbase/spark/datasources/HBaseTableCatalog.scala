@@ -22,9 +22,9 @@ import org.apache.yetus.audience.InterfaceAudience
 import org.apache.hadoop.hbase.spark.{Logging, SchemaConverters}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
-import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable
+import scala.util.parsing.json.JSON
 
 // The definition of each column cell, which may be composite type
 // TODO: add avro support
@@ -243,7 +243,7 @@ object HBaseTableCatalog {
     val parameters = convert(params)
     //  println(jString)
     val jString = parameters(tableCatalog)
-    val map = parse(jString).values.asInstanceOf[Map[String, _]]
+    val map = JSON.parseFull(jString).get.asInstanceOf[Map[String, _]]
     val tableMeta = map.get(table).get.asInstanceOf[Map[String, _]]
     val nSpace = tableMeta.get(nameSpace).getOrElse("default").asInstanceOf[String]
     val tName = tableMeta.get(tableName).get.asInstanceOf[String]

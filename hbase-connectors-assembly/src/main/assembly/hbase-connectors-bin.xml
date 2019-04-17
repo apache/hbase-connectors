@@ -32,6 +32,9 @@
   <moduleSets>
     <moduleSet>
       <useAllReactorProjects>true</useAllReactorProjects>
+      <excludes>
+        <exclude>org.apache.hbase.connectors.spark:hbase-spark-it</exclude>
+      </excludes>
       <binaries>
         <unpack>false</unpack>
         <outputDirectory>lib</outputDirectory>
