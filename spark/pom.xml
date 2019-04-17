@@ -147,11 +147,6 @@
           <artifactId>warbucks-maven-plugin</artifactId>
           <version>1.1.0</version>
         </plugin>
-        <plugin>
-          <groupId>net.alchim31.maven</groupId>
-          <artifactId>scala-maven-plugin</artifactId>
-          <version>3.2.0</version>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
