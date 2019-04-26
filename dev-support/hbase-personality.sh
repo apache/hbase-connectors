@@ -21,15 +21,16 @@ function personality_modules
 {
   local testtype="$2"
 
-  if [[ "$testtype" != "scaladoc" ]]; then
-    return
-  fi
-
   clear_personality_queue
 
   for m in "${CHANGED_MODULES[@]}"; do
-    if [[ "$m" == "spark/hbase-spark" ]]; then
-      personality_enqueue_module spark/hbase-spark
+    if [[ "$testtype" != "scaladoc" ]]; then
+      personality_enqueue_module "${m}"
+    else
+      if [[ "$m" == "spark/hbase-spark" ]]; then
+        personality_enqueue_module spark/hbase-spark
+      fi
     fi
+
   done
 }
