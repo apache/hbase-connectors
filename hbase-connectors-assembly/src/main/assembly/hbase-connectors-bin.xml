@@ -53,11 +53,11 @@
   <files>
     <file>
       <source>../LICENSE.txt</source>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory>${file.separator}</outputDirectory>
     </file>
     <file>
       <source>../NOTICE.txt</source>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory>${file.separator}</outputDirectory>
     </file>
   </files>
 </assembly>
