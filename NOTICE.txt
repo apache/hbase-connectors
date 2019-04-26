@@ -1,0 +1,2 @@
+Apache HBase - Connectors
+Copyright 2019 The Apache Software Foundation
