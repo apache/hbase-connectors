@@ -59,5 +59,17 @@
       <source>../NOTICE.txt</source>
       <outputDirectory>${file.separator}</outputDirectory>
     </file>
+    <file>
+      <source>../README.md</source>
+      <outputDirectory>${file.separator}</outputDirectory>
+    </file>
+    <file>
+      <source>../CHANGELOG.md</source>
+      <outputDirectory>${file.separator}</outputDirectory>
+    </file>
+    <file>
+      <source>../RELEASENOTES.md</source>
+      <outputDirectory>${file.separator}</outputDirectory>
+    </file>
   </files>
 </assembly>
