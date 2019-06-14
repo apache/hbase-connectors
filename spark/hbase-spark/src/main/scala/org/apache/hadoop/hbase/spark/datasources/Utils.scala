@@ -18,17 +18,16 @@
 
 package org.apache.hadoop.hbase.spark.datasources
 
+import java.sql.{Date, Timestamp}
+
 import org.apache.hadoop.hbase.spark.AvroSerdes
 import org.apache.hadoop.hbase.util.Bytes
-//import org.apache.spark.sql.execution.SparkSqlSerializer
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
-
 import org.apache.yetus.audience.InterfaceAudience;
 
 @InterfaceAudience.Private
 object Utils {
-
 
   /**
     * Parses the hbase field to it's corresponding
@@ -48,14 +47,16 @@ object Utils {
     } else  {
       // Fall back to atomic type
       f.dt match {
-        case BooleanType => toBoolean(src, offset)
+        case BooleanType => src(offset) != 0
         case ByteType => src(offset)
-        case DoubleType => Bytes.toDouble(src, offset)
-        case FloatType => Bytes.toFloat(src, offset)
-        case IntegerType => Bytes.toInt(src, offset)
-        case LongType|TimestampType => Bytes.toLong(src, offset)
         case ShortType => Bytes.toShort(src, offset)
-        case StringType => toUTF8String(src, offset, length)
+        case IntegerType => Bytes.toInt(src, offset)
+        case LongType => Bytes.toLong(src, offset)
+        case FloatType => Bytes.toFloat(src, offset)
+        case DoubleType => Bytes.toDouble(src, offset)
+        case DateType => new Date(Bytes.toLong(src, offset))
+        case TimestampType => new Timestamp(Bytes.toLong(src, offset))
+        case StringType => UTF8String.fromBytes(src, offset, length)
         case BinaryType =>
           val newArray = new Array[Byte](length)
           System.arraycopy(src, offset, newArray, 0, length)
@@ -73,28 +74,19 @@ object Utils {
       val record = field.catalystToAvro(input)
       AvroSerdes.serialize(record, field.schema.get)
     } else {
-      input match {
-        case data: Boolean => Bytes.toBytes(data)
-        case data: Byte => Array(data)
-        case data: Array[Byte] => data
-        case data: Double => Bytes.toBytes(data)
-        case data: Float => Bytes.toBytes(data)
-        case data: Int => Bytes.toBytes(data)
-        case data: Long => Bytes.toBytes(data)
-        case data: Short => Bytes.toBytes(data)
-        case data: UTF8String => data.getBytes
-        case data: String => Bytes.toBytes(data)
-        // TODO: add more data type support
+      field.dt match {
+        case BooleanType => Bytes.toBytes(input.asInstanceOf[Boolean])
+        case ByteType => Array(input.asInstanceOf[Number].byteValue)
+        case ShortType => Bytes.toBytes(input.asInstanceOf[Number].shortValue)
+        case IntegerType => Bytes.toBytes(input.asInstanceOf[Number].intValue)
+        case LongType => Bytes.toBytes(input.asInstanceOf[Number].longValue)
+        case FloatType => Bytes.toBytes(input.asInstanceOf[Number].floatValue)
+        case DoubleType => Bytes.toBytes(input.asInstanceOf[Number].doubleValue)
+        case DateType | TimestampType => Bytes.toBytes(input.asInstanceOf[java.util.Date].getTime)
+        case StringType => Bytes.toBytes(input.toString)
+        case BinaryType => input.asInstanceOf[Array[Byte]]
         case _ => throw new Exception(s"unsupported data type ${field.dt}")
       }
     }
-  }
-
-  def toBoolean(input: Array[Byte], offset: Int): Boolean = {
-    input(offset) != 0
-  }
-
-  def toUTF8String(input: Array[Byte], offset: Int, length: Int): UTF8String = {
-    UTF8String.fromBytes(input.slice(offset, offset + length))
   }
 }
