@@ -1,4 +1,4 @@
-ON PROTOBUFS
+##ON PROTOBUFS
 This maven module has core protobuf definition files ('.protos') used by hbase
 Spark that ship with hbase core including tests.
 
