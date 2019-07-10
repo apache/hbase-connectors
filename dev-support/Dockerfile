@@ -22,15 +22,11 @@ FROM maven:3.6-jdk-8
 # hadolint ignore=DL3008
 RUN apt-get -q update && apt-get -q install --no-install-recommends -y \
        git \
-       bats \
-       findbugs \
        rsync \
        shellcheck \
        wget && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-ENV FINDBUGS_HOME /usr
 
 ###
 # Avoid out of memory errors in builds
