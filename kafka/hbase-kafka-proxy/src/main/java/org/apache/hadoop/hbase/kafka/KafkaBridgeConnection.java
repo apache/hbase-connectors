@@ -40,10 +40,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.yetus.audience.InterfaceAudience;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
+import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 
 /**
  * a alternative implementation of a connection object that forwards the mutations to a kafka queue
@@ -51,11 +48,7 @@ import org.slf4j.LoggerFactory;
  * */
 @InterfaceAudience.Private
 public class KafkaBridgeConnection implements Connection {
-  private static final Logger LOG = LoggerFactory.getLogger(KafkaBridgeConnection.class);
-
   private final Configuration conf;
-  private final User user;
-  private final ExecutorService pool;
   private volatile boolean closed = false;
   private TopicRoutingRules routingRules;
   private Producer<byte[],byte[]> producer;
@@ -74,32 +67,23 @@ public class KafkaBridgeConnection implements Connection {
                                ExecutorService pool,
                                User user) throws IOException {
     this.conf = conf;
-    this.user = user;
-    this.pool = pool;
     setupRules();
     startKafkaConnection();
   }
 
   /**
    * for testing.
-   * @param conf  hbase configuration
-   * @param pool  executor service
-   * @param user  user with connection
+   * @param conf hbase configuration
    * @param routingRules a set of routing rules
    * @param producer a kafka producer
    * @throws IOException on error
    */
-  public KafkaBridgeConnection(Configuration conf,
-                                ExecutorService pool,
-                                User user,
-                                TopicRoutingRules routingRules,
-                               Producer<byte[],byte[]> producer)
-          throws IOException {
+  @VisibleForTesting
+  public KafkaBridgeConnection(Configuration conf, TopicRoutingRules routingRules,
+                               Producer<byte[],byte[]> producer) {
     this.conf = conf;
-    this.user = user;
-    this.pool = pool;
-    this.producer=producer;
-    this.routingRules=routingRules;
+    this.producer = producer;
+    this.routingRules = routingRules;
   }
 
   private void setupRules() throws IOException {
@@ -159,6 +143,11 @@ public class KafkaBridgeConnection implements Connection {
   @Override
   public RegionLocator getRegionLocator(TableName tableName) throws IOException {
     return null;
+  }
+
+  /* Without @Override, we can also compile it against HBase 2.1. */
+  /* @Override */
+  public void clearRegionLocationCache() {
   }
 
   @Override

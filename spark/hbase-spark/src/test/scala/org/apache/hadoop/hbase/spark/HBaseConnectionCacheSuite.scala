@@ -59,6 +59,9 @@ class ConnectionMocker extends Connection {
 
   def isAborted: Boolean = true
   def abort(why: String, e: Throwable) = {}
+
+  /* Without override, we can also compile it against HBase 2.1. */
+  /* override */ def clearRegionLocationCache(): Unit = {}
 }
 
 class HBaseConnectionCacheSuite extends FunSuite with Logging {

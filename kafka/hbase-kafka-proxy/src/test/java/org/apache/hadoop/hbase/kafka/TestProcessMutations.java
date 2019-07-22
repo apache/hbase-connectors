@@ -23,7 +23,6 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
@@ -89,8 +88,7 @@ public class TestProcessMutations {
       rules.parseRules(new ByteArrayInputStream(ROUTE_RULE1.getBytes("UTF-8")));
       Configuration conf = new Configuration();
       KafkaBridgeConnection connection =
-          new KafkaBridgeConnection(
-                  conf,Executors.newSingleThreadExecutor(),user,rules,myTestingProducer);
+          new KafkaBridgeConnection(conf,rules,myTestingProducer);
       long zeTimestamp = System.currentTimeMillis();
       Put put = new Put("key1".getBytes("UTF-8"),zeTimestamp);
       put.addColumn("FAMILY".getBytes("UTF-8"),
