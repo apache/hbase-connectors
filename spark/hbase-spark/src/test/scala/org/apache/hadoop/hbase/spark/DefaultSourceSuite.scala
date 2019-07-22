@@ -26,7 +26,7 @@ import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCata
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 import org.xml.sax.SAXParseException
@@ -889,7 +889,8 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     assert(result.get(5) == 10000000000L)
     assert(result.get(6) == 0.5)
     assert(result.get(7) == 0.125)
-    assert(result.get(8).asInstanceOf[Date].getTime == 1234566000000L)
+    // sql date stores only year, month and day, so checking it is within a day
+    assert(Math.abs(result.get(8).asInstanceOf[Date].getTime - timestamp) <= 86400000)
     assert(result.get(9).asInstanceOf[Timestamp].getTime == timestamp)
     assert(result.get(10) == "string")
   }
