@@ -17,6 +17,8 @@
 
 package org.apache.hadoop.hbase.spark
 
+import java.sql.{Date, Timestamp}
+
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
@@ -89,7 +91,10 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
 
   val t1TableName = "t1"
   val t2TableName = "t2"
+  val t3TableName = "t3"
   val columnFamily = "c"
+
+  val timestamp = 1234567890000L
 
   var sqlContext:SQLContext = null
   var df:DataFrame = null
@@ -109,12 +114,22 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     catch {
       case e: Exception => logInfo(" - no table " + t2TableName + " found")
     }
+    try
+      TEST_UTIL.deleteTable(TableName.valueOf(t3TableName))
+    catch {
+      case e: Exception => logInfo(" - no table " + t3TableName + " found")
+    }
+
     logInfo(" - creating table " + t1TableName)
     TEST_UTIL.createTable(TableName.valueOf(t1TableName), Bytes.toBytes(columnFamily))
     logInfo(" - created table")
     logInfo(" - creating table " + t2TableName)
     TEST_UTIL.createTable(TableName.valueOf(t2TableName), Bytes.toBytes(columnFamily))
     logInfo(" - created table")
+    logInfo(" - creating table " + t3TableName)
+    TEST_UTIL.createTable(TableName.valueOf(t3TableName), Bytes.toBytes(columnFamily))
+    logInfo(" - created table")
+
     val sparkConf = new SparkConf
     sparkConf.set(HBaseSparkConf.QUERY_CACHEBLOCKS, "true")
     sparkConf.set(HBaseSparkConf.QUERY_BATCHSIZE, "100")
@@ -124,7 +139,7 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
 
     val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
     try {
-      val t1Table = connection.getTable(TableName.valueOf("t1"))
+      val t1Table = connection.getTable(TableName.valueOf(t1TableName))
 
       try {
         var put = new Put(Bytes.toBytes("get1"))
@@ -158,7 +173,7 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
         t1Table.close()
       }
 
-      val t2Table = connection.getTable(TableName.valueOf("t2"))
+      val t2Table = connection.getTable(TableName.valueOf(t2TableName))
 
       try {
         var put = new Put(Bytes.toBytes(1))
@@ -190,6 +205,26 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
         t2Table.put(put)
       } finally {
         t2Table.close()
+      }
+
+      val t3Table = connection.getTable(TableName.valueOf(t3TableName))
+
+      try {
+        val put = new Put(Bytes.toBytes("row"))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("binary"), Array(1.toByte, 2.toByte, 3.toByte))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("boolean"), Bytes.toBytes(true))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("byte"), Array(127.toByte))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("short"), Bytes.toBytes(32767.toShort))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("int"), Bytes.toBytes(1000000))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("long"), Bytes.toBytes(10000000000L))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("float"), Bytes.toBytes(0.5f))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("double"), Bytes.toBytes(0.125))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("date"), Bytes.toBytes(timestamp))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("timestamp"), Bytes.toBytes(timestamp))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("string"), Bytes.toBytes("string"))
+        t3Table.put(put)
+      } finally {
+        t3Table.close()
       }
     } finally {
       connection.close()
@@ -805,6 +840,59 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     assert(results.length == 2)
 
     assert(executionRules.dynamicLogicExpression == null)
+  }
+
+  test("Test mapping") {
+    val catalog = s"""{
+                     |"table":{"namespace":"default", "name":"t3"},
+                     |"rowkey":"key",
+                     |"columns":{
+                     |"KEY_FIELD":{"cf":"rowkey", "col":"key", "type":"string"},
+                     |"BINARY_FIELD":{"cf":"c", "col":"binary", "type":"binary"},
+                     |"BOOLEAN_FIELD":{"cf":"c", "col":"boolean", "type":"boolean"},
+                     |"BYTE_FIELD":{"cf":"c", "col":"byte", "type":"byte"},
+                     |"SHORT_FIELD":{"cf":"c", "col":"short", "type":"short"},
+                     |"INT_FIELD":{"cf":"c", "col":"int", "type":"int"},
+                     |"LONG_FIELD":{"cf":"c", "col":"long", "type":"long"},
+                     |"FLOAT_FIELD":{"cf":"c", "col":"float", "type":"float"},
+                     |"DOUBLE_FIELD":{"cf":"c", "col":"double", "type":"double"},
+                     |"DATE_FIELD":{"cf":"c", "col":"date", "type":"date"},
+                     |"TIMESTAMP_FIELD":{"cf":"c", "col":"timestamp", "type":"timestamp"},
+                     |"STRING_FIELD":{"cf":"c", "col":"string", "type":"string"}
+                     |}
+                     |}""".stripMargin
+    df = sqlContext.load("org.apache.hadoop.hbase.spark",
+      Map(HBaseTableCatalog.tableCatalog->catalog))
+
+    df.registerTempTable("hbaseTestMapping")
+
+    val results = sqlContext.sql("SELECT binary_field, boolean_field, " +
+      "byte_field, short_field, int_field, long_field, " +
+      "float_field, double_field, date_field, timestamp_field, " +
+      "string_field FROM hbaseTestMapping").collect()
+
+    assert(results.length == 1)
+
+    val result = results(0)
+
+    System.out.println("row: " + result)
+    System.out.println("0: " + result.get(0))
+    System.out.println("1: " + result.get(1))
+    System.out.println("2: " + result.get(2))
+    System.out.println("3: " + result.get(3))
+
+    assert(result.get(0).asInstanceOf[Array[Byte]].sameElements(Array(1.toByte, 2.toByte, 3.toByte)))
+    assert(result.get(1) == true)
+    assert(result.get(2) == 127)
+    assert(result.get(3) == 32767)
+    assert(result.get(4) == 1000000)
+    assert(result.get(5) == 10000000000L)
+    assert(result.get(6) == 0.5)
+    assert(result.get(7) == 0.125)
+    // sql date stores only year, month and day, so checking it is within a day
+    assert(Math.abs(result.get(8).asInstanceOf[Date].getTime - timestamp) <= 86400000)
+    assert(result.get(9).asInstanceOf[Timestamp].getTime == timestamp)
+    assert(result.get(10) == "string")
   }
 
   def writeCatalog = s"""{

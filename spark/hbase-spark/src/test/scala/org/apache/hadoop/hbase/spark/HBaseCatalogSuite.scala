@@ -38,7 +38,9 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
                     |"col5":{"cf":"cf1", "col":"col4", "type":"double", "serdes":"${classOf[DoubleSerDes].getName}"},
                     |"col6":{"cf":"cf1", "col":"col5", "type":"$map"},
                     |"col7":{"cf":"cf1", "col":"col6", "type":"$array"},
-                    |"col8":{"cf":"cf1", "col":"col7", "type":"$arrayMap"}
+                    |"col8":{"cf":"cf1", "col":"col7", "type":"$arrayMap"},
+                    |"col9":{"cf":"cf1", "col":"col8", "type":"date"},
+                    |"col10":{"cf":"cf1", "col":"col9", "type":"timestamp"}
                     |}
                     |}""".stripMargin
   val parameters = Map(HBaseTableCatalog.tableCatalog->catalog)
@@ -63,6 +65,8 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
     assert(t.getField("col2").length == Bytes.SIZEOF_DOUBLE)
     assert(t.getField("col1").length == -1)
     assert(t.getField("col8").length == -1)
+    assert(t.getField("col9").dt == DateType)
+    assert(t.getField("col10").dt == TimestampType)
   }
 
   checkDataType(
@@ -95,7 +99,7 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
     assert(DataTypeParserWrapper.parse("BINARY") === t.getField("C_FIELD").dt)
   }
 
-  test("compatiblity") {
+  test("compatibility") {
     val m = Map("hbase.columns.mapping" ->
       "KEY_FIELD STRING :key, A_FIELD STRING c:a, B_FIELD DOUBLE c:b, C_FIELD BINARY c:c,",
       "hbase.table" -> "t1")

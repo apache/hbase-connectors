@@ -440,11 +440,9 @@ case class HBaseRelation (
         if (field != null) {
           if (field.isRowKey) {
             parentRowKeyFilter.mergeIntersect(new RowKeyFilter(
-              DefaultSourceStaticUtils.getByteValue(field,
-                value.toString), null))
+                Utils.toBytes(value, field), null))
           }
-          val byteValue =
-            DefaultSourceStaticUtils.getByteValue(field, value.toString)
+          val byteValue = Utils.toBytes(value, field)
           valueArray += byteValue
         }
         new EqualLogicExpression(attr, valueArray.length - 1, false)
@@ -929,12 +927,6 @@ class ColumnFilterCollection {
 @InterfaceAudience.Private
 object DefaultSourceStaticUtils {
 
-  val rawInteger = new RawInteger
-  val rawLong = new RawLong
-  val rawFloat = new RawFloat
-  val rawDouble = new RawDouble
-  val rawString = RawString.ASCENDING
-
   val byteRange = new ThreadLocal[PositionedByteRange] {
     override def initialValue(): PositionedByteRange = {
       val range = new SimplePositionedMutableByteRange()
@@ -971,93 +963,6 @@ object DefaultSourceStaticUtils {
       rowKeyFilter, dynamicLogicExpression))
     while (lastFiveExecutionRules.size() > 5) {
       lastFiveExecutionRules.poll()
-    }
-  }
-
-  /**
-   * This method will convert the result content from HBase into the
-   * SQL value type that is requested by the Spark SQL schema definition
-   *
-   * @param field              The structure of the SparkSQL Column
-   * @param r                       The result object from HBase
-   * @return                        The converted object type
-   */
-  def getValue(field: Field,
-      r: Result): Any = {
-    if (field.isRowKey) {
-      val row = r.getRow
-
-      field.dt match {
-        case IntegerType => rawInteger.decode(getFreshByteRange(row))
-        case LongType => rawLong.decode(getFreshByteRange(row))
-        case FloatType => rawFloat.decode(getFreshByteRange(row))
-        case DoubleType => rawDouble.decode(getFreshByteRange(row))
-        case StringType => rawString.decode(getFreshByteRange(row))
-        case TimestampType => rawLong.decode(getFreshByteRange(row))
-        case _ => Bytes.toString(row)
-      }
-    } else {
-      val cellByteValue =
-        r.getColumnLatestCell(field.cfBytes, field.colBytes)
-      if (cellByteValue == null) null
-      else field.dt match {
-        case IntegerType => rawInteger.decode(getFreshByteRange(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength))
-        case LongType => rawLong.decode(getFreshByteRange(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength))
-        case FloatType => rawFloat.decode(getFreshByteRange(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength))
-        case DoubleType => rawDouble.decode(getFreshByteRange(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength))
-        case StringType => Bytes.toString(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength)
-        case TimestampType => rawLong.decode(getFreshByteRange(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength))
-        case _ => Bytes.toString(cellByteValue.getValueArray,
-          cellByteValue.getValueOffset, cellByteValue.getValueLength)
-      }
-    }
-  }
-
-  /**
-   * This will convert the value from SparkSQL to be stored into HBase using the
-   * right byte Type
-   *
-   * @param value                   String value from SparkSQL
-   * @return                        Returns the byte array to go into HBase
-   */
-  def getByteValue(field: Field,
-      value: String): Array[Byte] = {
-    field.dt match {
-      case IntegerType =>
-        val result = new Array[Byte](Bytes.SIZEOF_INT)
-        val localDataRange = getFreshByteRange(result)
-        rawInteger.encode(localDataRange, value.toInt)
-        localDataRange.getBytes
-      case LongType =>
-        val result = new Array[Byte](Bytes.SIZEOF_LONG)
-        val localDataRange = getFreshByteRange(result)
-        rawLong.encode(localDataRange, value.toLong)
-        localDataRange.getBytes
-      case FloatType =>
-        val result = new Array[Byte](Bytes.SIZEOF_FLOAT)
-        val localDataRange = getFreshByteRange(result)
-        rawFloat.encode(localDataRange, value.toFloat)
-        localDataRange.getBytes
-      case DoubleType =>
-        val result = new Array[Byte](Bytes.SIZEOF_DOUBLE)
-        val localDataRange = getFreshByteRange(result)
-        rawDouble.encode(localDataRange, value.toDouble)
-        localDataRange.getBytes
-      case StringType =>
-        Bytes.toBytes(value)
-      case TimestampType =>
-        val result = new Array[Byte](Bytes.SIZEOF_LONG)
-        val localDataRange = getFreshByteRange(result)
-        rawLong.encode(localDataRange, value.toLong)
-        localDataRange.getBytes
-
-      case _ => Bytes.toBytes(value)
     }
   }
 }
