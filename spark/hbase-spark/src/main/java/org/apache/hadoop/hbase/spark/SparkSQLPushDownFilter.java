@@ -17,9 +17,6 @@
 
 package org.apache.hadoop.hbase.spark;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +26,6 @@ import java.util.Objects;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.exceptions.DeserializationException;
-import org.apache.hadoop.hbase.filter.Filter.ReturnCode;
 import org.apache.hadoop.hbase.filter.FilterBase;
 import org.apache.hadoop.hbase.spark.datasources.BytesEncoder;
 import org.apache.hadoop.hbase.spark.datasources.Field;
@@ -40,6 +36,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.hbase.thirdparty.com.google.protobuf.ByteString;
+import org.apache.hbase.thirdparty.com.google.protobuf.InvalidProtocolBufferException;
 
 import scala.collection.mutable.MutableList;
 
@@ -256,17 +255,17 @@ public class SparkSQLPushDownFilter extends FilterBase{
 
     builder.setDynamicLogicExpression(dynamicLogicExpression.toExpressionString());
     for (byte[] valueFromQuery: valueFromQueryArray) {
-      builder.addValueFromQueryArray(ByteStringer.wrap(valueFromQuery));
+      builder.addValueFromQueryArray(ByteString.copyFrom(valueFromQuery));
     }
 
     for (Map.Entry<ByteArrayComparable, HashMap<ByteArrayComparable, String>>
-            familyEntry : currentCellToColumnIndexMap.entrySet()) {
+        familyEntry : currentCellToColumnIndexMap.entrySet()) {
       for (Map.Entry<ByteArrayComparable, String> qualifierEntry :
-              familyEntry.getValue().entrySet()) {
+          familyEntry.getValue().entrySet()) {
         columnMappingBuilder.setColumnFamily(
-                ByteStringer.wrap(familyEntry.getKey().bytes()));
+            ByteString.copyFrom(familyEntry.getKey().bytes()));
         columnMappingBuilder.setQualifier(
-                ByteStringer.wrap(qualifierEntry.getKey().bytes()));
+            ByteString.copyFrom(qualifierEntry.getKey().bytes()));
         columnMappingBuilder.setColumnName(qualifierEntry.getValue());
         builder.addCellToColumnMapping(columnMappingBuilder.build());
       }

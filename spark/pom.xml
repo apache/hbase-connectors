@@ -21,22 +21,28 @@
    */
   -->
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>hbase-connectors</artifactId>
     <version>${revision}</version>
     <relativePath>../</relativePath>
   </parent>
+
   <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>spark</artifactId>
   <packaging>pom</packaging>
   <version>${revision}</version>
   <name>Apache HBase - Spark</name>
   <description>Spark Connectors for Apache HBase</description>
+
   <modules>
+    <module>hbase-spark-protocol</module>
+    <module>hbase-spark-protocol-shaded</module>
     <module>hbase-spark</module>
     <module>hbase-spark-it</module>
   </modules>
+
   <properties>
     <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
@@ -47,6 +53,7 @@
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -55,79 +62,23 @@
         <version>${revision}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.hbase.connectors.spark</groupId>
+        <artifactId>hbase-spark-protocol</artifactId>
+        <version>${revision}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase.connectors.spark</groupId>
+        <artifactId>hbase-spark-protocol-shaded</artifactId>
+        <version>${revision}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.hbase.thirdparty</groupId>
         <artifactId>hbase-shaded-miscellaneous</artifactId>
         <version>${hbase-thirdparty.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
-        <version>${hadoop.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-          </exclusion>
-          <exclusion>
-             <groupId>com.google.code.findbugs</groupId>
-             <artifactId>jsr305</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
-        <version>${hadoop.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-mapreduce-client-core</artifactId>
-        <version>${hadoop.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-          </exclusion>
-          <exclusion>
-             <groupId>com.google.code.findbugs</groupId>
-             <artifactId>jsr305</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
     </dependencies>
   </dependencyManagement>
+
   <build>
     <pluginManagement>
       <plugins>
@@ -150,4 +101,5 @@
       </plugins>
     </pluginManagement>
   </build>
+
 </project>
