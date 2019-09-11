@@ -1,0 +1,426 @@
+Apache HBase - Spark
+Copyright 2019 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+====
+Apache HBase - Spark contained works
+
+This product contains additional works that are distributed under licenses
+other than Apache Software License Version 2. See LICENSE for full details
+
+----
+This product includes AntLR Parser Generator
+Copyright (c) 2012-2017 The ANTLR Project.
+Licensed under BSD, see LICENSE for details
+incorporated from antlr:antlr:jar:2.7.7
+For source see 'http://www.antlr.org/'.
+
+----
+This product includes Kryo Shaded
+Copyright (c) 2008-2018, Nathan Sweet All rights reserved.
+Licensed under BSD, see LICENSE for details
+incorporated from com.esotericsoftware:kryo-shaded:jar:4.0.2
+For source see 'https://github.com/EsotericSoftware/kryo/'.
+
+----
+This product includes MinLog
+Copyright (c) 2008, Nathan Sweet
+Licensed under BSD, see LICENSE for details
+incorporated from com.esotericsoftware:minlog:jar:1.3.0
+For source see 'https://github.com/EsotericSoftware/minlog'.
+
+----
+This product includes Protocol Buffer Java API
+Copyright 2008 Google Inc.
+Licensed under New BSD license, see LICENSE for details
+incorporated from com.google.protobuf:protobuf-java:jar:2.5.0
+For source see 'http://code.google.com/p/protobuf'.
+
+----
+This product includes Jsch
+Copyright (c) 2002-2015 Atsuhiko Yamanaka, JCraft,Inc.
+Licensed under Revised BSD, see LICENSE for details
+incorporated from com.jcraft:jsch:jar:0.1.54
+For source see 'http://www.jcraft.com/jsch/'.
+
+----
+This product includes ParaNamer Core
+Portions copyright (c) 2006-2018 Paul Hammant & ThoughtWorks Inc
+Portions copyright (c) 2000-2007 INRIA, France Telecom
+under the terms of BSD License, see LICENSE for details
+incorporated from com.thoughtworks.paranamer:paranamer:jar:2.3
+For source see 'https://github.com/paul-hammant/paranamer/'
+
+----
+This product includes Py4J
+Copyright (c) 2009-2018, Barthelemy Dagenais and individual contributors
+under the terms of BSD License, see LICENSE for details
+incorporated from cnet.sf.py4j:py4j:jar:0.10.7
+For source see 'https://github.com/bartdag/py4j'
+
+----
+This product includes ANTLR 4 Runtime
+Copyright (c) 2012-2017 The ANTLR Project.
+under the terms of BSD License
+incorporated from org.antlr:antlr4-runtime:jar:4.7
+For source see 'http://www.antlr.org/antlr4-runtime'
+
+----
+This product includes commons-compiler
+Copyright (c) 2001-2016, Arno Unkrig
+Copyright (c) 2015-2016  TIBCO Software Inc.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.codehaus.janino:commons-compiler:jar:3.0.9
+For source see 'https://janino-compiler.github.io/janino/'
+
+----
+This product includes janino
+Copyright (c) 2001-2016, Arno Unkrig
+Copyright (c) 2015-2016  TIBCO Software Inc.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.codehaus.janino:janino:jar:3.0.9
+For source see 'https://janino-compiler.github.io/janino/'
+
+----
+This product includes leveldbjni-all
+Copyright (c) 2011 FuseSource Corp.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.fusesource.leveldbjni:leveldbjni-all:jar:1.8
+For source see 'https://github.com/fusesource/leveldbjni/'
+
+----
+This product includes Scala Library
+Copyright (c) 2002-2019 EPFL
+Copyright (c) 2011-2019 Lightbend, Inc.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.scala-lang:scala-library:jar:2.11.12
+For source see 'http://www.scala-lang.org/'
+
+----
+This product includes Scala Compiler
+Copyright (c) 2002-2019 EPFL
+Copyright (c) 2011-2019 Lightbend, Inc.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.scala-lang:scala-reflect:jar:2.11.12
+For source see 'http://www.scala-lang.org/'
+
+----
+This product includes scala-parser-combinators
+Copyright (c) 2002-2019 EPFL
+Copyright (c) 2011-2019 Lightbend, Inc.
+under the terms of BSD License, see LICENSE for details
+incorporated from org.scala-lang.modules:scala-parser-combinators_2.11:jar:1.1.0
+For source see 'http://www.scala-lang.org/'
+
+----
+This product includes scala-xml
+Copyright (c) 2002-2019 EPFL
+Copyright (c) 2011-2019 Lightbend, Inc.
+under the terms of BSD License
+incorporated from org.scala-lang.modules:scala-xml_2.11:jar:1.0.6
+For source see 'http://www.scala-lang.org/'
+
+----
+This product includes xmlenc Library
+Copyright 2003-2011, Ernst de Haan
+under the terms of 2-Clause BSD License, see LICENSE for details
+incorporated from xmlenc:xmlenc:jar:0.52
+For source see 'https://github.com/znerd/xmlenc/'
+
+----
+This product includes jersey-client
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.jersey:jersey-client:jar:1.9
+For source see 'https://jersey.java.net/jersey-client/'.
+
+----
+This product includes jersey-core
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.jersey:jersey-core:jar:1.9
+For source see 'https://jersey.java.net/jersey-core/'.
+
+----
+This product includes jersey-json
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.jersey:jersey-json:jar:1.9
+For source see 'https://jersey.java.net/jersey-json/'.
+
+----
+This product includes jersey-server
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.jersey:jersey-server:jar:1.9
+For source see 'https://jersey.java.net/jersey-server/'.
+
+----
+This product includes jersey-guice
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.jersey:jersey-guice:jar:1.9
+For source see 'https://jersey.java.net/jersey-guice/'.
+
+----
+This product includes JAXB RI
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from com.sun.xml.bind:jaxb-impl:jar:2.2.3-1
+For source see 'https://jersey.java.net/jersey-core/'.
+
+----
+This product includes javax.annotation API
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from javax.annotation:javax.annotation-api:jar:1.2
+For source see 'http://jcp.org/en/jsr/detail?id=250'.
+
+----
+This product includes Java Servlet API
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from javax.servlet:javax.servlet-api:jar:3.1.0
+For source see 'http://servlet-spec.java.net'.
+
+----
+This product includes JavaServer Pages(TM) API
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from javax.servlet.jsp:javax.servlet.jsp-api:jar:2.3.1
+For source see 'http://jsp.java.net'.
+
+----
+This product includes javax.ws.rs-api
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from javax.ws.rs:javax.ws.rs-api:jar:2.0.1
+For source see 'http://jax-rs-spec.java.net'.
+
+----
+This product includes JAXB API bundle for GlassFish V3
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details.
+incorporated from javax.xml.bind:jaxb-api:jar:2.2.2
+For source see 'https://jaxb.dev.java.net/'.
+
+----
+This product includes Expression Language 3.0
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish:javax.el:jar:3.0.1-b08
+For source see 'http://uel.java.net'.
+
+----
+This product includes HK2 API module
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details.
+incorporated from org.glassfish.hk2:hk2-api:jar:2.4.0-b34
+For source see 'https://hk2.java.net/hk2-api'.
+
+----
+This product includes ServiceLocator Default Implementation
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details.
+incorporated from org.glassfish.hk2:hk2-locator:jar:2.4.0-b34
+For source see 'https://hk2.java.net/hk2-locator'.
+
+----
+This product includes HK2 Implementation Utilities
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.hk2:hk2-utils:jar:2.4.0-b34
+For source see 'https://hk2.java.net/hk2-utils'.
+
+----
+This product includes OSGi resource locator bundle
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.hk2:osgi-resource-locator:jar:1.0.1
+For source see 'http://glassfish.org/osgi-resource-locator/'.
+
+----
+This product includes aopalliance version 1.0 repackaged as a module
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.hk2.external:aopalliance-repackaged:jar:2.4.0-b34
+For source see 'https://hk2.java.net/external/aopalliance-repackaged'.
+
+----
+This product includes javax.inject:1 as OSGi bundle
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details.
+incorporated from org.glassfish.hk2.external:javax.inject:jar:2.4.0-b34
+For source see 'https://hk2.java.net/external/javax.inject'.
+
+----
+This product includes jersey-repackaged-guava
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.bundles.repackaged:jersey-guava:jar:2.22.2
+For source see 'https://jersey.java.net/project/project/jersey-guava/'.
+
+----
+This product includes jersey-container-servlet
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.containers:jersey-container-servlet-core:jar:2.22.2
+For source see 'https://jersey.java.net/project/jersey-container-servlet/'.
+
+----
+This product includes jersey-container-servlet-core
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details.
+incorporated from org.glassfish.jersey.containers:jersey-container-servlet-core:jar:2.22.2
+For source see 'https://jersey.java.net/project/jersey-container-servlet-core/'.
+
+----
+This product includes jersey-core-client
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.core:jersey-client:jar:2.22.2
+For source see 'https://jersey.java.net/jersey-client/'.
+
+----
+This product includes jersey-core-common
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.core:jersey-common:jar:2.22.2
+For source see 'https://jersey.java.net/jersey-common/'.
+
+----
+This product includes jersey-core-server
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.core:jersey-server:jar:2.22.2
+For source see 'https://jersey.java.net/jersey-server/'.
+
+----
+This product includes jersey-media-jaxb
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.jersey.media:jersey-media-jaxb:jar:2.22.2
+For source see 'https://jersey.java.net/project/jersey-media-jaxb/'.
+
+----
+This product includes JSP implementation
+Licensed under COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
+and General Public License 2 with CLASSPATH EXCEPTION, see LICENSE for details
+incorporated from org.glassfish.web:javax.servlet.jsp:jar:2.3.2
+For source see 'http://jsp.java.net'.
+
+----
+This product includes pyrolite
+Copyright (c) by Irmen de Jong
+Licensed under MIT License see LICENSE for details
+incorporated from net.razorvine:pyrolite:jar:4.13
+For source see 'https://github.com/jruby/jcodings/'.
+
+----
+This product includes Jony
+Copyright (c) 2017 JRuby Team
+Licensed under MIT License see LICENSE for details
+incorporated from org.jruby.joni:joni:jar:2.1.11
+For source see 'https://github.com/jruby/joni/'.
+
+----
+This product includes JCL 1.1.1 implemented over SLF4J
+Copyright (c) 2004-2017 QOS.ch
+Licensed under MIT License see LICENSE for details
+incorporated from org.slf4j:jcl-over-slf4j:jar:1.7.16
+For source see 'http://www.slf4j.org'.
+
+----
+This product includes JUL to SLF4J bridge
+Copyright (c) 2004-2017 QOS.ch
+Licensed under MIT License see LICENSE for details
+incorporated from org.slf4j:jul-to-slf4j:jar:1.7.16
+For source see 'http://www.slf4j.org'.
+
+----
+This product includes SLF4j API module
+Copyright (c) 2004-2017 QOS.ch
+Licensed under MIT License see LICENSE for details
+incorporated from org.slf4j:slf4j-api:jar:1.7.25
+For source see 'http://www.slf4j.org'.
+
+----
+This product includes SLF4J LOG4J-12 Binding
+Copyright (c) 2004-2017 QOS.ch
+Licensed under MIT License see LICENSE for details
+incorporated from org.slf4j:slf4j-log4j12:jar:1.7.25
+For source see 'http://www.slf4j.org'.
+
+----
+This product includes JavaBeans Activation Framework under the terms of
+Common Development and Distribution License (CDDL) v1.0 License
+see LICENSE for details
+incorporated from javax.activation:activation:jar:1.1.1
+For source see 'http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp'
+
+----
+This product includes Streaming API for XML under the terms of
+COMMON DEVELOPMENT AND DISTRIBUTION LICENSE and  GNU General Public Library License
+see LICENSE for details
+incorporated from javax.xml.stream:stax-api:jar:1.0-2
+
+----
+This product includes JAX-RS provider for JSON content type
+under the terms of
+GNU Lesser General Public License (LGPL), Version 2.1 and
+The Apache Software License, Version 2.0
+see LICENSE for details
+incorporated from org.codehaus.jackson:jackson-jaxrs:jar:1.8.3
+For source see 'http://jackson.codehaus.org'
+
+----
+This product includes Xml Compatibility extensions for Jackson
+under the terms of
+GNU Lesser General Public License (LGPL), Version 2.1 and
+The Apache Software License, Version 2.0
+see LICENSE for details
+incorporated from org.codehaus.jackson:jackson-xc:jar:1.8.3
+For source see 'http://jackson.codehaus.org'
+
+----
+This product includes jamon-runtime under the terms of
+Mozilla Public License Version 2.0
+see LICENSE for details
+incorporated from org.jamon:jamon-runtime:jar:2.4.1
+For source see 'http://www.jamon.org/jamon-java-parent/jamon-runtime/'
+
+----
+This product includes Javassist under the terms of
+Copyright (C) 1999- Shigeru Chiba
+Mozilla Public License Version 1.1,
+Apache License Version 2.0,
+LGPL 2.1 see License for details
+incorporated from org.javassist:javassist:jar:3.18.1-GA
+For source see 'http://www.javassist.org/'
+
+----
+This product includes JUnit under the terms of Eclipse Public License 1.0
+see LICENSE for details
+incorporated from junit:junit:jar:4.12
+For source see 'http://junit.org'
+
+----
+This product includes Apache XBean :: ASM 6 shaded under the terms of
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+BSD 3-Clause and Apache License version 2.0 see LICENSE for details
+incorporated from org.apache.xbean:xbean-asm6-shaded:jar:4.8
+For source see 'http://geronimo.apache.org/maven/xbean/4.8/xbean-asm6-shaded'
+
+----
+This product includes Legion of the Bouncy Castle Java Cryptography APIs
+under the terms of
+Copyright (c) 2000 - 2019 The Legion of the Bouncy Castle Inc.
+(https://www.bouncycastle.org)
+see LICENSE for details
+incorporated from bouncycastle:bcprov-jdk15:jar:140
+For source see 'https://www.bouncycastle.org'
+
+

@@ -1,0 +1,26 @@
+Apache HBase - Kafka Model
+Copyright 2019 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+====
+Apache HBase - Kafka Model contained works
+
+This product contains additional works that are distributed under licenses
+other than Apache Software License Version 2. See LICENSE for full details
+
+----
+This product includes the SLF4J API Module
+Copyright (c) 2004-2017 QOS.ch
+under the terms of the MIT license see LICENSE for details
+incorporated from org.slf4j:slf4j-api:1.7.25:jar
+For source see 'http://www.slf4j.org'
+
+----
+This product includes ParaNamer Core
+Portions copyright (c) 2006-2018 Paul Hammant & ThoughtWorks Inc
+Portions copyright (c) 2000-2007 INRIA, France Telecom
+under the terms of BSD License see LICENSE for details
+incorporated from com.thoughtworks.paranamer:paranamer:2.3:jar
+For source see 'https://github.com/paul-hammant/paranamer/'
