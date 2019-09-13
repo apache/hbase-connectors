@@ -46,7 +46,7 @@ Portions copyright (c) 2006-2018 Paul Hammant & ThoughtWorks Inc
 Portions copyright (c) 2000-2007 INRIA, France Telecom
 under the terms of BSD License, see LICENSE for details
 incorporated from com.thoughtworks.paranamer:paranamer:jar:2.3
-For source see 'https://github.com/paul-hammant/paranamer/releases/tag/paranamer-2.3'
+For source see 'https://github.com/paul-hammant/paranamer/blob/paranamer-2.3/'
 
 ----
 This product includes Py4J
