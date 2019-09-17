@@ -89,69 +89,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <!-- licensing info from our dependencies -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>aggregate-licenses</id>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <copyright-end-year>${build.year}</copyright-end-year>
-                <debug-print-included-work-info>${license.debug.print.included}
-                </debug-print-included-work-info>
-                <bundled-dependencies>${license.bundles.dependencies}</bundled-dependencies>
-                <bundled-jquery>${license.bundles.jquery}</bundled-jquery>
-                <bundled-logo>${license.bundles.logo}</bundled-logo>
-                <bundled-bootstrap>${license.bundles.bootstrap}</bundled-bootstrap>
-              </properties>
-              <resourceBundles>
-                <resourceBundle>org.apache.hbase:hbase-resource-bundle:${hbase.version}</resourceBundle>
-              </resourceBundles>
-              <supplementalModelArtifacts>
-                <supplementalModelArtifact>org.apache.hbase:hbase-resource-bundle:${hbase.version}
-                </supplementalModelArtifact>
-              </supplementalModelArtifacts>
-              <supplementalModels>
-                <supplementalModel>supplemental-models.xml</supplementalModel>
-              </supplementalModels>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>${exec.maven.version}</version>
-        <executions>
-          <execution>
-            <id>concat-NOTICE-files</id>
-            <phase>package</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>env</executable>
-              <arguments>
-                <argument>bash</argument>
-                <argument>-c</argument>
-                <argument>cat maven-shared-archive-resources/META-INF/NOTICE \
-                  `find ${project.build.directory}/dependency -iname NOTICE -or -iname NOTICE.txt`
-                </argument>
-              </arguments>
-              <outputFile>${project.build.directory}/NOTICE.aggregate</outputFile>
-              <workingDirectory>${project.build.directory}</workingDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- /end building aggregation of NOTICE files -->
     </plugins>
   </build>
 </project>
