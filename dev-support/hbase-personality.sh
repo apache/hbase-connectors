@@ -23,6 +23,12 @@ function personality_modules
 
   clear_personality_queue
 
+  if [[ ${testtype} == mvninstall ]]; then
+    # shellcheck disable=SC2086
+    personality_enqueue_module .
+    return
+  fi
+
   for m in "${CHANGED_MODULES[@]}"; do
     if [[ "$testtype" != "scaladoc" ]]; then
       personality_enqueue_module "${m}"
@@ -31,6 +37,5 @@ function personality_modules
         personality_enqueue_module spark/hbase-spark
       fi
     fi
-
   done
 }
