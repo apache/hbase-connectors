@@ -40,7 +40,7 @@
   <properties>
     <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
-    <jackson.version>2.9.2</jackson.version>
+    <jackson.version>2.9.10</jackson.version>
     <spark.version>2.4.0</spark.version>
     <!-- The following version is in sync with Spark's choice
          Please take caution when this version is modified -->
