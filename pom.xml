@@ -514,7 +514,7 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <version>1.1.0</version>
         <configuration>
-          <updatePomFile>false</updatePomFile>
+          <updatePomFile>true</updatePomFile>
           <flattenMode>resolveCiFriendliesOnly</flattenMode>
         </configuration>
         <executions>
