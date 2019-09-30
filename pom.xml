@@ -18,6 +18,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+  ON MVN COMPILE NOT WORKING
+
+  you can't rely on doing `mvn compile` or `mvn test-compile` direclty
+  because in the spark/hbase-spark module we need to refer to the classes
+  from hbase-spark-protocol after they've been rewritten in
+  hbase-spark-protocol-shaded to use the protobuf version from the
+  hbase-thirdparty project.
+
+  instead you should include a "package" phase in any commands you run
+  that won't implicitly include a package phase (e.g. install and verify
+  will implicitly include package)
+
 -->
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -330,6 +343,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.version}</version>
           <configuration>
@@ -496,7 +514,7 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <version>1.1.0</version>
         <configuration>
-          <updatePomFile>true</updatePomFile>
+          <updatePomFile>false</updatePomFile>
           <flattenMode>resolveCiFriendliesOnly</flattenMode>
         </configuration>
         <executions>

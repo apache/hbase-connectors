@@ -33,9 +33,15 @@
   <name>Apache HBase - Spark Protocol (Shaded)</name>
 
   <dependencies>
+    <!-- marked as "optional" to keep it from being included
+         as a transitive dependency of this module. needed
+         because we don't make a dependency reduced pom after
+         shading.
+      -->
     <dependency>
       <groupId>org.apache.hbase.connectors.spark</groupId>
       <artifactId>hbase-spark-protocol</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase.thirdparty</groupId>
