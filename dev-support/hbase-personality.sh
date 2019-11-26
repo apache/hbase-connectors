@@ -192,6 +192,27 @@ function hb_modules_workers {
   return 0
 }
 
+
+function hb_maven_add_install {
+  maven_add_install
+}
+
+function hb_maven_delete_install {
+  maven_delete_install
+}
+
+function hb_maven_ws_replace {
+  maven_ws_replace
+}
+
+function hb_maven_usage {
+  maven_usage
+}
+
+function hb_maven_parse_args {
+  maven_parse_args
+}
+
 function hb_maven_initialize {
   maven_initialize
 }
@@ -212,6 +233,22 @@ function hb_maven_executor {
   maven_executor
 }
 
+function hb_maven_javac_logfilter {
+  maven_javac_logfilter
+}
+
+function hb_maven_javadoc_logfilter {
+  maven_javadoc_logfilter
+}
+
+function hb_maven_javac_calcdiffs {
+  maven_javac_calcdiffs
+}
+
+function hb_maven_javadoc_calcdiffs {
+  maven_javadoc_calcdiffs
+}
+
 function hb_maven_builtin_personality_modules {
   maven_builtin_personality_modules
 }
@@ -226,6 +263,54 @@ function hb_maven_reorder_modules {
 
 function hb_maven_docker_support {
   maven_docker_support
+}
+
+# Copied from Yetus 0.11.1 maven.sh
+function hb_maven_precompile {
+  declare repostatus=$1
+  declare result=0
+  declare need=${2:-false}
+
+  # Only run for hb_maven
+  if [[ ${BUILDTOOL} != hb_maven ]]; then
+    return 0
+  fi
+
+  # not everything needs a maven install
+  # but quite a few do ...
+  # shellcheck disable=SC2086
+  for index in "${MAVEN_NEED_INSTALL[@]}"; do
+    if verify_needed_test "${index}"; then
+      need=true
+    fi
+  done
+
+  if [[ "${need}" == false ]]; then
+    return 0
+  fi
+
+  if [[ "${repostatus}" == branch ]]; then
+    big_console_header "maven install: ${PATCH_BRANCH}"
+  else
+    big_console_header "maven install: ${BUILDMODE}"
+  fi
+
+  personality_modules "${repostatus}" mvninstall
+  modules_workers "${repostatus}" mvninstall -fae \
+    clean install \
+    -DskipTests=true -Dmaven.javadoc.skip=true \
+    -Dcheckstyle.skip=true -Dfindbugs.skip=true \
+    -Dspotbugs.skip=true
+  result=$?
+  modules_messages "${repostatus}" mvninstall true
+  if [[ ${result} != 0 ]]; then
+    return 1
+  fi
+  return 0
+}
+
+function hb_maven_reorder_module_process {
+  maven_reorder_module_process
 }
 
 # copied from Apache Yetus 0.11.0 maven.sh
