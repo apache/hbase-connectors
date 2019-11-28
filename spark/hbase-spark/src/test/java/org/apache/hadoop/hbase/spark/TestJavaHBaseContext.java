@@ -73,7 +73,7 @@ public class TestJavaHBaseContext implements Serializable {
       HBaseClassTestRule.forClass(TestJavaHBaseContext.class);
 
   private static transient JavaSparkContext JSC;
-  private static HBaseTestingUtility HTU;
+  private static HBaseTestingUtility TEST_UTIL;
   private static JavaHBaseContext HBASE_CONTEXT;
   private static final Logger LOG = LoggerFactory.getLogger(TestJavaHBaseContext.class);
 
@@ -85,23 +85,21 @@ public class TestJavaHBaseContext implements Serializable {
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-    File tempDir = Files.createTempDir();
-    tempDir.deleteOnExit();
 
     JSC = new JavaSparkContext("local", "JavaHBaseContextSuite");
-    HTU = new HBaseTestingUtility();
-    Configuration conf = HTU.getConfiguration();
+    TEST_UTIL = new HBaseTestingUtility();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     HBASE_CONTEXT = new JavaHBaseContext(JSC, conf);
 
     LOG.info("cleaning up test dir");
 
-    HTU.cleanupTestDir();
+    TEST_UTIL.cleanupTestDir();
 
     LOG.info("starting minicluster");
 
-    HTU.startMiniZKCluster();
-    HTU.startMiniHBaseCluster(1, 1);
+    TEST_UTIL.startMiniZKCluster();
+    TEST_UTIL.startMiniHBaseCluster(1, 1);
 
     LOG.info(" - minicluster started");
   }
@@ -109,10 +107,10 @@ public class TestJavaHBaseContext implements Serializable {
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
     LOG.info("shuting down minicluster");
-    HTU.shutdownMiniHBaseCluster();
-    HTU.shutdownMiniZKCluster();
+    TEST_UTIL.shutdownMiniHBaseCluster();
+    TEST_UTIL.shutdownMiniZKCluster();
     LOG.info(" - minicluster shut down");
-    HTU.cleanupTestDir();
+    TEST_UTIL.cleanupTestDir();
 
     JSC.stop();
     JSC = null;
@@ -122,20 +120,20 @@ public class TestJavaHBaseContext implements Serializable {
   public void setUp() throws Exception {
 
     try {
-      HTU.deleteTable(TableName.valueOf(tableName));
+      TEST_UTIL.deleteTable(TableName.valueOf(tableName));
     } catch (Exception e) {
-      LOG.info(" - no table " + Bytes.toString(tableName) + " found");
+      LOG.info(" - no table {} found", Bytes.toString(tableName));
     }
 
-    LOG.info(" - creating table " + Bytes.toString(tableName));
-    HTU.createTable(TableName.valueOf(tableName),
+    LOG.info(" - creating table {}", Bytes.toString(tableName));
+    TEST_UTIL.createTable(TableName.valueOf(tableName),
         new byte[][]{columnFamily, columnFamily1});
     LOG.info(" - created table");
   }
 
   @After
   public void tearDown() throws Exception {
-      HTU.deleteTable(TableName.valueOf(tableName));
+      TEST_UTIL.deleteTable(TableName.valueOf(tableName));
   }
 
   @Test
@@ -150,7 +148,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     JavaRDD<String> rdd = JSC.parallelize(list);
 
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     Connection conn = ConnectionFactory.createConnection(conf);
     Table table = conn.getTable(TableName.valueOf(tableName));
@@ -216,7 +214,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     JavaRDD<byte[]> rdd = JSC.parallelize(list);
 
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     populateTableWithMockData(conf, TableName.valueOf(tableName));
 
@@ -248,7 +246,7 @@ public class TestJavaHBaseContext implements Serializable {
 
   @Test
   public void testDistributedScan() throws IOException {
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     populateTableWithMockData(conf, TableName.valueOf(tableName));
 
@@ -283,7 +281,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     JavaRDD<byte[]> rdd = JSC.parallelize(list);
 
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     populateTableWithMockData(conf, TableName.valueOf(tableName));
 
@@ -298,7 +296,7 @@ public class TestJavaHBaseContext implements Serializable {
   @Test
   public void testBulkLoad() throws Exception {
 
-    Path output = HTU.getDataTestDir("testBulkLoad");
+    Path output = TEST_UTIL.getDataTestDir("testBulkLoad");
     // Add cell as String: "row,falmily,qualifier,value"
     List<String> list= new ArrayList<String>();
     // row1
@@ -313,7 +311,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     JavaRDD<String> rdd = JSC.parallelize(list);
 
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     HBASE_CONTEXT.bulkLoad(rdd, TableName.valueOf(tableName), new BulkLoadFunction(),
             output.toUri().getPath(), new HashMap<byte[], FamilyHFileWriteOptions>(), false,
@@ -362,7 +360,7 @@ public class TestJavaHBaseContext implements Serializable {
 
   @Test
   public void testBulkLoadThinRows() throws Exception {
-    Path output = HTU.getDataTestDir("testBulkLoadThinRows");
+    Path output = TEST_UTIL.getDataTestDir("testBulkLoadThinRows");
     // because of the limitation of scala bulkLoadThinRows API
     // we need to provide data as <row, all cells in that row>
     List<List<String>> list= new ArrayList<List<String>>();
@@ -384,7 +382,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     JavaRDD<List<String>> rdd = JSC.parallelize(list);
 
-    Configuration conf = HTU.getConfiguration();
+    Configuration conf = TEST_UTIL.getConfiguration();
 
     HBASE_CONTEXT.bulkLoadThinRows(rdd, TableName.valueOf(tableName), new BulkLoadThinRowsFunction(),
             output.toString(), new HashMap<byte[], FamilyHFileWriteOptions>(), false,
