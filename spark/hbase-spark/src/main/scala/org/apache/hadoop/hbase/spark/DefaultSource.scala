@@ -164,7 +164,7 @@ case class HBaseRelation (
       // Initialize hBase table if necessary
       val admin = connection.getAdmin
       try {
-        if (!admin.isTableAvailable(tName)) {
+        if (!admin.tableExists(tName)) {
           val tableDesc = new HTableDescriptor(tName)
           cfs.foreach { x =>
             val cf = new HColumnDescriptor(x.getBytes())
