@@ -129,7 +129,7 @@
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.2.1</hbase.version>
+    <hbase.version>2.2.2</hbase.version>
     <maven.compiler.version>3.6.1</maven.compiler.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
