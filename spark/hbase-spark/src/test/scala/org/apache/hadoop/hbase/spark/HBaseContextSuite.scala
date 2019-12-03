@@ -27,6 +27,7 @@ class HBaseContextSuite extends FunSuite with
 BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
 
   @transient var sc: SparkContext = null
+  var hbaseContext: HBaseContext = null
   var TEST_UTIL = new HBaseTestingUtility
 
   val tableName = "t1"
@@ -49,6 +50,9 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val envMap = Map[String,String](("Xmx", "512m"))
 
     sc = new SparkContext("local", "test", null, Nil, envMap)
+
+    val config = TEST_UTIL.getConfiguration
+    hbaseContext = new HBaseContext(sc, config)
   }
 
   override def afterAll() {
@@ -73,7 +77,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       (Bytes.toBytes("5"),
         Array((Bytes.toBytes(columnFamily), Bytes.toBytes("e"), Bytes.toBytes("bar"))))))
 
-    val hbaseContext = new HBaseContext(sc, config)
     hbaseContext.bulkPut[(Array[Byte], Array[(Array[Byte], Array[Byte], Array[Byte])])](rdd,
       TableName.valueOf(tableName),
       (putRecord) => {
@@ -132,7 +135,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
         Bytes.toBytes("delete1"),
         Bytes.toBytes("delete3")))
 
-      val hbaseContext = new HBaseContext(sc, config)
       hbaseContext.bulkDelete[Array[Byte]](rdd,
         TableName.valueOf(tableName),
         putRecord => new Delete(putRecord),
@@ -174,7 +176,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       Bytes.toBytes("get2"),
       Bytes.toBytes("get3"),
       Bytes.toBytes("get4")))
-    val hbaseContext = new HBaseContext(sc, config)
 
     val getRdd = hbaseContext.bulkGet[Array[Byte], String](
       TableName.valueOf(tableName),
@@ -221,7 +222,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       Bytes.toBytes("get2"),
       Bytes.toBytes("get3"),
       Bytes.toBytes("get4")))
-    val hbaseContext = new HBaseContext(sc, config)
 
     intercept[SparkException] {
       try {
@@ -274,7 +274,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       Bytes.toBytes("get2"),
       Bytes.toBytes("get3"),
       Bytes.toBytes("get4")))
-    val hbaseContext = new HBaseContext(sc, config)
 
     val getRdd = hbaseContext.bulkGet[Array[Byte], String](
       TableName.valueOf(tableName),
@@ -328,8 +327,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       table.close()
       connection.close()
     }
-
-    val hbaseContext = new HBaseContext(sc, config)
 
     val scan = new Scan()
     val filter = new FirstKeyOnlyFilter()

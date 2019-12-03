@@ -65,13 +65,11 @@ class HBaseContext(@transient val sc: SparkContext,
                    val tmpHdfsConfgFile: String = null)
   extends Serializable with Logging {
 
-  @transient var credentials = UserGroupInformation.getCurrentUser().getCredentials()
   @transient var tmpHdfsConfiguration:Configuration = config
   @transient var appliedCredentials = false
   @transient val job = Job.getInstance(config)
   TableMapReduceUtil.initCredentials(job)
   val broadcastedConf = sc.broadcast(new SerializableWritable(config))
-  val credentialsConf = sc.broadcast(new SerializableWritable(job.getCredentials))
 
   LatestHBaseContextCache.latest = this
 
@@ -233,21 +231,12 @@ class HBaseContext(@transient val sc: SparkContext,
   }
 
   def applyCreds[T] (){
-    credentials = UserGroupInformation.getCurrentUser().getCredentials()
-
-    if (log.isDebugEnabled) {
-      logDebug("appliedCredentials:" + appliedCredentials + ",credentials:" + credentials)
-    }
-
-    if (!appliedCredentials && credentials != null) {
+    if (!appliedCredentials) {
       appliedCredentials = true
 
       @transient val ugi = UserGroupInformation.getCurrentUser
-      ugi.addCredentials(credentials)
       // specify that this is a proxy user
       ugi.setAuthenticationMethod(AuthenticationMethod.PROXY)
-
-      ugi.addCredentials(credentialsConf.value.value)
     }
   }
 
