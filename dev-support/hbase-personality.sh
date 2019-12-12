@@ -194,75 +194,75 @@ function hb_modules_workers {
 
 
 function hb_maven_add_install {
-  maven_add_install
+  maven_add_install "$@"
 }
 
 function hb_maven_delete_install {
-  maven_delete_install
+  maven_delete_install "$@"
 }
 
 function hb_maven_ws_replace {
-  maven_ws_replace
+  maven_ws_replace "$@"
 }
 
 function hb_maven_usage {
-  maven_usage
+  maven_usage "$@"
 }
 
 function hb_maven_parse_args {
-  maven_parse_args
+  maven_parse_args "$@"
 }
 
 function hb_maven_initialize {
-  maven_initialize
+  maven_initialize "$@"
 }
 
 function hb_maven_precheck {
-  maven_precheck
+  maven_precheck "$@"
 }
 
 function hb_maven_filefilter {
-  maven_filefilter
+  maven_filefilter "$@"
 }
 
 function hb_maven_buildfile {
-  maven_buildfile
+  maven_buildfile "$@"
 }
 
 function hb_maven_executor {
-  maven_executor
+  maven_executor "$@"
 }
 
 function hb_maven_javac_logfilter {
-  maven_javac_logfilter
+  maven_javac_logfilter "$@"
 }
 
 function hb_maven_javadoc_logfilter {
-  maven_javadoc_logfilter
+  maven_javadoc_logfilter "$@"
 }
 
 function hb_maven_javac_calcdiffs {
-  maven_javac_calcdiffs
+  maven_javac_calcdiffs "$@"
 }
 
 function hb_maven_javadoc_calcdiffs {
-  maven_javadoc_calcdiffs
+  maven_javadoc_calcdiffs "$@"
 }
 
 function hb_maven_builtin_personality_modules {
-  maven_builtin_personality_modules
+  maven_builtin_personality_modules "$@"
 }
 
 function hb_maven_builtin_personality_file_tests {
-  maven_builtin_personality_file_tests
+  maven_builtin_personality_file_tests "$@"
 }
 
 function hb_maven_reorder_modules {
-  maven_reorder_modules
+  maven_reorder_modules "$@"
 }
 
 function hb_maven_docker_support {
-  maven_docker_support
+  maven_docker_support "$@"
 }
 
 # Copied from Yetus 0.11.1 maven.sh
@@ -310,7 +310,7 @@ function hb_maven_precompile {
 }
 
 function hb_maven_reorder_module_process {
-  maven_reorder_module_process
+  maven_reorder_module_process "$@"
 }
 
 # copied from Apache Yetus 0.11.0 maven.sh
