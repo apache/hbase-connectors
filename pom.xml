@@ -418,10 +418,20 @@
               <version>${checkstyle.version}</version>
             </dependency>
           </dependencies>
+          <executions>
+            <execution>
+              <id>checkstyle</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
           <configuration>
             <configLocation>hbase/checkstyle.xml</configLocation>
             <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <failOnViolation>true</failOnViolation>
           </configuration>
         </plugin>
       </plugins>

@@ -159,9 +159,7 @@ public final class KafkaProxy {
     commandLineConf.clear();
 
     GenericOptionsParser parser = new GenericOptionsParser(commandLineConf, args);
-    String restArgs[] =parser.getRemainingArgs();
-
-
+    String[] restArgs = parser.getRemainingArgs();
 
     try {
       commandLine = new BasicParser().parse(options, restArgs);
@@ -279,10 +277,8 @@ public final class KafkaProxy {
     byte []uuidBytes = Bytes.toBytes(newValue);
     String idPath=rootZnode+"/hbaseid";
     if (zk.checkExists().forPath(idPath) == null) {
-     // zk.create().creatingParentsIfNeeded().forPath(rootZnode +
-     //     "/hbaseid",uuidBytes);
-        zk.create().forPath(rootZnode);
-        zk.create().forPath(rootZnode +"/hbaseid",uuidBytes);
+      zk.create().forPath(rootZnode);
+      zk.create().forPath(rootZnode +"/hbaseid",uuidBytes);
     } else {
       // If the znode is there already make sure it has the
       // expected value for the peer name.
@@ -340,14 +336,14 @@ public final class KafkaProxy {
 
         if (peerThere) {
           if (enablePeer){
-            LOG.info("enable peer," + peerName);
-              List<ReplicationPeerDescription> peers = admin.listReplicationPeers().stream()
-                      .filter((peer)->peer.getPeerId().equals(peerName))
-                      .filter((peer)->peer.isEnabled()==false)
-                      .collect(Collectors.toList());
-              if (!peers.isEmpty()){
-                admin.enableReplicationPeer(peerName);
-              }
+            LOG.info("enable peer,{}", peerName);
+            List<ReplicationPeerDescription> peers = admin.listReplicationPeers().stream()
+                    .filter(peer -> peer.getPeerId().equals(peerName))
+                    .filter(peer -> !peer.isEnabled())
+                    .collect(Collectors.toList());
+            if (!peers.isEmpty()){
+              admin.enableReplicationPeer(peerName);
+            }
           }
           break;
         } else {
