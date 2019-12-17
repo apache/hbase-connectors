@@ -19,6 +19,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Make sure match rules work
  */
@@ -26,48 +28,47 @@ import org.junit.experimental.categories.Category;
 public class TestQualifierMatching {
 
   @Test
-  public void testMatchQualfier() throws Exception {
+  public void testMatchQualfier() {
     DropRule rule = new DropRule();
-    rule.setQualifier("data".getBytes("UTF-8"));
-    Assert.assertTrue(rule.qualifierMatch("data".getBytes("UTF-8")));
+    rule.setQualifier("data".getBytes(StandardCharsets.UTF_8));
+    Assert.assertTrue(rule.qualifierMatch("data".getBytes(StandardCharsets.UTF_8)));
 
     rule = new DropRule();
-    rule.setQualifier("data1".getBytes("UTF-8"));
-    Assert.assertFalse(rule.qualifierMatch("data".getBytes("UTF-8")));
+    rule.setQualifier("data1".getBytes(StandardCharsets.UTF_8));
+    Assert.assertFalse(rule.qualifierMatch("data".getBytes(StandardCharsets.UTF_8)));
 
     // if not set, it is a wildcard
     rule = new DropRule();
-    Assert.assertTrue(rule.qualifierMatch("data".getBytes("UTF-8")));
+    Assert.assertTrue(rule.qualifierMatch("data".getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
-  public void testStartWithQualifier() throws  Exception{
+  public void testStartWithQualifier() {
     DropRule rule = new DropRule();
-    rule.setQualifier("data*".getBytes("UTF-8"));
+    rule.setQualifier("data*".getBytes(StandardCharsets.UTF_8));
     Assert.assertTrue(rule.isQualifierStartsWith());
     Assert.assertFalse(rule.isQualifierEndsWith());
 
-    Assert.assertTrue(rule.qualifierMatch("data".getBytes("UTF-8")));
-    Assert.assertTrue(rule.qualifierMatch("data1".getBytes("UTF-8")));
-    Assert.assertTrue(rule.qualifierMatch("datafoobar".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("datfoobar".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("d".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("".getBytes("UTF-8")));
+    Assert.assertTrue(rule.qualifierMatch("data".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertTrue(rule.qualifierMatch("data1".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertTrue(rule.qualifierMatch("datafoobar".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("datfoobar".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("d".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("".getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
-  public void testEndsWithQualifier() throws Exception {
+  public void testEndsWithQualifier() {
     DropRule rule = new DropRule();
-    rule.setQualifier("*data".getBytes("UTF-8"));
+    rule.setQualifier("*data".getBytes(StandardCharsets.UTF_8));
     Assert.assertFalse(rule.isQualifierStartsWith());
     Assert.assertTrue(rule.isQualifierEndsWith());
 
-    Assert.assertTrue(rule.qualifierMatch("data".getBytes("UTF-8")));
-    Assert.assertTrue(rule.qualifierMatch("1data".getBytes("UTF-8")));
-    Assert.assertTrue(rule.qualifierMatch("foobardata".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("foobardat".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("d".getBytes("UTF-8")));
-    Assert.assertFalse(rule.qualifierMatch("".getBytes("UTF-8")));
+    Assert.assertTrue(rule.qualifierMatch("data".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertTrue(rule.qualifierMatch("1data".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertTrue(rule.qualifierMatch("foobardata".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("foobardat".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("d".getBytes(StandardCharsets.UTF_8)));
+    Assert.assertFalse(rule.qualifierMatch("".getBytes(StandardCharsets.UTF_8)));
   }
-
 }
