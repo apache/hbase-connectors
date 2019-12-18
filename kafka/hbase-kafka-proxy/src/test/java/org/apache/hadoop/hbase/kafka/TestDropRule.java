@@ -15,6 +15,7 @@
 package org.apache.hadoop.hbase.kafka;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.testclassification.SmallTests;
@@ -53,15 +54,14 @@ public class TestDropRule {
   public void testDropies1() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE1.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE1.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
         rules.getDropRules().get(0).getTableName());
-      Assert.assertEquals(null, rules.getDropRules().get(0).getColumnFamily());
-      Assert.assertEquals(null, rules.getDropRules().get(0).getQualifier());
+      Assert.assertNull(rules.getDropRules().get(0).getColumnFamily());
+      Assert.assertNull(rules.getDropRules().get(0).getQualifier());
       Assert.assertEquals(0, rules.getRouteRules().size());
     } catch (Exception e) {
-      e.printStackTrace();
       Assert.fail(e.getMessage());
     }
   }
@@ -70,16 +70,15 @@ public class TestDropRule {
   public void testDropies2() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE2.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE2.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
         rules.getDropRules().get(0).getTableName());
-      Assert.assertTrue(
-        Bytes.equals("data".getBytes("UTF-8"), rules.getDropRules().get(0).getColumnFamily()));
-      Assert.assertEquals(null, rules.getDropRules().get(0).getQualifier());
+      Assert.assertTrue(Bytes.equals("data".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getColumnFamily()));
+      Assert.assertNull(rules.getDropRules().get(0).getQualifier());
       Assert.assertEquals(0, rules.getRouteRules().size());
     } catch (Exception e) {
-      e.printStackTrace();
       Assert.fail(e.getMessage());
     }
   }
@@ -88,15 +87,14 @@ public class TestDropRule {
   public void testDropies3() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE3.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE3.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
         rules.getDropRules().get(0).getTableName());
-      Assert.assertTrue(
-        Bytes.equals("data".getBytes("UTF-8"), rules.getDropRules().get(0).getColumnFamily()));
-      Assert
-          .assertTrue(Bytes.equals(
-                  "dhold".getBytes("UTF-8"), rules.getDropRules().get(0).getQualifier()));
+      Assert.assertTrue(Bytes.equals("data".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getColumnFamily()));
+      Assert.assertTrue(Bytes.equals("dhold".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getQualifier()));
       Assert.assertEquals(0, rules.getRouteRules().size());
     } catch (Exception e) {
       Assert.fail(e.getMessage());
@@ -107,30 +105,24 @@ public class TestDropRule {
   public void testDropies4() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE4.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE4.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
         rules.getDropRules().get(0).getTableName());
-      Assert.assertTrue(
-        Bytes.equals("data".getBytes("UTF-8"), rules.getDropRules().get(0).getColumnFamily()));
-      Assert.assertTrue(
-        Bytes.equals("dhold:".getBytes("UTF-8"), rules.getDropRules().get(0).getQualifier()));
+      Assert.assertTrue(Bytes.equals("data".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getColumnFamily()));
+      Assert.assertTrue(Bytes.equals("dhold:".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getQualifier()));
       Assert.assertEquals(0, rules.getRouteRules().size());
 
       DropRule drop = rules.getDropRules().get(0);
-      Assert.assertFalse(
-        drop.match(TableName.valueOf("default:MyTable"),
-                "data".getBytes("UTF-8"),
-                "blah".getBytes("UTF-8")));
-      Assert.assertFalse(
-        drop.match(TableName.valueOf("default:MyTable"),
-                "data".getBytes("UTF-8"),
-                "dholdme".getBytes("UTF-8")));
-      Assert.assertTrue(
-        drop.match(TableName.valueOf("default:MyTable"),
-                "data".getBytes("UTF-8"),
-                "dhold:me".getBytes("UTF-8")));
-
+      Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8), "blah".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8), "dholdme".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8),
+              "dhold:me".getBytes(StandardCharsets.UTF_8)));
     } catch (Exception e) {
       Assert.fail(e.getMessage());
     }
@@ -140,28 +132,25 @@ public class TestDropRule {
   public void testDropies5() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE5.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE5.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
         rules.getDropRules().get(0).getTableName());
-      Assert.assertTrue(
-        Bytes.equals("data".getBytes("UTF-8"), rules.getDropRules().get(0).getColumnFamily()));
-      Assert.assertTrue(
-        Bytes.equals("pickme".getBytes("UTF-8"), rules.getDropRules().get(0).getQualifier()));
+      Assert.assertTrue(Bytes.equals("data".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getColumnFamily()));
+      Assert.assertTrue(Bytes.equals("pickme".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getQualifier()));
       Assert.assertEquals(0, rules.getRouteRules().size());
 
       DropRule drop = rules.getDropRules().get(0);
-      Assert.assertFalse(
-        drop.match(TableName.valueOf("default:MyTable"),
-                "data".getBytes("UTF-8"),
-                "blah".getBytes("UTF-8")));
       Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "blacickme".getBytes("UTF-8")));
+              "data".getBytes(StandardCharsets.UTF_8), "blah".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8),
+              "blacickme".getBytes(StandardCharsets.UTF_8)));
       Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "hithere.pickme".getBytes("UTF-8")));
-
+              "data".getBytes(StandardCharsets.UTF_8),
+              "hithere.pickme".getBytes(StandardCharsets.UTF_8)));
     } catch (Exception e) {
       Assert.fail(e.getMessage());
     }
@@ -171,40 +160,36 @@ public class TestDropRule {
   public void testDropies6() {
     TopicRoutingRules rules = new TopicRoutingRules();
     try {
-      rules.parseRules(new ByteArrayInputStream(DROP_RULE6.getBytes("UTF-8")));
+      rules.parseRules(new ByteArrayInputStream(DROP_RULE6.getBytes(StandardCharsets.UTF_8)));
       Assert.assertEquals(1, rules.getDropRules().size());
       Assert.assertEquals(TableName.valueOf("default:MyTable"),
-        rules.getDropRules().get(0).getTableName());
-      Assert.assertTrue(
-        Bytes.equals("data".getBytes("UTF-8"), rules.getDropRules().get(0).getColumnFamily()));
-      Assert.assertTrue(
-        Bytes.equals("pickme".getBytes("UTF-8"), rules.getDropRules().get(0).getQualifier()));
+              rules.getDropRules().get(0).getTableName());
+      Assert.assertTrue(Bytes.equals("data".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getColumnFamily()));
+      Assert.assertTrue(Bytes.equals("pickme".getBytes(StandardCharsets.UTF_8),
+              rules.getDropRules().get(0).getQualifier()));
       Assert.assertEquals(0, rules.getRouteRules().size());
 
       DropRule drop = rules.getDropRules().get(0);
-      Assert.assertFalse(
-        drop.match(TableName.valueOf("default:MyTable"),
-                "data".getBytes("UTF-8"),
-                "blah".getBytes("UTF-8")));
       Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "blacickme".getBytes("UTF-8")));
-      Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "hithere.pickme".getBytes("UTF-8")));
-      Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "pickme.pleaze.do.it".getBytes("UTF-8")));
+              "data".getBytes(StandardCharsets.UTF_8), "blah".getBytes(StandardCharsets.UTF_8)));
       Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "please.pickme.pleaze".getBytes("UTF-8")));
+              "data".getBytes(StandardCharsets.UTF_8),
+              "blacickme".getBytes(StandardCharsets.UTF_8)));
       Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
-              "data".getBytes("UTF-8"),
-              "pickme.pleaze.pickme".getBytes("UTF-8")));
-
+              "data".getBytes(StandardCharsets.UTF_8),
+              "hithere.pickme".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8),
+              "pickme.pleaze.do.it".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertFalse(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8),
+              "please.pickme.pleaze".getBytes(StandardCharsets.UTF_8)));
+      Assert.assertTrue(drop.match(TableName.valueOf("default:MyTable"),
+              "data".getBytes(StandardCharsets.UTF_8),
+              "pickme.pleaze.pickme".getBytes(StandardCharsets.UTF_8)));
     } catch (Exception e) {
       Assert.fail(e.getMessage());
     }
   }
-
 }
