@@ -17,7 +17,6 @@
  */
 package org.apache.hadoop.hbase.spark;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -62,8 +61,6 @@ import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
-
-import org.apache.hbase.thirdparty.com.google.common.io.Files;
 
 @Category({MiscTests.class, MediumTests.class})
 public class TestJavaHBaseContext implements Serializable {
@@ -133,7 +130,7 @@ public class TestJavaHBaseContext implements Serializable {
 
   @After
   public void tearDown() throws Exception {
-      TEST_UTIL.deleteTable(TableName.valueOf(tableName));
+    TEST_UTIL.deleteTable(TableName.valueOf(tableName));
   }
 
   @Test
@@ -384,8 +381,8 @@ public class TestJavaHBaseContext implements Serializable {
 
     Configuration conf = TEST_UTIL.getConfiguration();
 
-    HBASE_CONTEXT.bulkLoadThinRows(rdd, TableName.valueOf(tableName), new BulkLoadThinRowsFunction(),
-            output.toString(), new HashMap<byte[], FamilyHFileWriteOptions>(), false,
+    HBASE_CONTEXT.bulkLoadThinRows(rdd, TableName.valueOf(tableName),
+            new BulkLoadThinRowsFunction(), output.toString(), new HashMap<>(), false,
             HConstants.DEFAULT_MAX_FILE_SIZE);
 
 
@@ -524,5 +521,4 @@ public class TestJavaHBaseContext implements Serializable {
       table.put(puts);
     }
   }
-
 }

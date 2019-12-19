@@ -14,12 +14,12 @@
  */
 package org.apache.hadoop.hbase.kafka;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.hadoop.hbase.testclassification.SmallTests;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * Make sure match rules work

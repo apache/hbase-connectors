@@ -160,9 +160,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <configuration>
-          <failOnViolation>true</failOnViolation>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>net.revelc.code</groupId>

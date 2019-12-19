@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark;
 
 import java.io.IOException;
@@ -32,16 +31,15 @@ import org.apache.hadoop.hbase.spark.datasources.BytesEncoder;
 import org.apache.hadoop.hbase.spark.datasources.Field;
 import org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder;
 import org.apache.hadoop.hbase.spark.protobuf.generated.SparkFilterProtos;
-import org.apache.hadoop.hbase.util.ByteStringer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import scala.collection.mutable.MutableList;
+
 import org.apache.hbase.thirdparty.com.google.protobuf.ByteString;
 import org.apache.hbase.thirdparty.com.google.protobuf.InvalidProtocolBufferException;
-
-import scala.collection.mutable.MutableList;
 
 /**
  * This filter will push down all qualifier logic given to us
