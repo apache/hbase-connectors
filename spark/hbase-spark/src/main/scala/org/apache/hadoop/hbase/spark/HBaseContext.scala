@@ -22,7 +22,7 @@ import java.util
 import java.util.UUID
 import javax.management.openmbean.KeyAlreadyExistsException
 
-import org.apache.yetus.audience.InterfaceAudience;
+import org.apache.yetus.audience.InterfaceAudience
 import org.apache.hadoop.hbase.fs.HFileSystem
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.io.compress.Compression
@@ -38,6 +38,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.hadoop.hbase.client._
+
 import scala.reflect.ClassTag
 import org.apache.spark.{SerializableWritable, SparkContext}
 import org.apache.hadoop.hbase.mapreduce.{TableMapReduceUtil,
@@ -46,9 +47,11 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.mapreduce.Job
 import org.apache.spark.streaming.dstream.DStream
 import java.io._
+
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.hadoop.fs.{Path, FileAlreadyExistsException, FileSystem}
+import org.apache.hadoop.fs.{FileAlreadyExistsException, FileSystem, Path}
+
 import scala.collection.mutable
 
 /**
