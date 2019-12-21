@@ -148,6 +148,7 @@
     <commons-io.version>2.5</commons-io.version>
     <avro.version>1.7.7</avro.version>
     <commons-lang3.version>3.6</commons-lang3.version>
+    <commons-text.version>1.8</commons-text.version>
     <!--This property is for hadoops netty. HBase netty
          comes in via hbase-thirdparty hbase-shaded-netty-->
     <netty.hadoop.version>3.6.2.Final</netty.hadoop.version>
@@ -172,6 +173,11 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-text</artifactId>
+        <version>${commons-text.version}</version>
       </dependency>
       <!-- Avro dependencies we mostly get transitively, manual version coallescing -->
       <dependency>

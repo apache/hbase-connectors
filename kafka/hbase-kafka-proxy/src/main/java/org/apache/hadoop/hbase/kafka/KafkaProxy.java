@@ -49,8 +49,8 @@ import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.hbase.thirdparty.org.apache.commons.cli.BasicParser;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.CommandLine;
+import org.apache.hbase.thirdparty.org.apache.commons.cli.DefaultParser;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.HelpFormatter;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.Options;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.ParseException;
@@ -162,7 +162,7 @@ public final class KafkaProxy {
     String[] restArgs = parser.getRemainingArgs();
 
     try {
-      commandLine = new BasicParser().parse(options, restArgs);
+      commandLine = new DefaultParser().parse(options, restArgs);
     } catch (ParseException e) {
       LOG.error("Could not parse: ", e);
       printUsageAndExit(options, -1);

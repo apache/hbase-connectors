@@ -28,7 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
+
+import org.apache.commons.text.RandomStringGenerator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
@@ -225,7 +226,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
         List<byte[]> tmp1 = Arrays.asList(rk, CHAIN_FAM, chainIdArray, Bytes.toBytes(nextRow));
         List<byte[]> tmp2 = Arrays.asList(rk, SORT_FAM, chainIdArray, Bytes.toBytes(i));
         List<byte[]> tmp3 = Arrays.asList(rk, DATA_FAM, chainIdArray, Bytes.toBytes(
-            RandomStringUtils.randomAlphabetic(50)));
+            new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(50)));
         res.add(tmp1);
         res.add(tmp2);
         res.add(tmp3);
