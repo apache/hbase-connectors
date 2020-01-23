@@ -36,7 +36,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>18</version>
+    <version>22</version>
     <relativePath/>
     <!-- no parent resolution -->
   </parent>
@@ -130,7 +130,6 @@
     <java.min.version>${compileSource}</java.min.version>
     <maven.min.version>3.5.0</maven.min.version>
     <hbase.version>2.2.2</hbase.version>
-    <maven.compiler.version>3.8.1</maven.compiler.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
     <junit.version>4.12</junit.version>
@@ -349,7 +348,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${maven.compiler.version}</version>
           <configuration>
             <source>${compileSource}</source>
             <target>${compileSource}</target>
@@ -367,7 +365,6 @@
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
-          <version>0.11</version>
           <configuration>
             <excludes>
               <exclude>target/*</exclude>
