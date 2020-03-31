@@ -213,7 +213,7 @@ class HBaseTableScanRDD(relation: HBaseRelation,
     val scans = partition.scanRanges
       .map(buildScan(_, filter, columns))
     val tableResource = TableResource(relation)
-    context.addTaskCompletionListener(context => close())
+    context.addTaskCompletionListener[Unit](context => close())
     val points = partition.points
     val gIt: Iterator[Result] =  {
       if (points.isEmpty) {
