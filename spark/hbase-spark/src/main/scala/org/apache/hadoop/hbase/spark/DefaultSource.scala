@@ -103,7 +103,7 @@ case class HBaseRelation (
   @transient val encoder = JavaBytesEncoder.create(encoderClsName)
 
   val catalog = HBaseTableCatalog(parameters)
-  def tableName = catalog.name
+  def tableName = s"${catalog.namespace}:${catalog.name}"
   val configResources = parameters.get(HBaseSparkConf.HBASE_CONFIG_LOCATION)
   val useHBaseContext =  parameters.get(HBaseSparkConf.USE_HBASECONTEXT).map(_.toBoolean).getOrElse(HBaseSparkConf.DEFAULT_USE_HBASECONTEXT)
   val usePushDownColumnFilter = parameters.get(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER)
@@ -157,7 +157,7 @@ case class HBaseRelation (
       parameters.get(HBaseTableCatalog.regionEnd)
         .getOrElse(HBaseTableCatalog.defaultRegionEnd))
     if (numReg > 3) {
-      val tName = TableName.valueOf(catalog.name)
+      val tName = TableName.valueOf(tableName)
       val cfs = catalog.getColumnFamilies
 
       val connection = HBaseConnectionCache.getConnection(hbaseConf)
@@ -168,7 +168,7 @@ case class HBaseRelation (
           val tableDesc = new HTableDescriptor(tName)
           cfs.foreach { x =>
             val cf = new HColumnDescriptor(x.getBytes())
-            logDebug(s"add family $x to ${catalog.name}")
+            logDebug(s"add family $x to ${tableName}")
             tableDesc.addFamily(cf)
           }
           val splitKeys = Bytes.split(startKey, endKey, numReg);
@@ -194,7 +194,7 @@ case class HBaseRelation (
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     val jobConfig: JobConf = new JobConf(hbaseConf, this.getClass)
     jobConfig.setOutputFormat(classOf[TableOutputFormat])
-    jobConfig.set(TableOutputFormat.OUTPUT_TABLE, catalog.name)
+    jobConfig.set(TableOutputFormat.OUTPUT_TABLE, tableName)
     var count = 0
     val rkFields = catalog.getRowKey
     val rkIdxedFields = rkFields.map{ case x =>
