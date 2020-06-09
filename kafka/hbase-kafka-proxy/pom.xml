@@ -161,6 +161,13 @@
       <artifactId>kafka-clients</artifactId>
       <version>${kafka-clients.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <classifier>test</classifier>
+      <scope>test</scope>
+      <version>${kafka-clients.version}</version>
+    </dependency>
     <!-- General dependencies -->
     <dependency>
       <groupId>org.apache.commons</groupId>
