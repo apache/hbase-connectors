@@ -20,6 +20,7 @@ function personality_globals
 {
   # See notes down by the definition
   BUILDTOOL=hb_maven
+  PROC_LIMIT=12500
 }
 
 # customizing yetus build to run scaladoc plugin only on hbase-spark project
