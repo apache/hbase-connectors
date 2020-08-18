@@ -61,7 +61,7 @@
   <modules>
     <module>kafka</module>
     <module>spark</module>
-    <module>hbase-rest</module>
+    <module>rest</module>
     <module>hbase-connectors-assembly</module>
     <module>hbase-connectors-protocol-shaded</module>
   </modules>
