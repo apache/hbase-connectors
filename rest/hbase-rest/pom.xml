@@ -37,11 +37,6 @@
     <name>Apache HBase - Rest Server</name>
     <description>HBase Rest Server</description>
 
-    <properties>
-        <jackson.version>2.10.1</jackson.version>
-        <wx.rs.api.version>2.0.1</wx.rs.api.version>
-    </properties>
-
     <build>
         <!-- Makes sure the resources get added before they are processed
           by placing this first -->
@@ -56,7 +51,7 @@
         </resources>
         <testResources>
             <testResource>
-                <directory>hbase-rest/src/test/resources</directory>
+                <directory>../hbase-rest/src/test/resources</directory>
                 <includes>
                     <include>**/**</include>
                 </includes>
@@ -88,7 +83,6 @@
                                 <property name="build.webapps" location="${project.build.directory}/hbase-webapps"/>
                                 <property name="src.webapps" location="${basedir}/src/main/resources/hbase-webapps"/>
                                 <property name="generated.sources" location="${project.build.directory}/generated-sources"/>
-                                <mkdir dir="${build.webapps}"/>
                                 <copy todir="${build.webapps}">
                                     <fileset dir="${src.webapps}">
                                         <exclude name="**/*.jsp"/>
@@ -140,9 +134,21 @@
                 <groupId>net.revelc.code</groupId>
                 <artifactId>warbucks-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>org.apache.hbase.connectors.rest</groupId>
+            <artifactId>hbase-rest-protocol</artifactId>
+        </dependency>
         <!--This one is upfront to get in front of
              any dependency that pulls in jersey-core.
              Jersey-core has implemented version 1
@@ -430,6 +436,7 @@
             <build>
                 <pluginManagement>
                     <plugins>
+
                         <!--This plugin's configuration is used to store Eclipse m2e settings
                              only. It has no influence on the Maven build itself.-->
                         <plugin>

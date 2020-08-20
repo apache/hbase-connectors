@@ -32,6 +32,7 @@
 
     <groupId>org.apache.hbase.connectors.rest</groupId>
     <artifactId>hbase-rest-protocol</artifactId>
+    <version>${revision}</version>
     <name>Apache HBase - Rest Protocol</name>
     <description>Shaded protobuf protocol classes used by HBase REST internally.</description>
 <properties>
