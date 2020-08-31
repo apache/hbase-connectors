@@ -37,6 +37,13 @@
     <name>Apache HBase - Rest Server</name>
     <description>HBase Rest Server</description>
 
+    <properties>
+        <surefire.provider>surefire-junit47</surefire.provider>
+    </properties>
+
+
+
+
     <build>
         <!-- Makes sure the resources get added before they are processed
           by placing this first -->
@@ -129,6 +136,16 @@
                         <test.build.webapps>target/test-classes/webapps</test.build.webapps>
                     </systemPropertyVariables>
                 </configuration>
+                <dependencies>
+                    <!-- by default surefire selects dynamically the connector to the unit tests
+                      tool. We want to use always the same as the different connectors can have different
+                      bugs and behaviour. -->
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>${surefire.provider}</artifactId>
+                        <version>${surefire.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>net.revelc.code</groupId>
@@ -348,10 +365,11 @@
                 </property>
             </activation>
             <properties>
-                <surefire.skipFirstPart>true</surefire.skipFirstPart>
-                <surefire.skipSecondPart>true</surefire.skipSecondPart>
+                <surefire.skipFirstPart>false</surefire.skipFirstPart>
+                <surefire.skipSecondPart>false</surefire.skipSecondPart>
             </properties>
         </profile>
+
         <!-- Hadoop-specific dependencies -->
         <profile>
             <id>hadoop-3.0</id>
