@@ -130,6 +130,7 @@
                     <configuration>
                         <minimizeJar>true</minimizeJar>
                         <shadeSourcesContent>true</shadeSourcesContent>
+                        <createDependencyReducedPom>false</createDependencyReducedPom>
                         <!-- Causes an NPE until shade 3.0.1.  See MSHADE-247
                         <createSourcesJar>true</createSourcesJar>
                         -->

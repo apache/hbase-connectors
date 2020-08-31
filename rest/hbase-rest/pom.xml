@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <!--
     /**
@@ -43,7 +43,6 @@
 
 
 
-
     <build>
         <!-- Makes sure the resources get added before they are processed
           by placing this first -->
@@ -76,6 +75,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>%regex[.*(Cat|Dog).*Test.*]</include>
+                    </includes>
+                </configuration>
             </plugin>
             <!-- General ant tasks, bound to different build phases -->
             <plugin>
@@ -133,7 +137,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <test.build.webapps>target/test-classes/webapps</test.build.webapps>
+                        <test.build.webapps>../target/test-classes/webapps</test.build.webapps>
                     </systemPropertyVariables>
                 </configuration>
                 <dependencies>
@@ -365,8 +369,8 @@
                 </property>
             </activation>
             <properties>
-                <surefire.skipFirstPart>false</surefire.skipFirstPart>
-                <surefire.skipSecondPart>false</surefire.skipSecondPart>
+                <surefire.skipFirstPart>true</surefire.skipFirstPart>
+                <surefire.skipSecondPart>true</surefire.skipSecondPart>
             </properties>
         </profile>
 
