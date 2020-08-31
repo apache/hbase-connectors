@@ -19,15 +19,14 @@
 
 package org.apache.hadoop.hbase.rest.filter;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import org.apache.yetus.audience.InterfaceAudience;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-
-import org.apache.yetus.audience.InterfaceAudience;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 @InterfaceAudience.Private
 public class GZIPRequestWrapper extends HttpServletRequestWrapper {
