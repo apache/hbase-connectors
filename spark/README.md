@@ -26,4 +26,11 @@ To generate an artifact for a different [spark version](https://mvnrepository.co
 $ mvn -Dspark.version=2.2.2 -Dscala.version=2.11.7 -Dscala.binary.version=2.11 clean install
 ```
 
-See above linked spark version to match spark version and supported scala version.
+---
+To build the connector with Spark 3.0, compile it with scala 2.12.
+Additional configurations that you can customize are the Spark version, HBase version, and Hadoop version.
+Example:
+
+```
+$ mvn -Dspark.version=3.0.1 -Dscala.version=2.12.10 -Dscala.binary.version=2.12 -Dhbase.version=2.2.4 -Dhadoop.profile=3.0 -Dhadoop-three.version=3.2.0 -DskipTests clean package
+```

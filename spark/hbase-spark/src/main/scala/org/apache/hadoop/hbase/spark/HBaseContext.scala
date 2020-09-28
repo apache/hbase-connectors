@@ -33,7 +33,6 @@ import org.apache.hadoop.hbase.regionserver.{HStore, HStoreFile, StoreFileWriter
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rdd.RDD
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
@@ -436,7 +435,10 @@ class HBaseContext(@transient val sc: SparkContext,
       classOf[IdentityTableMapper], null, null, job)
 
     val jconf = new JobConf(job.getConfiguration)
-    SparkHadoopUtil.get.addCredentials(jconf)
+    val jobCreds = jconf.getCredentials()
+    UserGroupInformation.setConfiguration(sc.hadoopConfiguration)
+    jobCreds.mergeAll(UserGroupInformation.getCurrentUser().getCredentials())
+
     new NewHBaseRDD(sc,
       classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
@@ -484,7 +486,7 @@ class HBaseContext(@transient val sc: SparkContext,
   Configuration = {
 
     if (tmpHdfsConfiguration == null && tmpHdfsConfgFile != null) {
-      val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
+      val fs = FileSystem.newInstance(sc.hadoopConfiguration)
       val inputStream = fs.open(new Path(tmpHdfsConfgFile))
       tmpHdfsConfiguration = new Configuration(false)
       tmpHdfsConfiguration.readFields(inputStream)
