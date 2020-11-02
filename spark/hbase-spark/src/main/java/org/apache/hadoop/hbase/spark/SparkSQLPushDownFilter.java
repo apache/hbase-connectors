@@ -29,7 +29,6 @@ import org.apache.hadoop.hbase.filter.Filter.ReturnCode;
 import org.apache.hadoop.hbase.filter.FilterBase;
 import org.apache.hadoop.hbase.spark.datasources.BytesEncoder;
 import org.apache.hadoop.hbase.spark.datasources.Field;
-import org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder;
 import org.apache.hadoop.hbase.spark.protobuf.generated.SparkFilterProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.yetus.audience.InterfaceAudience;
@@ -177,6 +176,38 @@ public class SparkSQLPushDownFilter extends FilterBase{
     return false;
   }
 
+  public static Object JavaBytesEncoderCreateReflection(String encoder)  {
+    java.lang.reflect.Method mymethod;
+    java.lang.Object myobj;
+    java.lang.Class myclass;
+    try {
+      myclass = Class.forName("org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder");
+      myobj = myclass.getClass();
+      mymethod = myclass.getMethod("create", java.lang.String.class);
+      Object o = mymethod.invoke(myobj, encoder);
+      return o;
+    } catch (Throwable throwable) {
+      System.err.println(throwable);
+      return null;
+    }
+  }
+
+  public static Object DynamicLogicExpressionBuilderBuildReflection(
+    String expressionString, BytesEncoder encoder)  {
+    java.lang.reflect.Method mymethod;
+    java.lang.Object myobj;
+    java.lang.Class myclass;
+    try {
+      myclass = Class.forName("org.apache.hadoop.hbase.spark.DynamicLogicExpressionBuilder");
+      myobj = myclass.getClass();
+      mymethod = myclass.getMethod("build", java.lang.String.class, BytesEncoder.class);
+      Object o = mymethod.invoke(myobj, expressionString, encoder);
+      return o;
+    } catch (Throwable throwable) {
+      System.err.println(throwable);
+      return null;
+    }
+  }
 
   /**
    * @param pbBytes A pb serialized instance
@@ -195,11 +226,15 @@ public class SparkSQLPushDownFilter extends FilterBase{
     }
 
     String encoder = proto.getEncoderClassName();
-    BytesEncoder enc = JavaBytesEncoder.create(encoder);
+
+    //BytesEncoder enc = JavaBytesEncoder.create(encoder);
+    BytesEncoder enc = (BytesEncoder) JavaBytesEncoderCreateReflection(encoder);
 
     //Load DynamicLogicExpression
-    DynamicLogicExpression dynamicLogicExpression =
-            DynamicLogicExpressionBuilder.build(proto.getDynamicLogicExpression(), enc);
+    // DynamicLogicExpression dynamicLogicExpression =
+    //        DynamicLogicExpressionBuilder.build(proto.getDynamicLogicExpression(), enc);
+    DynamicLogicExpression dynamicLogicExpression = (DynamicLogicExpression)
+      DynamicLogicExpressionBuilderBuildReflection(proto.getDynamicLogicExpression(), enc);
 
     //Load valuesFromQuery
     final List<ByteString> valueFromQueryArrayList = proto.getValueFromQueryArrayList();
