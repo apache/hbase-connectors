@@ -100,7 +100,7 @@ public class TestRouteRules {
       Assert.assertTrue(Bytes.equals("dhold".getBytes(StandardCharsets.UTF_8),
               rules.getRouteRules().get(0).getQualifier()));
       Assert.assertTrue(rules.getRouteRules().get(0).getTopics().contains("foo"));
-      Assert.assertEquals(rules.getRouteRules().get(0).getTopics().size(), 1);
+      Assert.assertEquals(1, rules.getRouteRules().get(0).getTopics().size());
 
       Assert.assertEquals(0, rules.getDropRules().size());
     } catch (Exception e) {

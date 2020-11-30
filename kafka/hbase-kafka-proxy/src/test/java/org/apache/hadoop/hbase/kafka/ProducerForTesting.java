@@ -18,10 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
@@ -55,7 +53,6 @@ public class ProducerForTesting implements Producer<byte[], byte[]> {
   @Override
   public Future<RecordMetadata> send(ProducerRecord<byte[], byte[]> producerRecord) {
     try {
-
       BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(producerRecord.value(), null);
       HBaseKafkaEvent event = dreader.read(null, decoder);
       if (!messages.containsKey(producerRecord.topic())) {
@@ -79,18 +76,16 @@ public class ProducerForTesting implements Producer<byte[], byte[]> {
         }
 
         @Override
-        public RecordMetadata get() throws InterruptedException, ExecutionException {
+        public RecordMetadata get() {
           return new RecordMetadata(null, 1, 1, 1, (long)1, 1, 1);
         }
 
         @Override
-        public RecordMetadata get(long timeout, TimeUnit unit)
-            throws InterruptedException, ExecutionException, TimeoutException {
+        public RecordMetadata get(long timeout, TimeUnit unit) {
           return null;
         }
       };
     } catch (Exception e) {
-      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
