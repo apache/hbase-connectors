@@ -44,11 +44,10 @@ function personality_modules
     MODULES=(.)
   fi
 
-  # If we'll end up needing a plugin to run on the hbase-spark or
-  # hbase-spark-it modules, then we need to ensure a 'package' phase runs.
+  # If we'll end up needing a plugin to run on the spark
+  # modules, then we need to ensure a 'package' phase runs.
   if [[ "${MODULES[*]}" =~ \. ]] || \
-     [[ "${MODULES[*]}" =~ "hbase-spark " ]] || \
-     [[ "${MODULES[*]}" =~ "hbase-spark-it" ]]; then
+     [[ "${MODULES[*]}" =~ "spark" ]]; then
     extra="${extra} package"
   fi
 
