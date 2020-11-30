@@ -29,7 +29,6 @@
     <relativePath>../</relativePath>
   </parent>
 
-  <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>spark</artifactId>
   <packaging>pom</packaging>
   <version>${revision}</version>
