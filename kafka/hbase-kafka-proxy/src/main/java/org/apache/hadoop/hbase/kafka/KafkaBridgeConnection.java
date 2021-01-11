@@ -40,7 +40,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.yetus.audience.InterfaceAudience;
-import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 
 /**
  * a alternative implementation of a connection object that forwards the mutations to a kafka queue
@@ -76,9 +75,7 @@ public class KafkaBridgeConnection implements Connection {
    * @param conf hbase configuration
    * @param routingRules a set of routing rules
    * @param producer a kafka producer
-   * @throws IOException on error
    */
-  @VisibleForTesting
   public KafkaBridgeConnection(Configuration conf, TopicRoutingRules routingRules,
                                Producer<byte[],byte[]> producer) {
     this.conf = conf;
