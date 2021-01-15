@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hbase.kafka;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
@@ -36,12 +37,11 @@ import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.hbase.thirdparty.org.apache.commons.cli.BasicParser;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.CommandLine;
+import org.apache.hbase.thirdparty.org.apache.commons.cli.DefaultParser;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.HelpFormatter;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.Options;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.ParseException;
-
 
 /**
  * connects to kafka and reads from the passed in topics.  Parses each message into an avro object
@@ -52,7 +52,6 @@ public final class DumpToStringListener {
   private static final Logger LOG = LoggerFactory.getLogger(DumpToStringListener.class);
 
   private DumpToStringListener(){
-
   }
 
   public static void main(String[] args) {
@@ -65,12 +64,14 @@ public final class DumpToStringListener {
     options.addRequiredOption("t", "kafkatopics", true,"Kafka Topics "
         + "to subscribe to (comma delimited)");
     CommandLine commandLine = null;
+
     try {
-      commandLine = new BasicParser().parse(options, args);
+      commandLine = new DefaultParser().parse(options, args);
     } catch (ParseException e) {
       LOG.error("Could not parse: ", e);
       printUsageAndExit(options, -1);
     }
+
     SpecificDatumReader<HBaseKafkaEvent> dreader =
             new SpecificDatumReader<>(HBaseKafkaEvent.SCHEMA$);
 
@@ -81,11 +82,11 @@ public final class DumpToStringListener {
     props.put("key.deserializer", ByteArrayDeserializer.class.getName());
     props.put("value.deserializer", ByteArrayDeserializer.class.getName());
 
-    try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props);){
+    try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props)) {
       consumer.subscribe(Arrays.stream(topic.split(",")).collect(Collectors.toList()));
 
       while (true) {
-        ConsumerRecords<byte[], byte[]> records = consumer.poll(10000);
+        ConsumerRecords<byte[], byte[]> records = consumer.poll(Duration.ofMillis(10000));
         Iterator<ConsumerRecord<byte[], byte[]>> it = records.iterator();
         while (it.hasNext()) {
           ConsumerRecord<byte[], byte[]> record = it.next();
@@ -108,5 +109,4 @@ public final class DumpToStringListener {
                     "[-k <kafka brokers (comma delmited)>] \n", true);
     System.exit(exitCode);
   }
-
 }
