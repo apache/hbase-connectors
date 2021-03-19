@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.hbase.spark
 
+import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -150,12 +151,10 @@ case class HBaseRelation (
 
   def createTable() {
     val numReg = parameters.get(HBaseTableCatalog.newTable).map(x => x.toInt).getOrElse(0)
-    val startKey =  Bytes.toBytes(
-      parameters.get(HBaseTableCatalog.regionStart)
-        .getOrElse(HBaseTableCatalog.defaultRegionStart))
-    val endKey = Bytes.toBytes(
-      parameters.get(HBaseTableCatalog.regionEnd)
-        .getOrElse(HBaseTableCatalog.defaultRegionEnd))
+    val startKey = parameters.get(HBaseTableCatalog.regionStart)
+      .getOrElse(HBaseTableCatalog.defaultRegionStart).getBytes(StandardCharsets.ISO_8859_1)
+    val endKey = parameters.get(HBaseTableCatalog.regionEnd)
+      .getOrElse(HBaseTableCatalog.defaultRegionEnd).getBytes(StandardCharsets.ISO_8859_1)
     if (numReg > 3) {
       val tName = TableName.valueOf(tableName)
       val cfs = catalog.getColumnFamilies
