@@ -43,7 +43,7 @@
   <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>hbase-connectors</artifactId>
   <!-- See https://maven.apache.org/maven-ci-friendly.html -->
-  <version>1.0.1-sprout-emr</version>
+  <version>1.0.1.sprout</version>
   <name>Apache HBase Connectors</name>
   <packaging>pom</packaging>
   <description>
@@ -136,7 +136,7 @@
   <developers/>
   <properties>
     <!-- See https://maven.apache.org/maven-ci-friendly.html -->
-    <revision>1.0.1-sprout-emr</revision>
+    <revision>1.0.1.sprout</revision>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm</maven.build.timestamp.format>
     <buildDate>${maven.build.timestamp}</buildDate>
