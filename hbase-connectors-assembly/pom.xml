@@ -24,7 +24,7 @@
   <parent>
     <artifactId>hbase-connectors</artifactId>
     <groupId>org.apache.hbase.connectors</groupId>
-    <version>${revision}</version>
+    <version>1.0.1.2-sprout</version>
     <relativePath>../</relativePath>
   </parent>
   <artifactId>hbase-connectors-assembly</artifactId>
@@ -40,12 +40,12 @@
     <dependency>
       <groupId>org.apache.hbase.connectors.kafka</groupId>
       <artifactId>hbase-kafka-proxy</artifactId>
-      <version>${revision}</version>
+      <version>1.0.1.2-sprout</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase.connectors.kafka</groupId>
       <artifactId>hbase-kafka-model</artifactId>
-      <version>${revision}</version>
+      <version>1.0.1.2-sprout</version>
     </dependency>
   </dependencies>
   <build>
