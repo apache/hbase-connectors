@@ -25,13 +25,13 @@
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>hbase-connectors</artifactId>
-    <version>1.0.1-sprout-emr</version>
+    <version>1.0.1.sprout</version>
     <relativePath>../</relativePath>
   </parent>
 
   <artifactId>spark</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.1-sprout-emr</version>
+  <version>1.0.1.sprout</version>
   <name>Apache HBase - Spark</name>
   <description>Spark Connectors for Apache HBase</description>
 
@@ -58,17 +58,17 @@
       <dependency>
         <groupId>org.apache.hbase.connectors.spark</groupId>
         <artifactId>hbase-spark</artifactId>
-        <version>1.0.1-sprout-emr</version>
+        <version>1.0.1.sprout</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase.connectors.spark</groupId>
         <artifactId>hbase-spark-protocol</artifactId>
-        <version>1.0.1-sprout-emr</version>
+        <version>1.0.1.sprout</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase.connectors.spark</groupId>
         <artifactId>hbase-spark-protocol-shaded</artifactId>
-        <version>1.0.1-sprout-emr</version>
+        <version>1.0.1.sprout</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase.thirdparty</groupId>

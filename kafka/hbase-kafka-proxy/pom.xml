@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>kafka</artifactId>
-    <version>1.0.1-sprout-emr</version>
+    <version>1.0.1.sprout</version>
     <relativePath>../</relativePath>
   </parent>
   <groupId>org.apache.hbase.connectors.kafka</groupId>
