@@ -68,6 +68,20 @@
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
     <url>https://gitbox.apache.org/repos/asf?p=hbase-connectors.git;a=summary</url>
   </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>releases</id>
+      <name>Internal releases</name>
+      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <name>Internal snapshots</name>
+      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <issueManagement>
     <!--File issues for this project against Apache HBase JIRA-->
     <system>JIRA</system>
