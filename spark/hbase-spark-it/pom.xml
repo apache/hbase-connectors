@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>spark</artifactId>
-    <version>1.0.1.3-sprout</version>
+    <version>1.0.1-sprout-emr</version>
     <relativePath>../</relativePath>
   </parent>
   <groupId>org.apache.hbase.connectors.spark</groupId>
@@ -186,7 +186,7 @@
     <dependency>
       <groupId>org.apache.hbase.connectors.spark</groupId>
       <artifactId>hbase-spark</artifactId>
-      <version>1.0.1.3-sprout</version>
+      <version>1.0.1-sprout-emr</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
