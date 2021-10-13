@@ -182,7 +182,6 @@ class ClientBase(object):
     @abc.abstractmethod
     def _delete_row(self, table_name, delete):
         """
-        
         Send a delete request to thrift server. Only should be invoked by a Table object.
         Args:
             table_name: a str representation of Table name, including the namespace part.

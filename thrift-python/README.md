@@ -31,7 +31,6 @@ if __name__ == '__main__':
                 qualifier="column_qualifier",
                 value="your_value")
         table.put(p)
-        
         # example for a batch operation
         put_list = []
         for i in range(100):
@@ -42,7 +41,6 @@ if __name__ == '__main__':
                     value="your_value")
             put_list.append(p)
         table.put_batch(put_list)
-        
         # do not forget to close the connection after using
         client.close_connection()
 ```
@@ -168,6 +166,3 @@ if __name__ == '__main__':
     for thread in thread_list:
         thread.join()
 ```
-## Source
-The github repository is:  
-https://github.com/YutSean/thbase
