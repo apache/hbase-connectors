@@ -45,8 +45,8 @@ if __name__ == '__main__':
         client.close_connection()
 ```
 ###Multi-threaded
-The thrift basic transport is not thread-safe. In this case, if you want to parallelize your program
-, you should create a new connection object for each thread. 
+The thrift basic transport is not thread-safe. In this case, if you want to parallelize your program,
+you should create a new connection object for each thread.
 The sample code is:
 ```python
 from thbase.thrift2.client import Client
