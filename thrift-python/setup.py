@@ -23,14 +23,14 @@ else:
         long_description = f.read()
 
 setup(
-    name='thbase',
-    version='1.3.6',
-    description='HBase thrift2 client python API. Compatible with python2.7 and python3',
+    name='hbase-client-thrift2',
+    version='2.0',
+    description='Apache HBase thrift2 client.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     # Author details
-    author='',
-    author_email='',
+    author='Apache HBase Community',
+    author_email='dev@hbase.apache.org',
     url='',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
