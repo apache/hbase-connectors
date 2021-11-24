@@ -129,20 +129,20 @@
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.2.2</hbase.version>
+    <hbase.version>2.4.8</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
     <junit.version>4.12</junit.version>
-    <hbase-thirdparty.version>2.2.1</hbase-thirdparty.version>
+    <hbase-thirdparty.version>3.5.1</hbase-thirdparty.version>
     <hadoop-two.version>2.8.5</hadoop-two.version>
-    <hadoop-three.version>3.0.3</hadoop-three.version>
-    <hadoop.version>${hadoop-two.version}</hadoop.version>
+    <hadoop-three.version>3.2.0</hadoop-three.version>
+    <hadoop.version>${hadoop-three.version}</hadoop.version>
     <slf4j.version>1.7.25</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
-    <checkstyle.version>8.18</checkstyle.version>
-    <maven.checkstyle.version>3.1.0</maven.checkstyle.version>
-    <surefire.version>3.0.0-M4</surefire.version>
-    <enforcer.version>3.0.0-M3</enforcer.version>
+    <checkstyle.version>8.45.1</checkstyle.version>
+    <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
+    <surefire.version>3.0.0-M5</surefire.version>
+    <enforcer.version>3.0.0</enforcer.version>
     <extra.enforcer.version>1.2</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->

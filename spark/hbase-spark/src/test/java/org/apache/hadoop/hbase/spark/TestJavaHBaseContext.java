@@ -284,8 +284,8 @@ public class TestJavaHBaseContext implements Serializable {
 
     final JavaRDD<String> stringJavaRDD =
             HBASE_CONTEXT.bulkGet(TableName.valueOf(tableName), 2, rdd,
-            new GetFunction(),
-            new ResultFunction());
+              new GetFunction(),
+              new ResultFunction());
 
     Assert.assertEquals(stringJavaRDD.count(), 5);
   }

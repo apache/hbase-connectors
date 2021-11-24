@@ -18,19 +18,26 @@ limitations under the License.
 
 # Apache HBase&trade; Spark Connector
 
-## Scala and Spark Versions
+## Spark, Scala and other configurable options
 
-To generate an artifact for a different [spark version](https://mvnrepository.com/artifact/org.apache.spark/spark-core) and/or [scala version](https://www.scala-lang.org/download/all.html), pass command-line options as follows (changing version numbers appropriately):
-
-```
-$ mvn -Dspark.version=2.2.2 -Dscala.version=2.11.7 -Dscala.binary.version=2.11 clean install
-```
-
----
-To build the connector with Spark 3.0, compile it with scala 2.12.
-Additional configurations that you can customize are the Spark version, HBase version, and Hadoop version.
-Example:
+To generate an artifact for a different [Spark version](https://mvnrepository.com/artifact/org.apache.spark/spark-core) and/or [Scala version](https://www.scala-lang.org/download/all.html), 
+[Hadoop version](https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-core), or [HBase version](https://mvnrepository.com/artifact/org.apache.hbase/hbase) pass command-line options as follows (changing version numbers appropriately):
 
 ```
-$ mvn -Dspark.version=3.0.1 -Dscala.version=2.12.10 -Dscala.binary.version=2.12 -Dhbase.version=2.2.4 -Dhadoop.profile=3.0 -Dhadoop-three.version=3.2.0 -DskipTests clean package
+$ mvn -Dspark.version=3.1.2 -Dscala.version=2.12.10 -Dhadoop-three.version=3.2.0 -Dscala.binary.version=2.12 -Dhbase.version=2.4.8 clean install
 ```
+
+Note: to build the connector with Spark 2.x, compile it with `-Dscala.binary.version=2.11` and use the profile `-Dhadoop.profile=2.0`
+
+## Configuration and installation
+**Client-side** (Spark) configuration:
+- The HBase configuration file `hbase-site.xml` should be made available to Spark, it 
+can be copied to `$SPARK_CONF_DIR` (default is $SPARK_HOME/conf`)
+
+**Server-side** (HBase region servers) configuration:
+- The following jars needs to be in the CLASSPATH of the HBase region servers:
+  - scala-library, hbase-spark, and hbase-spark-protocol-shaded.
+- The server-side configuration is needed for column filter pushdown
+  - if you cannot perform the server-side configuration, consider using `.option("hbase.spark.pushdown.columnfilter", false)`
+- The Scala library version must match the Scala version (2.11 or 2.12) used for compiling the connector.
+
