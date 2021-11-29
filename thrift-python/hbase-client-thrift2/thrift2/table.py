@@ -169,8 +169,8 @@ class Table(object):
         for delete in batch:
             type_check(delete, Delete)
         for i in range(0, len(batch), self.conf.batch_size):
-            if not self._client._delete_batch(table_name=self.name,
-                                              deletes=batch[i: i + self.conf.batch_size]):
+            if not [] == self._client._delete_batch(table_name=self.name,
+                                                    deletes=batch[i: i + self.conf.batch_size]):
                 logger.error("Delete_batch failed at index {}, the delete requests after {} (inclusive) are not sent.".format(i, i))
                 return False
         return True
