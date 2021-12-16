@@ -150,3 +150,4 @@ def _column_format(family, qualifier):
                 cols.append(TColumn(family=family_bytes, qualifier=to_bytes(cq)))
             else:
                 raise ValueError("Qualifier should be None, str or a list (tuple) of str")
+        return cols
