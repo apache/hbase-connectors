@@ -55,7 +55,7 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     TEST_UTIL.deleteTable(TableName.valueOf(tableName))
     logInfo("shuting down minicluster")
     TEST_UTIL.shutdownMiniCluster()
-
+    TEST_UTIL.cleanupTestDir
     sc.stop()
   }
 

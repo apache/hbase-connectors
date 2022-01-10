@@ -65,6 +65,15 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     sc.stop()
   }
 
+  override def beforeEach() {
+    try {
+      TEST_UTIL.deleteTable(TableName.valueOf(tableName))
+    } catch {
+      case e: Exception =>
+        logInfo(" - no table " + tableName + " found")
+    }
+  }
+
   test("Wide Row Bulk Load: Test multi family and multi column tests " +
     "with all default HFile Configs.") {
     val config = TEST_UTIL.getConfiguration
@@ -391,7 +400,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     for ( i <- 0 until f1FileList.length) {
       val reader = HFile.createReader(fs, f1FileList(i).getPath,
         new CacheConfig(config), true, config)
-      assert(reader.getCompressionAlgorithm.getName.equals("gz"))
+      assert(reader.getFileContext.getCompression.getName.equals("gz"))
       assert(reader.getDataBlockEncoding.name().equals("PREFIX"))
     }
 
@@ -401,7 +410,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     for ( i <- 0 until f2FileList.length) {
       val reader = HFile.createReader(fs, f2FileList(i).getPath,
         new CacheConfig(config), true, config)
-      assert(reader.getCompressionAlgorithm.getName.equals("none"))
+      assert(reader.getFileContext.getCompression.getName.equals("none"))
       assert(reader.getDataBlockEncoding.name().equals("NONE"))
     }
 
@@ -870,7 +879,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     for ( i <- 0 until f1FileList.length) {
       val reader = HFile.createReader(fs, f1FileList(i).getPath,
         new CacheConfig(config), true, config)
-      assert(reader.getCompressionAlgorithm.getName.equals("gz"))
+      assert(reader.getFileContext.getCompression.getName.equals("gz"))
       assert(reader.getDataBlockEncoding.name().equals("PREFIX"))
     }
 
@@ -880,7 +889,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     for ( i <- 0 until f2FileList.length) {
       val reader = HFile.createReader(fs, f2FileList(i).getPath,
         new CacheConfig(config), true, config)
-      assert(reader.getCompressionAlgorithm.getName.equals("none"))
+      assert(reader.getFileContext.getCompression.getName.equals("none"))
       assert(reader.getDataBlockEncoding.name().equals("NONE"))
     }
 

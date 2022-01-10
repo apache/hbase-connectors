@@ -80,7 +80,7 @@ class PartitionFilterSuite extends FunSuite with
   override def afterAll() {
     logInfo("shutting down minicluster")
     TEST_UTIL.shutdownMiniCluster()
-
+    TEST_UTIL.cleanupTestDir
     sc.stop()
   }
 

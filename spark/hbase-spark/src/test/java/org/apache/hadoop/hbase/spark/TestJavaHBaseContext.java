@@ -95,8 +95,8 @@ public class TestJavaHBaseContext implements Serializable {
 
     LOG.info("starting minicluster");
 
-    TEST_UTIL.startMiniZKCluster();
-    TEST_UTIL.startMiniHBaseCluster(1, 1);
+    //TEST_UTIL.startMiniZKCluster();
+    TEST_UTIL.startMiniCluster();
 
     LOG.info(" - minicluster started");
   }
@@ -104,8 +104,8 @@ public class TestJavaHBaseContext implements Serializable {
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
     LOG.info("shuting down minicluster");
-    TEST_UTIL.shutdownMiniHBaseCluster();
-    TEST_UTIL.shutdownMiniZKCluster();
+    //TEST_UTIL.shutdownMiniHBaseCluster();
+    TEST_UTIL.shutdownMiniCluster();
     LOG.info(" - minicluster shut down");
     TEST_UTIL.cleanupTestDir();
 
