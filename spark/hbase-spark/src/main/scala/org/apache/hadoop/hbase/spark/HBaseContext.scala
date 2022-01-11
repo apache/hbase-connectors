@@ -21,33 +21,34 @@ import java.net.InetSocketAddress
 import java.util
 import java.util.UUID
 import javax.management.openmbean.KeyAlreadyExistsException
-
-import org.apache.yetus.audience.InterfaceAudience;
+import org.apache.yetus.audience.InterfaceAudience
 import org.apache.hadoop.hbase.fs.HFileSystem
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.io.compress.Compression
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm
 import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding
-import org.apache.hadoop.hbase.io.hfile.{HFile, CacheConfig, HFileContextBuilder, HFileWriterImpl}
-import org.apache.hadoop.hbase.regionserver.{HStore, HStoreFile, StoreFileWriter, StoreUtils, BloomType}
-import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileContextBuilder, HFileWriterImpl}
+import org.apache.hadoop.hbase.regionserver.{BloomType, HStoreFile, StoreFileWriter}
+import org.apache.hadoop.hbase.util.{Bytes, ChecksumType}
 import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.hadoop.hbase.client._
+
 import scala.reflect.ClassTag
 import org.apache.spark.{SerializableWritable, SparkContext}
-import org.apache.hadoop.hbase.mapreduce.{TableMapReduceUtil,
-TableInputFormat, IdentityTableMapper}
+import org.apache.hadoop.hbase.mapreduce.{IdentityTableMapper, TableInputFormat, TableMapReduceUtil}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.mapreduce.Job
 import org.apache.spark.streaming.dstream.DStream
+
 import java.io._
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.hadoop.fs.{Path, FileAlreadyExistsException, FileSystem}
+import org.apache.hadoop.fs.{FileAlreadyExistsException, FileSystem, Path}
+
 import scala.collection.mutable
 
 /**
@@ -900,11 +901,18 @@ class HBaseContext(@transient val sc: SparkContext,
 
     val tempConf = new Configuration(conf)
     tempConf.setFloat(HConstants.HFILE_BLOCK_CACHE_SIZE_KEY, 0.0f)
+    // HBASE-25249 introduced an incompatible change in the IA.Private HStore and StoreUtils
+    // so here, we directly use conf.get for CheckSumType and BytesPerCheckSum to make it
+    // compatible between hbase 2.3.x and 2.4.x
     val contextBuilder = new HFileContextBuilder()
       .withCompression(Algorithm.valueOf(familyOptions.compression))
-      .withChecksumType(StoreUtils.getChecksumType(conf))
+      // ChecksumType.nameToType is still an IA.Private Utils, but it's unlikely to be changed.
+      .withChecksumType(ChecksumType
+        .nameToType(conf.get(HConstants.CHECKSUM_TYPE_NAME,
+          ChecksumType.getDefaultChecksumType.getName)))
       .withCellComparator(CellComparator.getInstance())
-      .withBytesPerCheckSum(StoreUtils.getBytesPerChecksum(conf))
+      .withBytesPerCheckSum(conf.getInt(HConstants.BYTES_PER_CHECKSUM,
+        HFile.DEFAULT_BYTES_PER_CHECKSUM))
       .withBlockSize(familyOptions.blockSize)
 
     if (HFile.getFormatVersion(conf) >= HFile.MIN_FORMAT_VERSION_WITH_TAGS) {
