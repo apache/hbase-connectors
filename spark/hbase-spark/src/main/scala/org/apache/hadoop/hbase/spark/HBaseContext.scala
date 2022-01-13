@@ -29,8 +29,8 @@ import org.apache.hadoop.hbase.io.compress.Compression
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm
 import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding
 import org.apache.hadoop.hbase.io.hfile.{HFile, CacheConfig, HFileContextBuilder, HFileWriterImpl}
-import org.apache.hadoop.hbase.regionserver.{HStore, HStoreFile, StoreFileWriter, BloomType}
-import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.regionserver.{HStoreFile, StoreFileWriter, StoreUtils, BloomType}
+import org.apache.hadoop.hbase.util.{Bytes, ChecksumType}
 import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -900,10 +900,19 @@ class HBaseContext(@transient val sc: SparkContext,
 
     val tempConf = new Configuration(conf)
     tempConf.setFloat(HConstants.HFILE_BLOCK_CACHE_SIZE_KEY, 0.0f)
+
+    // HBASE-25249 introduced an incompatible change in the IA.Private HStore and StoreUtils
+    // so here, we directly use conf.get for CheckSumType and BytesPerCheckSum to make it
+    // compatible between hbase 2.3.x and 2.4.x
     val contextBuilder = new HFileContextBuilder()
       .withCompression(Algorithm.valueOf(familyOptions.compression))
-      .withChecksumType(HStore.getChecksumType(conf))
-      .withBytesPerCheckSum(HStore.getBytesPerChecksum(conf))
+      // ChecksumType.nameToType is still an IA.Private Utils, but it's unlikely to be changed.
+      .withChecksumType(ChecksumType
+        .nameToType(conf.get(HConstants.CHECKSUM_TYPE_NAME,
+          ChecksumType.getDefaultChecksumType.getName)))
+      .withCellComparator(CellComparator.getInstance())
+      .withBytesPerCheckSum(conf.getInt(HConstants.BYTES_PER_CHECKSUM,
+        HFile.DEFAULT_BYTES_PER_CHECKSUM))
       .withBlockSize(familyOptions.blockSize)
 
     if (HFile.getFormatVersion(conf) >= HFile.MIN_FORMAT_VERSION_WITH_TAGS) {
@@ -919,7 +928,7 @@ class HBaseContext(@transient val sc: SparkContext,
     new WriterLength(0,
       new StoreFileWriter.Builder(conf, new CacheConfig(tempConf), new HFileSystem(fs))
         .withBloomType(BloomType.valueOf(familyOptions.bloomType))
-        .withComparator(CellComparator.getInstance()).withFileContext(hFileContext)
+        .withFileContext(hFileContext)
         .withFilePath(new Path(familydir, "_" + UUID.randomUUID.toString.replaceAll("-", "")))
         .withFavoredNodes(favoredNodes).build())
 
