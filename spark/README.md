@@ -34,7 +34,7 @@ Note: to build the connector with Spark 2.x, compile it with `-Dscala.binary.ver
 - The HBase configuration file `hbase-site.xml` should be made available to Spark, it can be copied to `$SPARK_CONF_DIR` (default is $SPARK_HOME/conf`)
 
 **Server-side** (HBase region servers) configuration:
-- The following jars needs to be in the CLASSPATH of the HBase region servers:
+- The following jars need to be in the CLASSPATH of the HBase region servers:
   - scala-library, hbase-spark, and hbase-spark-protocol-shaded.
 - The server-side configuration is needed for column filter pushdown
   - if you cannot perform the server-side configuration, consider using `.option("hbase.spark.pushdown.columnfilter", false)`
