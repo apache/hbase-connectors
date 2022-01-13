@@ -35,6 +35,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.TableDescriptor;
@@ -67,6 +68,11 @@ public class KafkaTableForBridge implements Table {
     byte[]family;
     Cell cell;
     List<String> topics = new ArrayList<>();
+  }
+
+  @Override
+  public RegionLocator getRegionLocator() throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   public KafkaTableForBridge(TableName tableName,
