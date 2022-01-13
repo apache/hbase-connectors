@@ -143,7 +143,7 @@
     <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
     <surefire.version>3.0.0-M5</surefire.version>
     <enforcer.version>3.0.0</enforcer.version>
-    <extra.enforcer.version>1.2</extra.enforcer.version>
+    <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
     <external.protobuf.version>2.5.0</external.protobuf.version>
