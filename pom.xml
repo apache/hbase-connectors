@@ -43,7 +43,7 @@
   <groupId>org.apache.hbase.connectors</groupId>
   <artifactId>hbase-connectors</artifactId>
   <!-- See https://maven.apache.org/maven-ci-friendly.html -->
-  <version>1.0.1.sprout-emr</version>
+  <version>${revision}</version>
   <name>Apache HBase Connectors</name>
   <packaging>pom</packaging>
   <description>
@@ -136,38 +136,38 @@
   <developers/>
   <properties>
     <!-- See https://maven.apache.org/maven-ci-friendly.html -->
-    <revision>1.0.1.sprout-emr</revision>
+    <revision>1.0.1-SNAPSHOT</revision>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm</maven.build.timestamp.format>
     <buildDate>${maven.build.timestamp}</buildDate>
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.2.6</hbase.version>
+    <hbase.version>2.4.9</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
     <junit.version>4.12</junit.version>
-    <hbase-thirdparty.version>2.2.1</hbase-thirdparty.version>
+    <hbase-thirdparty.version>4.0.1</hbase-thirdparty.version>
     <hadoop-two.version>2.8.5</hadoop-two.version>
-    <hadoop-three.version>3.2.1</hadoop-three.version>
-    <hadoop.version>${hadoop-two.version}</hadoop.version>
+    <hadoop-three.version>3.2.0</hadoop-three.version>
+    <hadoop.version>${hadoop-three.version}</hadoop.version>
     <slf4j.version>1.7.25</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
-    <checkstyle.version>8.18</checkstyle.version>
-    <maven.checkstyle.version>3.1.0</maven.checkstyle.version>
-    <surefire.version>3.0.0-M4</surefire.version>
-    <enforcer.version>3.0.0-M3</enforcer.version>
+    <checkstyle.version>8.28</checkstyle.version>
+    <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
+    <surefire.version>3.0.0-M5</surefire.version>
+    <enforcer.version>3.0.0</enforcer.version>
     <extra.enforcer.version>1.2</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
     <external.protobuf.version>2.5.0</external.protobuf.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
-    <commons-io.version>2.5</commons-io.version>
+    <commons-io.version>2.11.0</commons-io.version>
     <avro.version>1.7.7</avro.version>
     <commons-lang3.version>3.6</commons-lang3.version>
     <!--This property is for hadoops netty. HBase netty
          comes in via hbase-thirdparty hbase-shaded-netty-->
-    <netty.hadoop.version>3.6.2.Final</netty.hadoop.version>
+    <netty.hadoop.version>3.10.6.Final</netty.hadoop.version>
     <os.maven.version>1.6.1</os.maven.version>
     <glassfish.el.version>3.0.1-b08</glassfish.el.version>
     <compat.module>hbase-hadoop2-compat</compat.module>
@@ -691,6 +691,28 @@
                 </message>
                 </enforceBytecodeVersion>
               </rules>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- this profile should match the name of the release profile in the root asf pom -->
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <!-- This should insert itself in place of the normal deploy plugin and then
+               handle either closing or dropping the staging repository for us depending
+               on if the build succeeds.
+            -->
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.8</version>
+            <extensions>true</extensions>
+            <configuration>
+              <nexusUrl>https://repository.apache.org/</nexusUrl>
+              <serverId>apache.releases.https</serverId>
             </configuration>
           </plugin>
         </plugins>

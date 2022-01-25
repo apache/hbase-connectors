@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>spark</artifactId>
-    <version>1.0.1.sprout-emr</version>
+    <version>${revision}</version>
     <relativePath>../</relativePath>
   </parent>
 
@@ -286,14 +286,16 @@
         <skipTests>true</skipTests>
       </properties>
     </profile>
-    <!-- profile against Hadoop 2.x: This is the default. -->
+    <!--
+      profile for building against Hadoop 2.x. Activate using:
+       mvn -Dhadoop.profile=2.0
+    -->
     <profile>
       <id>hadoop-2.0</id>
       <activation>
         <property>
-          <!--Below formatting for dev-support/generate-hadoopX-poms.sh-->
-          <!--h2-->
-          <name>!hadoop.profile</name>
+          <name>hadoop.profile</name>
+          <value>2.0</value>
         </property>
       </activation>
       <dependencies>
@@ -357,20 +359,16 @@
         </dependency>
       </dependencies>
     </profile>
-    <!--
-      profile for building against Hadoop 3.0.x. Activate using:
-       mvn -Dhadoop.profile=3.0
-    -->
+    <!-- profile against Hadoop 3.x: This is the default. -->
     <profile>
       <id>hadoop-3.0</id>
       <activation>
         <property>
-          <name>hadoop.profile</name>
-          <value>3.0</value>
+          <name>!hadoop.profile</name>
         </property>
       </activation>
       <properties>
-        <hadoop.version>3.0</hadoop.version>
+        <hadoop.version>${hadoop-three.version}</hadoop.version>
       </properties>
       <dependencies>
         <dependency>

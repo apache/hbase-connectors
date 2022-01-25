@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.hbase.connectors</groupId>
     <artifactId>spark</artifactId>
-    <version>1.0.1.sprout-emr</version>
+    <version>${revision}</version>
     <relativePath>../</relativePath>
   </parent>
 

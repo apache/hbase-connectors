@@ -279,6 +279,74 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     assert(!builtExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
   }
 
+  test("Long Type") {
+    val greaterLogic = new GreaterThanLogicExpression("Col1", 0)
+    greaterLogic.setEncoder(encoder)
+    val greaterAndEqualLogic = new GreaterThanOrEqualLogicExpression("Col1", 0)
+    greaterAndEqualLogic.setEncoder(encoder)
+    val lessLogic = new LessThanLogicExpression("Col1", 0)
+    lessLogic.setEncoder(encoder)
+    val lessAndEqualLogic = new LessThanOrEqualLogicExpression("Col1", 0)
+    lessAndEqualLogic.setEncoder(encoder)
+    val equalLogic = new EqualLogicExpression("Col1", 0, false)
+    val notEqualLogic = new EqualLogicExpression("Col1", 0, true)
+
+    val columnToCurrentRowValueMap = new util.HashMap[String, ByteArrayComparable]()
+    columnToCurrentRowValueMap.put("Col1", new ByteArrayComparable(Bytes.toBytes(10L)))
+    val valueFromQueryValueArray = new Array[Array[Byte]](1)
+
+    //great than
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
+    assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
+    assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    //great than and equal
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 5L)
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
+      valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
+      valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
+    assert(!greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
+      valueFromQueryValueArray))
+
+    //less than
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
+    assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 5L)
+    assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    //less than and equal
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
+    assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
+    assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
+    assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    //equal too
+    valueFromQueryValueArray(0) = Bytes.toBytes(10L)
+    assert(equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = Bytes.toBytes(5L)
+    assert(!equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    //not equal too
+    valueFromQueryValueArray(0) = Bytes.toBytes(10L)
+    assert(!notEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+
+    valueFromQueryValueArray(0) = Bytes.toBytes(5L)
+    assert(notEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
+  }
+
   test("String Type") {
     val leftLogic = new LessThanLogicExpression("Col1", 0)
     leftLogic.setEncoder(encoder)

@@ -240,8 +240,8 @@ class NaiveEncoder extends BytesEncoder with Logging{
         val value = Bytes.toInt(filterBytes, offset2 + 1)
         compare(in.compareTo(value), ops)
       case LongEnc | TimestampEnc =>
-        val in = Bytes.toInt(input, offset1)
-        val value = Bytes.toInt(filterBytes, offset2 + 1)
+        val in = Bytes.toLong(input, offset1)
+        val value = Bytes.toLong(filterBytes, offset2 + 1)
         compare(in.compareTo(value), ops)
       case FloatEnc =>
         val in = Bytes.toFloat(input, offset1)
