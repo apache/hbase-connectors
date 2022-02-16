@@ -82,9 +82,11 @@
             <phase>test</phase>
             <goals>
               <goal>build-classpath</goal>
+              <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <outputFile>${project.parent.basedir}/target/cached_classpath.txt</outputFile>
+              <outputDirectory>${project.build.directory}/dependency</outputDirectory>
             </configuration>
           </execution>
         </executions>
