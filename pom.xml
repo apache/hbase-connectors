@@ -130,7 +130,6 @@
     <java.min.version>${compileSource}</java.min.version>
     <!-- override on command line to have generated LICENSE files include
          diagnostic info for verifying notice requirements -->
-    <build.year>2022</build.year>
     <license.debug.print.included>false</license.debug.print.included>
     <license.bundles.dependencies>false</license.bundles.dependencies>
     <license.bundles.logo>false</license.bundles.logo>
