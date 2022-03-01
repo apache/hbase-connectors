@@ -121,6 +121,8 @@
               </supplementalModelArtifacts>
               <supplementalModels>
                 <supplementalModel>supplemental-models.xml</supplementalModel>
+                <!-- extra supplement data model overridden by hbase-connector -->
+                <supplementalModel>src/main/resources/supplemental-models.xml</supplementalModel>
               </supplementalModels>
             </configuration>
           </execution>
@@ -152,6 +154,11 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${buildnumber.maven.version}</version>
       </plugin>
       <!-- /end building aggregation of NOTICE files -->
     </plugins>
