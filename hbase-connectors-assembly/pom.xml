@@ -51,6 +51,38 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>negate-license-bundles-property</id>
+            <goals>
+              <goal>bsh-property</goal>
+            </goals>
+            <configuration>
+              <source>skip.license.check = !${license.bundles.dependencies};</source>
+              <properties>
+                <property>skip.license.check</property>
+              </properties>
+            </configuration>
+          </execution>
+          <!-- sets where to find the generated LICENSE files -->
+          <execution>
+            <id>create-license-file-path-property</id>
+            <goals>
+              <goal>regex-property</goal>
+            </goals>
+            <configuration>
+              <name>license.aggregate.path</name>
+              <value>${project.build.directory}/maven-shared-archive-resources/META-INF/LICENSE</value>
+              <regex>\\</regex>
+              <replacement>/</replacement>
+              <failIfNoMatch>false</failIfNoMatch>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -82,9 +114,11 @@
             <phase>test</phase>
             <goals>
               <goal>build-classpath</goal>
+              <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <outputFile>${project.parent.basedir}/target/cached_classpath.txt</outputFile>
+              <outputDirectory>${project.build.directory}/dependency</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -119,6 +153,8 @@
               </supplementalModelArtifacts>
               <supplementalModels>
                 <supplementalModel>supplemental-models.xml</supplementalModel>
+                <!-- extra supplement data model overridden by hbase-connector -->
+                <supplementalModel>src/main/resources/supplemental-models.xml</supplementalModel>
               </supplementalModels>
             </configuration>
           </execution>
@@ -147,6 +183,60 @@
               </arguments>
               <outputFile>${project.build.directory}/NOTICE.aggregate</outputFile>
               <workingDirectory>${project.build.directory}</workingDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${buildnumber.maven.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${enforcer.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>extra-enforcer-rules</artifactId>
+            <version>${extra.enforcer.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>check-aggregate-license</id>
+            <!-- must check after LICENSE is built at 'generate-resources' -->
+            <phase>process-resources</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <evaluateBeanshell>
+                  <condition>
+                    File license = new File("${license.aggregate.path}");
+
+                    // Beanshell does not support try-with-resources,
+                    // so we must close this scanner manually
+                    Scanner scanner = new Scanner(license);
+
+                    while (scanner.hasNextLine()) {
+                    if (scanner.nextLine().startsWith("ERROR:")) {
+                    scanner.close();
+                    return false;
+                    }
+                    }
+                    scanner.close();
+                    return true;
+                  </condition>
+                  <message>
+                    License errors detected, for more detail find ERROR in
+                    ${license.aggregate.path}
+                  </message>
+                </evaluateBeanshell>
+              </rules>
+              <skip>${skip.license.check}</skip>
             </configuration>
           </execution>
         </executions>

@@ -128,6 +128,15 @@
     <buildDate>${maven.build.timestamp}</buildDate>
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
+    <!-- override on command line to have generated LICENSE files include
+         diagnostic info for verifying notice requirements -->
+    <license.debug.print.included>false</license.debug.print.included>
+    <license.bundles.dependencies>false</license.bundles.dependencies>
+    <license.bundles.logo>false</license.bundles.logo>
+    <license.bundles.bootstrap>false</license.bundles.bootstrap>
+    <license.bundles.jquery>false</license.bundles.jquery>
+    <buildnumber.maven.version>1.4</buildnumber.maven.version>
+
     <maven.min.version>3.5.0</maven.min.version>
     <hbase.version>2.4.9</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
@@ -391,7 +400,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.4</version>
+          <version>${buildnumber.maven.version}</version>
           <executions>
             <execution>
               <phase>validate</phase>
