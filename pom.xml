@@ -146,8 +146,8 @@
     <hadoop-two.version>2.8.5</hadoop-two.version>
     <hadoop-three.version>3.2.0</hadoop-three.version>
     <hadoop.version>${hadoop-three.version}</hadoop.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <log4j.version>1.2.17</log4j.version>
+    <slf4j.version>1.7.33</slf4j.version>
+    <reload4j.version>1.2.19</reload4j.version>
     <checkstyle.version>8.28</checkstyle.version>
     <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
     <surefire.version>3.0.0-M5</surefire.version>
@@ -193,7 +193,7 @@
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
+        <artifactId>slf4j-reload4j</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
@@ -202,9 +202,9 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>${log4j.version}</version>
+        <groupId>ch.qos.reload4j</groupId>
+        <artifactId>reload4j</artifactId>
+        <version>${reload4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish</groupId>
@@ -619,6 +619,25 @@
                     <bannedImport>org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting</bannedImport>
                   </bannedImports>
                 </restrictImports>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>banned-log4j</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>log4j:**</exclude>
+                    <exclude>org.slf4j:slf4j-log4j12</exclude>
+                  </excludes>
+                  <message>
+                    Use reload4j instead
+                  </message>
+                </bannedDependencies>
               </rules>
             </configuration>
           </execution>
