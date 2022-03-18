@@ -611,6 +611,26 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     assert(scanRange1.isUpperBoundEqualTo)
   }
 
+  test("Test Rowkey And with complex logic (HBASE-26863)") {
+    val results = sqlContext.sql("SELECT KEY_FIELD, B_FIELD, A_FIELD FROM hbaseTable1 " +
+      "WHERE " +
+      "( KEY_FIELD >= 'get1' AND KEY_FIELD <= 'get3' ) AND (A_FIELD = 'foo1' OR B_FIELD = '8')").take(10)
+    val executionRules = DefaultSourceStaticUtils.lastFiveExecutionRules.poll()
+    assert(results.length == 2)
+
+    assert(executionRules.dynamicLogicExpression.toExpressionString
+      == "( ( ( KEY_FIELD isNotNull AND KEY_FIELD >= 0 ) AND KEY_FIELD <= 1 ) AND ( A_FIELD == 2 OR B_FIELD == 3 ) )")
+
+    assert(executionRules.rowKeyFilter.points.size == 0)
+    assert(executionRules.rowKeyFilter.ranges.size == 1)
+
+    val scanRange1 = executionRules.rowKeyFilter.ranges.get(0).get
+    assert(Bytes.equals(scanRange1.lowerBound,Bytes.toBytes("get1")))
+    assert(Bytes.equals(scanRange1.upperBound, Bytes.toBytes("get3")))
+    assert(scanRange1.isLowerBoundEqualTo)
+    assert(scanRange1.isUpperBoundEqualTo)
+  }
+
   test("Test table that doesn't exist") {
     val catalog = s"""{
             |"table":{"namespace":"default", "name":"t1NotThere"},
