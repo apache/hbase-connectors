@@ -309,8 +309,8 @@
         <version>${hbase.version}</version>
       </dependency>
       <dependency>
-        <artifactId>hbase-it</artifactId>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-it</artifactId>
         <version>${hbase.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
