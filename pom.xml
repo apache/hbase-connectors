@@ -62,6 +62,7 @@
     <module>kafka</module>
     <module>spark</module>
     <module>hbase-connectors-assembly</module>
+    <module>hbase-thrift</module>
   </modules>
   <scm>
     <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>

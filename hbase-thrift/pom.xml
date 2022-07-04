@@ -1,0 +1,232 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <!--
+  /**
+   * Licensed to the Apache Software Foundation (ASF) under one
+   * or more contributor license agreements.  See the NOTICE file
+   * distributed with this work for additional information
+   * regarding copyright ownership.  The ASF licenses this file
+   * to you under the Apache License, Version 2.0 (the
+   * "License"); you may not use this file except in compliance
+   * with the License.  You may obtain a copy of the License at
+   *
+   *     http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   */
+  -->
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.hbase.connectors</groupId>
+    <artifactId>hbase-connectors</artifactId>
+    <version>${revision}</version>
+    <relativePath>../</relativePath>
+  </parent>
+  <artifactId>hbase-thrift</artifactId>
+  <packaging>jar</packaging>
+  <name>Apache HBase - Thrift</name>
+  <description>HBase Thrift Server</description>
+  <properties>
+    <thrift.version>0.14.1</thrift.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
+      <version>${thrift.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-client</artifactId>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <!-- Add the build webabpps to the classpth -->
+      <resource>
+        <directory>${project.build.directory}</directory>
+        <includes>
+          <include>hbase-webapps/**</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources/</directory>
+        <includes>
+          <include>**/*.thrift</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+    <!-- General ant tasks, bound to different build phases -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <!-- Generate web app sources -->
+          <execution>
+            <id>generate</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <property location="${project.build.directory}/hbase-webapps" name="build.webapps"/>
+                <property location="${basedir}/src/main/resources/hbase-webapps" name="src.webapps"/>
+                <property location="${project.build.directory}/generated-sources" name="generated.sources"/>
+                <mkdir dir="${build.webapps}"/>
+                <copy todir="${build.webapps}">
+                  <fileset dir="${src.webapps}">
+                    <exclude name="**/*.jsp"/>
+                    <exclude name="**/.*"/>
+                    <exclude name="**/*~"/>
+                  </fileset>
+                </copy>
+                <!--The compile.classpath is passed in by maven -->
+                <taskdef classname="org.apache.jasper.JspC" classpathref="maven.compile.classpath" name="jspcompiler"/>
+                <mkdir dir="${build.webapps}/thrift/WEB-INF"/>
+                <jspcompiler outputdir="${generated.sources}/java" package="org.apache.hadoop.hbase.generated.thrift" uriroot="${src.webapps}/thrift" webxml="${build.webapps}/thrift/WEB-INF/web.xml"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <!-- Add the generated sources -->
+          <execution>
+            <id>jspcSource-packageInfo-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Make a jar and put the sources in the jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <!--
+      Profile for regenerating the thrift java classes.
+      The generated files are to be committed to version control.
+      Activate using:
+       mvn compile -Pcompile-thrift
+    -->
+    <profile>
+      <id>compile-thrift</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-thrift-version</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireProperty>
+                      <property>thrift.version</property>
+                      <message>"The Thrift version must be specified."</message>
+                      <regex>0\.14\.1</regex>
+                      <regexMessage>-
+-
+[FATAL] ==========================================================================================
+[FATAL] HBase Thrift requires the thrift generator version 0.14.1.
+[FATAL] Setting it to something else needs to be reviewed for wire and behavior compatibility.
+[FATAL] ==========================================================================================
+-
+-</regexMessage>
+                    </requireProperty>
+                  </rules>
+                  <fail>true</fail>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>${exec.maven.version}</version>
+            <executions>
+              <execution>
+                <id>check-thrift-version</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <executable>sh</executable>
+                  <workingDirectory>${basedir}</workingDirectory>
+                  <arguments>
+                    <argument>-c</argument>
+                    <argument>${thrift.path} -version | \
+                      fgrep 'Thrift version ${thrift.version}' &amp;&amp; exit 0;
+                      echo "========== [FATAL] Need Thrift version ${thrift.version} ==========";
+                      exit 1</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <id>thrift</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <executable>${thrift.path}</executable>
+                  <workingDirectory>${basedir}</workingDirectory>
+                  <arguments>
+                    <argument>-strict</argument>
+                    <argument>--gen</argument>
+                    <argument>java</argument>
+                    <argument>-out</argument>
+                    <argument>${basedir}/src/main/java</argument>
+                    <argument>${basedir}/src/main/resources/org/apache/hadoop/hbase/thrift/Hbase.thrift</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <id>thrift2</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <executable>${thrift.path}</executable>
+                  <workingDirectory>${basedir}</workingDirectory>
+                  <arguments>
+                    <argument>-strict</argument>
+                    <argument>--gen</argument>
+                    <argument>java</argument>
+                    <argument>-out</argument>
+                    <argument>${basedir}/src/main/java</argument>
+                    <argument>${basedir}/src/main/resources/org/apache/hadoop/hbase/thrift2/hbase.thrift</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
