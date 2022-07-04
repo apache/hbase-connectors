@@ -446,7 +446,7 @@
             <configLocation>hbase/checkstyle.xml</configLocation>
             <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnViolation>true</failOnViolation>
+            <failOnViolation>false</failOnViolation>
           </configuration>
         </plugin>
       </plugins>
