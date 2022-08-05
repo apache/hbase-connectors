@@ -167,6 +167,10 @@
     <glassfish.el.version>3.0.1-b08</glassfish.el.version>
     <compat.module>hbase-hadoop2-compat</compat.module>
     <dependency.locations.enabled>false</dependency.locations.enabled>
+    <sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
+    <scoverage.version>1.4.11</scoverage.version>
+    <sbt-compiler.version>1.0.0</sbt-compiler.version>
+    <jacoco.version>0.8.8</jacoco.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -711,6 +715,78 @@
             </configuration>
           </plugin>
         </plugins>
+      </build>
+    </profile>
+    <!-- this profile runs unit test code coverage analysis -->
+    <profile>
+      <id>coverage</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>test-reporting</module>
+      </modules>
+      <properties>
+        <sonar.projectBaseDir>.</sonar.projectBaseDir>
+        <sonar.exclusions>test-reporting/**/*</sonar.exclusions>
+        <sonar.coverage.exclusions>**/example/**/*,**/DumpToStringListener*,**/KafkaProxy*</sonar.coverage.exclusions>
+        <sonar.java.binaries>**/target/classes</sonar.java.binaries>
+        <sonar.surefire.reportsPath>${project.build.directory}/surefire-reports</sonar.surefire.reportsPath>
+        <sonar.coverage.jacoco.xmlReportPaths>
+          ${sonar.projectBaseDir}/test-reporting/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.scala.coverage.reportPaths>
+          ${sonar.projectBaseDir}/spark/hbase-spark/target/scoverage.xml
+        </sonar.scala.coverage.reportPaths>
+        <argLine />
+        <main.basedir>${project.basedir}</main.basedir>
+        <codeCoverageReportRootDir>${main.basedir}/test-reporting/target/code-coverage</codeCoverageReportRootDir>
+        <jacocoDestFile>${codeCoverageReportRootDir}/jacoco.exec</jacocoDestFile>
+        <jacocoReportDir>${codeCoverageReportRootDir}/jacoco-reports</jacocoReportDir>
+        <scoverageReportDir>${codeCoverageReportRootDir}/scoverage-reports</scoverageReportDir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar-maven-plugin.version}</version>
+          </plugin>
+        </plugins>
+
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.scoverage</groupId>
+              <artifactId>scoverage-maven-plugin</artifactId>
+              <version>${scoverage.version}</version>
+              <configuration>
+                <excludedPackages>src/test/java</excludedPackages>
+                <excludedFiles>IntegrationTest*</excludedFiles>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>${jacoco.version}</version>
+              <configuration>
+                <excludes>**/example/**/*</excludes>
+              </configuration>
+              <executions>
+                <execution>
+                  <id>prepare-agent</id>
+                  <goals>
+                    <goal>prepare-agent</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
   </profiles>
