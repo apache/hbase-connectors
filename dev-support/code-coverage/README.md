@@ -32,7 +32,7 @@ generated results can be found under the `scoverage-reports` folder.
 
 Here is how you can generate the code coverage reports:
 
-```sh dev-support/code-coverage/run-coverage.sh```
+```./dev-support/code-coverage/run-coverage.sh```
 
 ## Publishing coverage results to SonarQube
 
@@ -46,4 +46,4 @@ The project name is an optional parameter.
 
 Here is an example command for running and publishing the coverage data:
 
-```sh dev-support/code-coverage/run-coverage.sh -l ProjectCredentials -u https://exampleserver.com -k Project_Key -n Project_Name```
+```./dev-support/code-coverage/run-coverage.sh -l ProjectCredentials -u https://exampleserver.com -k Project_Key -n Project_Name```
