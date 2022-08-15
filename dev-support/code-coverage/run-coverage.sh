@@ -43,8 +43,8 @@ MAIN_POM="${SCRIPT_DIR}/../../pom.xml"
 
   # If the required parameters are given, the code coverage results are uploaded to the SonarQube Server
   if [ -n "$SONAR_LOGIN" ] && [ -n "$SONAR_PROJECT_KEY" ] && [ -n "$SONAR_URL" ]; then
-    mvn -B -e -Pcoverage sonar:sonar -Dsonar.clover.reportPath=./target/clover/clover.xml \
-      -Dsonar.host.url="$SONAR_URL" -Dsonar.login="$SONAR_LOGIN" -Dsonar.projectKey="$SONAR_PROJECT_KEY" -Dsonar.projectName="$SONAR_PROJECT_NAME"
+    mvn -B -e -Pcoverage sonar:sonar -Dsonar.host.url="$SONAR_URL" -Dsonar.login="$SONAR_LOGIN" \
+       -Dsonar.projectKey="$SONAR_PROJECT_KEY" -Dsonar.projectName="$SONAR_PROJECT_NAME"
   fi
 }
 

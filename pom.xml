@@ -733,10 +733,10 @@
         <sonar.java.binaries>**/target/classes</sonar.java.binaries>
         <sonar.surefire.reportsPath>${project.build.directory}/surefire-reports</sonar.surefire.reportsPath>
         <sonar.coverage.jacoco.xmlReportPaths>
-          ${sonar.projectBaseDir}/test-reporting/target/site/jacoco-aggregate/jacoco.xml
+          ${sonar.projectBaseDir}/test-reporting/target/code-coverage/jacoco-reports/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
         <sonar.scala.coverage.reportPaths>
-          ${sonar.projectBaseDir}/spark/hbase-spark/target/scoverage.xml
+          ${sonar.projectBaseDir}/test-reporting/target/code-coverage/scoverage-reports/scoverage.xml
         </sonar.scala.coverage.reportPaths>
         <argLine />
         <main.basedir>${project.basedir}</main.basedir>
