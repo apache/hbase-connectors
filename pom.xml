@@ -155,7 +155,7 @@
     <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
-    <external.protobuf.version>2.5.0</external.protobuf.version>
+    <external.protobuf.version>3.16.3</external.protobuf.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.11.0</commons-io.version>
     <avro.version>1.7.7</avro.version>
