@@ -131,6 +131,23 @@ class EqualLogicExpression (val columnName:String,
 }
 
 @InterfaceAudience.Private
+class StartsWithLogicExpression (val columnName:String,
+                            val valueFromQueryIndex:Int) extends DynamicLogicExpression{
+  override def execute(columnToCurrentRowValueMap:
+                       util.HashMap[String, ByteArrayComparable],
+                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+    val currentRowValue = columnToCurrentRowValueMap.get(columnName)
+    val valueFromQuery = valueFromQueryValueArray(valueFromQueryIndex)
+
+    currentRowValue != null &&
+      Bytes.startsWith(currentRowValue.bytes, valueFromQuery)
+  }
+  override def appendToExpression(strBuilder: StringBuilder): Unit = {
+    strBuilder.append(columnName + " startsWith " + valueFromQueryIndex)
+  }
+}
+
+@InterfaceAudience.Private
 class IsNullLogicExpression (val columnName:String,
                              val isNot:Boolean) extends DynamicLogicExpression{
   override def execute(columnToCurrentRowValueMap:
@@ -242,6 +259,9 @@ object DynamicLogicExpressionBuilder {
         } else if (command.equals("!=")) {
           (new EqualLogicExpression(expressionArray(offSet),
             expressionArray(offSet + 2).toInt, true), offSet + 3)
+        } else if (command.equals("startsWith")) {
+          (new StartsWithLogicExpression(expressionArray(offSet),
+            expressionArray(offSet + 2).toInt), offSet + 3)
         } else if (command.equals("isNull")) {
           (new IsNullLogicExpression(expressionArray(offSet), false), offSet + 2)
         } else if (command.equals("isNotNull")) {

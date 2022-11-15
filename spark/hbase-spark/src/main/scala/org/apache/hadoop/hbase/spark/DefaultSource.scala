@@ -538,6 +538,18 @@ case class HBaseRelation (
           valueArray += byteValue
         }
         new GreaterThanOrEqualLogicExpression(attr, valueArray.length - 1)
+      case StringStartsWith(attr, value) =>
+        val field = catalog.getField(attr)
+        if (field != null) {
+          if (field.isRowKey) {
+            val p = Utils.toBytes(value, field)
+            val endRange = Utils.incrementByteArray(p)
+            parentRowKeyFilter.mergeIntersect(new RowKeyFilter(null, new ScanRange(endRange, p.length != 0, p, true)))
+          }
+          val byteValue = Utils.toBytes(value, field)
+          valueArray += byteValue
+        }
+        new StartsWithLogicExpression(attr, valueArray.length - 1)
       case Or(left, right) =>
         val leftExpression = transverseFilterTree(parentRowKeyFilter, valueArray, left)
         val rightSideRowKeyFilter = new RowKeyFilter
