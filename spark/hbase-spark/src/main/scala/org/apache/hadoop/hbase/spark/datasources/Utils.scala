@@ -106,28 +106,17 @@ object Utils {
       a = a - 1
     }
 
-    val shouldIncreaseLength = index < 0
-    var newLenght = array.length - 1
-
-    if (shouldIncreaseLength) {
-      newLenght = newLenght + 1
+    if (index < 0) {
+      return null
     }
-    val returnArray = new Array[Byte](newLenght + 1)
+    val returnArray = new Array[Byte](array.length)
 
-    if (shouldIncreaseLength) {
-      returnArray(0) = 1.toByte
-      for (a <- 1 to newLenght) {
-        println(0.toByte)
-        returnArray(a) = 0.toByte
-      }
-    } else {
-      for (a <- 0 until index) {
-        returnArray(a) = array(a)
-      }
-      returnArray(index) = (array(index) + 1).toByte
-      for (a <- index + 1 to newLenght) {
-        returnArray(a) = 0.toByte
-      }
+    for (a <- 0 until index) {
+      returnArray(a) = array(a)
+    }
+    returnArray(index) = (array(index) + 1).toByte
+    for (a <- index + 1 until array.length) {
+      returnArray(a) = 0.toByte
     }
 
     returnArray

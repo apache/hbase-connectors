@@ -61,7 +61,6 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     val res = Utils.incrementByteArray(t)
 
     assert(res.sameElements(expected))
-
   }
 
   test("overflow2") {
@@ -69,14 +68,11 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     t(0) = (-1).toByte
     t(1) = (-1).toByte
 
-    val expected = new Array[Byte](3)
-    expected(0) = 1.toByte
-    expected(1) = 0.toByte
-    expected(2) = 0.toByte
+    val expected = null
 
     val res = Utils.incrementByteArray(t)
 
-    assert(res.sameElements(expected))
+    assert(res == expected)
   }
 
   test("max-min-value") {

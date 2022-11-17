@@ -544,7 +544,7 @@ case class HBaseRelation (
           if (field.isRowKey) {
             val p = Utils.toBytes(value, field)
             val endRange = Utils.incrementByteArray(p)
-            parentRowKeyFilter.mergeIntersect(new RowKeyFilter(null, new ScanRange(endRange, p.length != 0, p, true)))
+            parentRowKeyFilter.mergeIntersect(new RowKeyFilter(null, new ScanRange(endRange, false, p, true)))
           }
           val byteValue = Utils.toBytes(value, field)
           valueArray += byteValue
