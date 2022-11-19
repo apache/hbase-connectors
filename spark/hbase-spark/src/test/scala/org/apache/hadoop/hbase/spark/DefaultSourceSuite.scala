@@ -298,6 +298,22 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
   }
 
   /**
+   * A example of query three fields and also only using rowkey points for the filter,
+   * some rowkey points are duplicate.
+   */
+  test("Test rowKey point only rowKey query, which contains duplicate rowkey") {
+    val results = sqlContext.sql("SELECT KEY_FIELD, B_FIELD, A_FIELD FROM hbaseTable1 " +
+      "WHERE " +
+      "(KEY_FIELD = 'get1' or KEY_FIELD = 'get2' or KEY_FIELD = 'get1')").take(10)
+    val executionRules = DefaultSourceStaticUtils.lastFiveExecutionRules.poll()
+    assert(results.length == 2)
+    assert(executionRules.dynamicLogicExpression.toExpressionString.
+      equals("( ( KEY_FIELD == 0 OR KEY_FIELD == 1 ) OR KEY_FIELD == 2 )"))
+    assert(executionRules.rowKeyFilter.points.size == 3)
+    assert(executionRules.rowKeyFilter.ranges.size == 0)
+  }
+
+  /**
    * A example of query three fields and also only using cell points for the filter
    */
   test("Test cell point only rowKey query") {
