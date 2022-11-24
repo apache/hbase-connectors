@@ -87,6 +87,10 @@ class HBaseTableScanRDD(relation: HBaseRelation,
         None
       }
     }.toArray
+    if (log.isDebugEnabled) {
+      logDebug(s"Partitions: ${ps.size}");
+      ps.foreach(x => logDebug(x.toString))
+    }
     regions.release()
     ShutdownHookManager.affixShutdownHook( new Thread() {
       override def run() {

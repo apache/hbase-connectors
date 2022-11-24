@@ -139,8 +139,9 @@ class StartsWithLogicExpression (val columnName:String,
     val currentRowValue = columnToCurrentRowValueMap.get(columnName)
     val valueFromQuery = valueFromQueryValueArray(valueFromQueryIndex)
 
-    currentRowValue != null &&
-      Bytes.startsWith(currentRowValue.bytes, valueFromQuery)
+    currentRowValue != null && valueFromQuery != null && currentRowValue.length >= valueFromQuery.length &&
+      Bytes.equals(valueFromQuery,0, valueFromQuery.length, currentRowValue.bytes,
+        currentRowValue.offset, valueFromQuery.length)
   }
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " startsWith " + valueFromQueryIndex)
