@@ -89,4 +89,36 @@ object Utils {
       }
     }
   }
+
+  // increment Byte array's value by 1
+  def incrementByteArray(array: Array[Byte]): Array[Byte] = {
+    if (array.length == 0) {
+      return null
+    }
+    var index = -1 // index of the byte we have to increment
+    var a = array.length - 1
+
+    while (a >= 0) {
+      if (array(a) != (-1).toByte) {
+        index = a
+        a = -1 // break from the loop because we found a non -1 element
+      }
+      a = a - 1
+    }
+
+    if (index < 0) {
+      return null
+    }
+    val returnArray = new Array[Byte](array.length)
+
+    for (a <- 0 until index) {
+      returnArray(a) = array(a)
+    }
+    returnArray(index) = (array(index) + 1).toByte
+    for (a <- index + 1 until array.length) {
+      returnArray(a) = 0.toByte
+    }
+
+    returnArray
+  }
 }

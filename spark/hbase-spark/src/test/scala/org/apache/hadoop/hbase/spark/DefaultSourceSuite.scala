@@ -954,6 +954,56 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     assert(s.count() == 6)
   }
 
+  test("filtered query01") {
+    val sql = sqlContext
+    import sql.implicits._
+    val df = withCatalog(writeCatalog)
+    val s = df.filter(col("col0").startsWith("row00"))
+      .select("col0", "col1")
+    s.show()
+    assert(s.count() == 10)
+  }
+
+  test("startsWith filtered query 1") {
+    val sql = sqlContext
+    import sql.implicits._
+    val df = withCatalog(writeCatalog)
+    val s = df.filter(col("col0").startsWith("row005"))
+      .select("col0", "col1")
+    s.show()
+    assert(s.count() == 1)
+  }
+
+  test("startsWith filtered query 2") {
+    val sql = sqlContext
+    import sql.implicits._
+    val df = withCatalog(writeCatalog)
+    val s = df.filter(col("col0").startsWith("row"))
+      .select("col0", "col1")
+    s.show()
+    assert(s.count() == 256)
+  }
+
+  test("startsWith filtered query 3") {
+    val sql = sqlContext
+    import sql.implicits._
+    val df = withCatalog(writeCatalog)
+    val s = df.filter(col("col0").startsWith("row19"))
+      .select("col0", "col1")
+    s.show()
+    assert(s.count() == 10)
+  }
+
+  test("startsWith filtered query 4") {
+    val sql = sqlContext
+    import sql.implicits._
+    val df = withCatalog(writeCatalog)
+    val s = df.filter(col("col0").startsWith(""))
+      .select("col0", "col1")
+    s.show()
+    assert(s.count() == 256)
+  }
+
   test("Timestamp semantics") {
     val sql = sqlContext
     import sql.implicits._
