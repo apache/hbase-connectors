@@ -289,9 +289,19 @@ object HBaseTableCatalog {
   @deprecated("Please use new json format to define HBaseCatalog")
   // TODO: There is no need to deprecate since this is the first release.
   def convert(parameters: Map[String, String]): Map[String, String] = {
-    val tableName = parameters.get(TABLE_KEY).getOrElse(null)
+    val nsTableName = parameters.get(TABLE_KEY).getOrElse(null)
     // if the hbase.table is not defined, we assume it is json format already.
-    if (tableName == null) return parameters
+    if (nsTableName == null) return parameters
+    val tableParts = nsTableName.trim.split(':')
+    val tableNamespace = if (tableParts.length == 1) {
+        "default"
+    } else if (tableParts.length == 2) {
+        tableParts(0)
+    } else {
+        throw new IllegalArgumentException("Invalid table name '" + nsTableName +
+            "' should be '<namespace>:<name>' or '<name>' ")
+    }
+    val tableName = tableParts(tableParts.length - 1)
     val schemaMappingString = parameters.getOrElse(SCHEMA_COLUMNS_MAPPING_KEY, "")
     import scala.collection.JavaConverters._
     val schemaMap = generateSchemaMappingMap(schemaMappingString).asScala.map(_._2.asInstanceOf[SchemaQualifierDefinition])
@@ -304,7 +314,7 @@ object HBaseTableCatalog {
     }
     val jsonCatalog =
       s"""{
-         |"table":{"namespace":"default", "name":"${tableName}"},
+         |"table":{"namespace":"${tableNamespace}", "name":"${tableName}"},
          |"rowkey":"${rowkey.mkString(":")}",
          |"columns":{
          |${cols.mkString(",")}
