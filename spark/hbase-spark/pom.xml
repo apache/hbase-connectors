@@ -39,7 +39,7 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <artifactId>slf4j-reload4j</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase.thirdparty</groupId>
@@ -87,6 +87,14 @@
         <exclusion>
           <groupId>xerces</groupId>
           <artifactId>xercesImpl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -291,6 +299,16 @@
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-client</artifactId>
           <version>${hadoop-two.version}</version>
+          <exclusions>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
         <dependency>
           <groupId>org.apache.hadoop</groupId>
@@ -313,6 +331,14 @@
             <exclusion>
               <groupId>com.google.code.findbugs</groupId>
               <artifactId>jsr305</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -363,6 +389,16 @@
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-client</artifactId>
           <version>${hadoop-three.version}</version>
+          <exclusions>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
         <dependency>
           <groupId>org.apache.hadoop</groupId>
@@ -372,6 +408,14 @@
             <exclusion>
               <groupId>com.google.code.findbugs</groupId>
               <artifactId>jsr305</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -385,6 +429,14 @@
             <exclusion>
               <groupId>com.google.code.findbugs</groupId>
               <artifactId>jsr305</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -399,6 +451,10 @@
               <groupId>com.google.code.findbugs</groupId>
               <artifactId>jsr305</artifactId>
             </exclusion>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
           </exclusions>
         </dependency>
         <dependency>
@@ -406,6 +462,12 @@
           <artifactId>hadoop-minikdc</artifactId>
           <version>${hadoop-three.version}</version>
           <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
       </dependencies>
     </profile>
