@@ -656,7 +656,7 @@ class HBaseContext(@transient val sc: SparkContext,
         hbaseForeachPartition(this, (it, conn) => {
 
           val conf = broadcastedConf.value.value
-          val fs = FileSystem.get(conf)
+          val fs = new Path(stagingDir).getFileSystem(conf)
           val writerMap = new mutable.HashMap[ByteArrayWrapper, WriterLength]
           var previousRow:Array[Byte] = HConstants.EMPTY_BYTE_ARRAY
           var rollOverRequested = false
@@ -791,7 +791,7 @@ class HBaseContext(@transient val sc: SparkContext,
         hbaseForeachPartition(this, (it, conn) => {
 
           val conf = broadcastedConf.value.value
-          val fs = FileSystem.get(conf)
+          val fs = new Path(stagingDir).getFileSystem(conf)
           val writerMap = new mutable.HashMap[ByteArrayWrapper, WriterLength]
           var previousRow:Array[Byte] = HConstants.EMPTY_BYTE_ARRAY
           var rollOverRequested = false
@@ -973,7 +973,7 @@ class HBaseContext(@transient val sc: SparkContext,
     val wl = writerMap.getOrElseUpdate(new ByteArrayWrapper(family), {
       val familyDir = new Path(stagingDir, Bytes.toString(family))
 
-      fs.mkdirs(familyDir)
+      familyDir.getFileSystem(conf).mkdirs(familyDir);
 
       val loc:HRegionLocation = {
         try {
