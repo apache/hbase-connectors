@@ -47,6 +47,7 @@ import org.apache.hadoop.hbase.testclassification.MiscTests;
 import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -69,21 +70,29 @@ public class TestJavaHBaseContext implements Serializable {
   public static final HBaseClassTestRule TIMEOUT =
       HBaseClassTestRule.forClass(TestJavaHBaseContext.class);
 
-  private static transient JavaSparkContext JSC;
-  private static HBaseTestingUtility TEST_UTIL;
-  private static JavaHBaseContext HBASE_CONTEXT;
-  private static final Logger LOG = LoggerFactory.getLogger(TestJavaHBaseContext.class);
+  protected static transient JavaSparkContext JSC;
+  protected static HBaseTestingUtility TEST_UTIL;
+  protected static JavaHBaseContext HBASE_CONTEXT;
+  protected static final Logger LOG = LoggerFactory.getLogger(TestJavaHBaseContext.class);
 
-  byte[] tableName = Bytes.toBytes("t1");
-  byte[] columnFamily = Bytes.toBytes("c");
+  protected byte[] tableName = Bytes.toBytes("t1");
+  protected byte[] columnFamily = Bytes.toBytes("c");
   byte[] columnFamily1 = Bytes.toBytes("d");
   String columnFamilyStr = Bytes.toString(columnFamily);
   String columnFamilyStr1 = Bytes.toString(columnFamily1);
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
+    // NOTE: We need to do this due to behaviour change in spark 3.2, where the below conf is true
+    // by default. We will get empty table as result (for small sized tables) for HBase version not
+    // having HBASE-26340
+    SparkConf sparkConf = new SparkConf().set("spark.hadoopRDD.ignoreEmptySplits", "false");
+    JSC = new JavaSparkContext("local", "JavaHBaseContextSuite", sparkConf);
 
-    JSC = new JavaSparkContext("local", "JavaHBaseContextSuite");
+    init();
+  }
+
+  protected static void init() throws Exception {
     TEST_UTIL = new HBaseTestingUtility();
     Configuration conf = TEST_UTIL.getConfiguration();
 
@@ -503,11 +512,12 @@ public class TestJavaHBaseContext implements Serializable {
     }
   }
 
-  private void populateTableWithMockData(Configuration conf, TableName tableName)
+  protected void populateTableWithMockData(Configuration conf, TableName tableName)
           throws IOException {
     try (
       Connection conn = ConnectionFactory.createConnection(conf);
-      Table table = conn.getTable(tableName)) {
+      Table table = conn.getTable(tableName);
+      Admin admin = conn.getAdmin()) {
 
       List<Put> puts = new ArrayList<>(5);
 
@@ -517,6 +527,7 @@ public class TestJavaHBaseContext implements Serializable {
         puts.add(put);
       }
       table.put(puts);
+      admin.flush(tableName);
     }
   }
 }
