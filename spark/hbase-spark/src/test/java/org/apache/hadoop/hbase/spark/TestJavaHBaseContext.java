@@ -71,9 +71,9 @@ public class TestJavaHBaseContext implements Serializable {
       HBaseClassTestRule.forClass(TestJavaHBaseContext.class);
 
   protected static transient JavaSparkContext JSC;
-  protected static HBaseTestingUtility TEST_UTIL;
-  protected static JavaHBaseContext HBASE_CONTEXT;
-  protected static final Logger LOG = LoggerFactory.getLogger(TestJavaHBaseContext.class);
+  private static HBaseTestingUtility TEST_UTIL;
+  private static JavaHBaseContext HBASE_CONTEXT;
+  private static final Logger LOG = LoggerFactory.getLogger(TestJavaHBaseContext.class);
 
   protected byte[] tableName = Bytes.toBytes("t1");
   protected byte[] columnFamily = Bytes.toBytes("c");
