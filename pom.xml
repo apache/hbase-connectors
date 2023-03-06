@@ -141,7 +141,7 @@
     <hbase.version>2.4.16</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
-    <junit.version>4.12</junit.version>
+    <junit.version>4.13.2</junit.version>
     <mockito-all.version>1.8.5</mockito-all.version>
     <hbase-thirdparty.version>4.1.4</hbase-thirdparty.version>
     <hadoop-two.version>2.10.0</hadoop-two.version>
