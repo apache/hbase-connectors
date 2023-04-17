@@ -35,9 +35,6 @@
     <module>hbase-kafka-model</module>
     <module>hbase-kafka-proxy</module>
   </modules>
-  <properties>
-    <avro.version>1.7.7</avro.version>
-  </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
