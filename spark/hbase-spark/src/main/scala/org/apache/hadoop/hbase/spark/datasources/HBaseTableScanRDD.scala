@@ -110,9 +110,9 @@ class HBaseTableScanRDD(relation: HBaseRelation,
       hbaseContext: HBaseContext): Iterator[Result] = {
     g.grouped(relation.bulkGetSize).flatMap{ x =>
       val gets = new ArrayList[Get](x.size)
-      val pointsSet = new mutable.HashSet[String]()
+      val rowkeySet = new mutable.HashSet[String]()
       x.foreach{ y =>
-        if (!pointsSet.contains(y.mkString("Array(", ", ", ")"))) {
+        if (!rowkeySet.contains(y.mkString("Array(", ", ", ")"))) {
           val g = new Get(y)
           handleTimeSemantics(g)
           columns.foreach { d =>
@@ -122,7 +122,7 @@ class HBaseTableScanRDD(relation: HBaseRelation,
           }
           filter.foreach(g.setFilter(_))
           gets.add(g)
-          pointsSet.add(y.mkString("Array(", ", ", ")"))
+          rowkeySet.add(y.mkString("Array(", ", ", ")"))
         }
       }
       hbaseContext.applyCreds()
