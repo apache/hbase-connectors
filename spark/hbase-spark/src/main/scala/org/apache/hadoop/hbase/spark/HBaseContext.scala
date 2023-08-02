@@ -478,8 +478,11 @@ class HBaseContext(@transient val sc: SparkContext,
     applyCreds
     // specify that this is a proxy user
     val smartConn = HBaseConnectionCache.getConnection(config)
-    f(it, smartConn.connection)
-    smartConn.close()
+    try {
+      f(it, smartConn.connection)
+    } finally {
+      if (smartConn != null) smartConn.close()
+    }
   }
 
   private def getConf(configBroadcast: Broadcast[SerializableWritable[Configuration]]):
@@ -518,9 +521,11 @@ class HBaseContext(@transient val sc: SparkContext,
     applyCreds
 
     val smartConn = HBaseConnectionCache.getConnection(config)
-    val res = mp(it, smartConn.connection)
-    smartConn.close()
-    res
+    try {
+      mp(it, smartConn.connection)
+    } finally {
+      if (smartConn != null) smartConn.close()
+    }
   }
 
   /**
