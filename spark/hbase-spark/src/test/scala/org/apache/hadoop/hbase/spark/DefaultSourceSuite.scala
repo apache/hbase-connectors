@@ -308,8 +308,8 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     val executionRules = DefaultSourceStaticUtils.lastFiveExecutionRules.poll()
     assert(results.length == 2)
     assert(executionRules.dynamicLogicExpression.toExpressionString.
-      equals("( ( KEY_FIELD == 0 OR KEY_FIELD == 1 ) OR KEY_FIELD == 2 )"))
-    assert(executionRules.rowKeyFilter.points.size == 3)
+      equals("( KEY_FIELD == 0 OR KEY_FIELD == 1 )"))
+    assert(executionRules.rowKeyFilter.points.size == 2)
     assert(executionRules.rowKeyFilter.ranges.size == 0)
   }
 
