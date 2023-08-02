@@ -130,7 +130,8 @@ case class HBaseRelation (
   val hbaseContext:HBaseContext = if (useHBaseContext) {
     LatestHBaseContextCache.latest
   } else {
-    val config = HBaseConfiguration.create()
+    val hadoopConfig = sqlContext.sparkContext.hadoopConfiguration
+    val config = HBaseConfiguration.create(hadoopConfig)
     configResources.map(resource => resource.split(",").foreach(r => config.addResource(r)))
     new HBaseContext(sqlContext.sparkContext, config)
   }
