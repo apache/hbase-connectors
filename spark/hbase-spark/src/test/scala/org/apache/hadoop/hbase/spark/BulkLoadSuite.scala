@@ -18,15 +18,19 @@
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.hbase.client.{Get, ConnectionFactory}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
 import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile}
 import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles
-import org.apache.hadoop.hbase.{HConstants, CellUtil, HBaseTestingUtility, TableName}
+import org.apache.hadoop.hbase.{CellUtil, HBaseTestingUtility, HConstants, TableName}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.spark.SparkContext
 import org.junit.rules.TemporaryFolder
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
+
+import java.io.File
+import java.net.URI
+import java.nio.file.Files
 
 class BulkLoadSuite extends FunSuite with
 BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
@@ -63,6 +67,61 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     logInfo(" - minicluster shut down")
     TEST_UTIL.cleanupTestDir()
     sc.stop()
+  }
+
+  test ("Staging dir: Test usage of staging dir on a separate filesystem") {
+    val config = TEST_UTIL.getConfiguration
+
+    logInfo(" - creating table " + tableName)
+    TEST_UTIL.createTable(TableName.valueOf(tableName),
+      Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
+
+    // Test creates rdd with 2 column families and
+    // write those to hfiles on local filesystem
+    // using bulkLoad functionality. We don't check the load functionality
+    // due the limitations of the HBase Minicluster
+
+    val rdd = sc.parallelize(Array(
+      (Bytes.toBytes("1"),
+        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+      (Bytes.toBytes("2"),
+        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+
+    val hbaseContext = new HBaseContext(sc, config)
+    val uri = Files.createTempDirectory("tmpDirPrefix").toUri
+    val stagingUri = new URI(uri + "staging_dir")
+    val stagingFolder = new File(stagingUri)
+    val fs = new Path(stagingUri.toString).getFileSystem(config)
+    try {
+    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](rdd,
+      TableName.valueOf(tableName),
+      t => {
+        val rowKey = t._1
+        val family: Array[Byte] = t._2._1
+        val qualifier = t._2._2
+        val value: Array[Byte] = t._2._3
+
+        val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
+
+        Seq((keyFamilyQualifier, value)).iterator
+      },
+      stagingUri.toString)
+
+    assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
+
+    } finally {
+      val admin = ConnectionFactory.createConnection(config).getAdmin
+      try {
+        admin.disableTable(TableName.valueOf(tableName))
+        admin.deleteTable(TableName.valueOf(tableName))
+      } finally {
+        admin.close()
+      }
+      fs.delete(new Path(stagingFolder.getPath), true)
+
+      testFolder.delete()
+
+    }
   }
 
   test("Wide Row Bulk Load: Test multi family and multi column tests " +

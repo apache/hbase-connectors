@@ -45,10 +45,10 @@
   <properties>
     <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     <jackson.version>2.12.5</jackson.version>
-    <spark.version>3.1.2</spark.version>
+    <spark.version>3.3.2</spark.version>
     <!-- The following version is in sync with Spark's choice
          Please take caution when this version is modified -->
-    <scala.version>2.12.10</scala.version>
+    <scala.version>2.12.15</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
   </properties>
 

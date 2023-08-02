@@ -130,7 +130,8 @@ case class HBaseRelation (
   val hbaseContext:HBaseContext = if (useHBaseContext) {
     LatestHBaseContextCache.latest
   } else {
-    val config = HBaseConfiguration.create()
+    val hadoopConfig = sqlContext.sparkContext.hadoopConfiguration
+    val config = HBaseConfiguration.create(hadoopConfig)
     configResources.map(resource => resource.split(",").foreach(r => config.addResource(r)))
     new HBaseContext(sqlContext.sparkContext, config)
   }
@@ -538,6 +539,18 @@ case class HBaseRelation (
           valueArray += byteValue
         }
         new GreaterThanOrEqualLogicExpression(attr, valueArray.length - 1)
+      case StringStartsWith(attr, value) =>
+        val field = catalog.getField(attr)
+        if (field != null) {
+          if (field.isRowKey) {
+            val p = Utils.toBytes(value, field)
+            val endRange = Utils.incrementByteArray(p)
+            parentRowKeyFilter.mergeIntersect(new RowKeyFilter(null, new ScanRange(endRange, false, p, true)))
+          }
+          val byteValue = Utils.toBytes(value, field)
+          valueArray += byteValue
+        }
+        new StartsWithLogicExpression(attr, valueArray.length - 1)
       case Or(left, right) =>
         val leftExpression = transverseFilterTree(parentRowKeyFilter, valueArray, left)
         val rightSideRowKeyFilter = new RowKeyFilter
