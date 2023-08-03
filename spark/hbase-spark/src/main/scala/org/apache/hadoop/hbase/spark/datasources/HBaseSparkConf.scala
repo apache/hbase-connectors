@@ -59,4 +59,6 @@ object HBaseSparkConf{
   val MAX_VERSIONS = "hbase.spark.query.maxVersions"
   /** Delayed time to close hbase-spark connection when no reference to this connection, in milliseconds. */
   val DEFAULT_CONNECTION_CLOSE_DELAY = 10 * 60 * 1000
+  /** The maximum time to keep the cached connection alive, in milliseconds. */
+  val DEFAULT_CONNECTION_MAX_LIFE_TIME = 24 * 3600 * 1000
 }
