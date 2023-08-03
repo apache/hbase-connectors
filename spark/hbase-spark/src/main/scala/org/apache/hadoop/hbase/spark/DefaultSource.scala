@@ -593,11 +593,13 @@ class ScanRange(var upperBound:Array[Byte], var isUpperBoundEqualTo:Boolean,
 
     isLowerBoundEqualTo = if (lowerBoundCompare == 0)
       isLowerBoundEqualTo && other.isLowerBoundEqualTo
-    else if (lowerBoundCompare < 0) other.isLowerBoundEqualTo else isLowerBoundEqualTo
+    else if (lowerBoundCompare < 0) other.isLowerBoundEqualTo
+    else isLowerBoundEqualTo
 
     isUpperBoundEqualTo = if (upperBoundCompare == 0)
       isUpperBoundEqualTo && other.isUpperBoundEqualTo
-    else if (upperBoundCompare < 0) isUpperBoundEqualTo else other.isUpperBoundEqualTo
+    else if (upperBoundCompare < 0) isUpperBoundEqualTo
+    else other.isUpperBoundEqualTo
   }
 
   /**
