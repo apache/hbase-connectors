@@ -606,11 +606,13 @@ class ScanRange(var upperBound:Array[Byte], var isUpperBoundEqualTo:Boolean,
 
     isLowerBoundEqualTo = if (lowerBoundCompare == 0)
       isLowerBoundEqualTo && other.isLowerBoundEqualTo
+    else if (lowerBoundCompare < 0) other.isLowerBoundEqualTo
     else isLowerBoundEqualTo
 
     isUpperBoundEqualTo = if (upperBoundCompare == 0)
       isUpperBoundEqualTo && other.isUpperBoundEqualTo
-    else isUpperBoundEqualTo
+    else if (upperBoundCompare < 0) isUpperBoundEqualTo
+    else other.isUpperBoundEqualTo
   }
 
   /**
@@ -656,7 +658,6 @@ class ScanRange(var upperBound:Array[Byte], var isUpperBoundEqualTo:Boolean,
    * @return      True is overlap false is not overlap
    */
   def getOverLapScanRange(other:ScanRange): ScanRange = {
-
     var leftRange:ScanRange = null
     var rightRange:ScanRange = null
 
@@ -672,14 +673,9 @@ class ScanRange(var upperBound:Array[Byte], var isUpperBoundEqualTo:Boolean,
     }
 
     if (hasOverlap(leftRange, rightRange)) {
-      // Find the upper bound and lower bound
-      if (compareRange(leftRange.upperBound, rightRange.upperBound) >= 0) {
-        new ScanRange(rightRange.upperBound, rightRange.isUpperBoundEqualTo,
-          rightRange.lowerBound, rightRange.isLowerBoundEqualTo)
-      } else {
-        new ScanRange(leftRange.upperBound, leftRange.isUpperBoundEqualTo,
-          rightRange.lowerBound, rightRange.isLowerBoundEqualTo)
-      }
+      val result = new ScanRange(upperBound, isUpperBoundEqualTo, lowerBound, isLowerBoundEqualTo)
+      result.mergeIntersect(other)
+      result
     } else {
       null
     }
