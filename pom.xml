@@ -149,10 +149,11 @@
     <hadoop.version>${hadoop-three.version}</hadoop.version>
     <slf4j.version>1.7.25</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
+    <reload4j.version>1.2.25</reload4j.version>
     <checkstyle.version>8.45.1</checkstyle.version>
     <maven.checkstyle.version>3.2.1</maven.checkstyle.version>
     <hbase.checkstyle.version>2.5.0</hbase.checkstyle.version>
-    <surefire.version>3.0.0-M5</surefire.version>
+    <surefire.version>3.0.0</surefire.version>
     <enforcer.version>3.0.0</enforcer.version>
     <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
@@ -161,7 +162,7 @@
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.11.0</commons-io.version>
     <avro.version>1.7.7</avro.version>
-    <commons-lang3.version>3.6</commons-lang3.version>
+    <commons-lang3.version>3.12.0</commons-lang3.version>
     <!--This property is for hadoops netty. HBase netty
          comes in via hbase-thirdparty hbase-shaded-netty-->
     <netty.hadoop.version>3.10.6.Final</netty.hadoop.version>
@@ -217,6 +218,11 @@
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.reload4j</groupId>
+        <artifactId>reload4j</artifactId>
+        <version>${reload4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish</groupId>
