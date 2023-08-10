@@ -138,7 +138,7 @@
     <buildnumber.maven.version>1.4</buildnumber.maven.version>
 
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.4.16</hbase.version>
+    <hbase.version>2.5.4</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
     <junit.version>4.13.2</junit.version>
@@ -147,8 +147,8 @@
     <hadoop-two.version>2.10.0</hadoop-two.version>
     <hadoop-three.version>3.2.4</hadoop-three.version>
     <hadoop.version>${hadoop-three.version}</hadoop.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <log4j.version>1.2.17</log4j.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <log4j2.version>2.17.2</log4j2.version>
     <reload4j.version>1.2.25</reload4j.version>
     <checkstyle.version>8.45.1</checkstyle.version>
     <maven.checkstyle.version>3.2.1</maven.checkstyle.version>
@@ -206,18 +206,28 @@
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>${log4j.version}</version>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j2.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.reload4j</groupId>
