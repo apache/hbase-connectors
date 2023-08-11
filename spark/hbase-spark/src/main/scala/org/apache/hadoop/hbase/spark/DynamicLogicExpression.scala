@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import java.util
@@ -31,12 +31,12 @@ import org.apache.hadoop.hbase.util.Bytes
  * Logic can be nested with And or Or operators.
  *
  * A logic tree can be written out as a string and reconstructed from that string
- *
  */
 @InterfaceAudience.Private
 trait DynamicLogicExpression {
-  def execute(columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
-              valueFromQueryValueArray:Array[Array[Byte]]): Boolean
+  def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean
   def toExpressionString: String = {
     val strBuilder = new StringBuilder
     appendToExpression(strBuilder)
@@ -44,7 +44,7 @@ trait DynamicLogicExpression {
   }
   def filterOps: JavaBytesEncoder = JavaBytesEncoder.Unknown
 
-  def appendToExpression(strBuilder:StringBuilder)
+  def appendToExpression(strBuilder: StringBuilder)
 
   var encoder: BytesEncoder = _
 
@@ -59,26 +59,33 @@ trait CompareTrait {
   self: DynamicLogicExpression =>
   def columnName: String
   def valueFromQueryIndex: Int
-  def execute(columnToCurrentRowValueMap:
-              util.HashMap[String, ByteArrayComparable],
-              valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+  def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     val currentRowValue = columnToCurrentRowValueMap.get(columnName)
     val valueFromQuery = valueFromQueryValueArray(valueFromQueryIndex)
     currentRowValue != null &&
-      encoder.filter(currentRowValue.bytes, currentRowValue.offset, currentRowValue.length,
-        valueFromQuery, 0, valueFromQuery.length, filterOps)
+    encoder.filter(
+      currentRowValue.bytes,
+      currentRowValue.offset,
+      currentRowValue.length,
+      valueFromQuery,
+      0,
+      valueFromQuery.length,
+      filterOps)
   }
 }
 
 @InterfaceAudience.Private
-class AndLogicExpression (val leftExpression:DynamicLogicExpression,
-                           val rightExpression:DynamicLogicExpression)
-  extends DynamicLogicExpression{
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+class AndLogicExpression(
+    val leftExpression: DynamicLogicExpression,
+    val rightExpression: DynamicLogicExpression)
+    extends DynamicLogicExpression {
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     leftExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray) &&
-      rightExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray)
+    rightExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray)
   }
 
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
@@ -91,14 +98,15 @@ class AndLogicExpression (val leftExpression:DynamicLogicExpression,
 }
 
 @InterfaceAudience.Private
-class OrLogicExpression (val leftExpression:DynamicLogicExpression,
-                          val rightExpression:DynamicLogicExpression)
-  extends DynamicLogicExpression{
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+class OrLogicExpression(
+    val leftExpression: DynamicLogicExpression,
+    val rightExpression: DynamicLogicExpression)
+    extends DynamicLogicExpression {
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     leftExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray) ||
-      rightExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray)
+    rightExpression.execute(columnToCurrentRowValueMap, valueFromQueryValueArray)
   }
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append("( ")
@@ -110,19 +118,22 @@ class OrLogicExpression (val leftExpression:DynamicLogicExpression,
 }
 
 @InterfaceAudience.Private
-class EqualLogicExpression (val columnName:String,
-                            val valueFromQueryIndex:Int,
-                            val isNot:Boolean) extends DynamicLogicExpression{
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+class EqualLogicExpression(val columnName: String, val valueFromQueryIndex: Int, val isNot: Boolean)
+    extends DynamicLogicExpression {
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     val currentRowValue = columnToCurrentRowValueMap.get(columnName)
     val valueFromQuery = valueFromQueryValueArray(valueFromQueryIndex)
 
     currentRowValue != null &&
-      Bytes.equals(valueFromQuery,
-        0, valueFromQuery.length, currentRowValue.bytes,
-        currentRowValue.offset, currentRowValue.length) != isNot
+    Bytes.equals(
+      valueFromQuery,
+      0,
+      valueFromQuery.length,
+      currentRowValue.bytes,
+      currentRowValue.offset,
+      currentRowValue.length) != isNot
   }
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     val command = if (isNot) "!=" else "=="
@@ -131,17 +142,22 @@ class EqualLogicExpression (val columnName:String,
 }
 
 @InterfaceAudience.Private
-class StartsWithLogicExpression (val columnName:String,
-                            val valueFromQueryIndex:Int) extends DynamicLogicExpression{
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+class StartsWithLogicExpression(val columnName: String, val valueFromQueryIndex: Int)
+    extends DynamicLogicExpression {
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     val currentRowValue = columnToCurrentRowValueMap.get(columnName)
     val valueFromQuery = valueFromQueryValueArray(valueFromQueryIndex)
 
     currentRowValue != null && valueFromQuery != null && currentRowValue.length >= valueFromQuery.length &&
-      Bytes.equals(valueFromQuery,0, valueFromQuery.length, currentRowValue.bytes,
-        currentRowValue.offset, valueFromQuery.length)
+    Bytes.equals(
+      valueFromQuery,
+      0,
+      valueFromQuery.length,
+      currentRowValue.bytes,
+      currentRowValue.offset,
+      valueFromQuery.length)
   }
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " startsWith " + valueFromQueryIndex)
@@ -149,11 +165,11 @@ class StartsWithLogicExpression (val columnName:String,
 }
 
 @InterfaceAudience.Private
-class IsNullLogicExpression (val columnName:String,
-                             val isNot:Boolean) extends DynamicLogicExpression{
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray:Array[Array[Byte]]): Boolean = {
+class IsNullLogicExpression(val columnName: String, val isNot: Boolean)
+    extends DynamicLogicExpression {
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = {
     val currentRowValue = columnToCurrentRowValueMap.get(columnName)
 
     (currentRowValue == null) != isNot
@@ -165,9 +181,11 @@ class IsNullLogicExpression (val columnName:String,
 }
 
 @InterfaceAudience.Private
-class GreaterThanLogicExpression (override val columnName:String,
-                                  override val valueFromQueryIndex:Int)
-  extends DynamicLogicExpression with CompareTrait{
+class GreaterThanLogicExpression(
+    override val columnName: String,
+    override val valueFromQueryIndex: Int)
+    extends DynamicLogicExpression
+    with CompareTrait {
   override val filterOps = JavaBytesEncoder.Greater
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " > " + valueFromQueryIndex)
@@ -175,9 +193,11 @@ class GreaterThanLogicExpression (override val columnName:String,
 }
 
 @InterfaceAudience.Private
-class GreaterThanOrEqualLogicExpression (override val columnName:String,
-                                         override val valueFromQueryIndex:Int)
-  extends DynamicLogicExpression with CompareTrait{
+class GreaterThanOrEqualLogicExpression(
+    override val columnName: String,
+    override val valueFromQueryIndex: Int)
+    extends DynamicLogicExpression
+    with CompareTrait {
   override val filterOps = JavaBytesEncoder.GreaterEqual
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " >= " + valueFromQueryIndex)
@@ -185,9 +205,11 @@ class GreaterThanOrEqualLogicExpression (override val columnName:String,
 }
 
 @InterfaceAudience.Private
-class LessThanLogicExpression (override val columnName:String,
-                               override val valueFromQueryIndex:Int)
-  extends DynamicLogicExpression with CompareTrait {
+class LessThanLogicExpression(
+    override val columnName: String,
+    override val valueFromQueryIndex: Int)
+    extends DynamicLogicExpression
+    with CompareTrait {
   override val filterOps = JavaBytesEncoder.Less
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " < " + valueFromQueryIndex)
@@ -195,9 +217,9 @@ class LessThanLogicExpression (override val columnName:String,
 }
 
 @InterfaceAudience.Private
-class LessThanOrEqualLogicExpression (val columnName:String,
-                                      val valueFromQueryIndex:Int)
-  extends DynamicLogicExpression with CompareTrait{
+class LessThanOrEqualLogicExpression(val columnName: String, val valueFromQueryIndex: Int)
+    extends DynamicLogicExpression
+    with CompareTrait {
   override val filterOps = JavaBytesEncoder.LessEqual
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     strBuilder.append(columnName + " <= " + valueFromQueryIndex)
@@ -206,9 +228,9 @@ class LessThanOrEqualLogicExpression (val columnName:String,
 
 @InterfaceAudience.Private
 class PassThroughLogicExpression() extends DynamicLogicExpression {
-  override def execute(columnToCurrentRowValueMap:
-                       util.HashMap[String, ByteArrayComparable],
-                       valueFromQueryValueArray: Array[Array[Byte]]): Boolean = true
+  override def execute(
+      columnToCurrentRowValueMap: util.HashMap[String, ByteArrayComparable],
+      valueFromQueryValueArray: Array[Array[Byte]]): Boolean = true
 
   override def appendToExpression(strBuilder: StringBuilder): Unit = {
     // Fix the offset bug by add dummy to avoid crash the region server.
@@ -227,8 +249,10 @@ object DynamicLogicExpressionBuilder {
     expressionAndOffset._1
   }
 
-  private def build(expressionArray:Array[String],
-                    offSet:Int, encoder: BytesEncoder): (DynamicLogicExpression, Int) = {
+  private def build(
+      expressionArray: Array[String],
+      offSet: Int,
+      encoder: BytesEncoder): (DynamicLogicExpression, Int) = {
     val expr = {
       if (expressionArray(offSet).equals("(")) {
         val left = build(expressionArray, offSet + 1, encoder)
@@ -243,26 +267,47 @@ object DynamicLogicExpressionBuilder {
       } else {
         val command = expressionArray(offSet + 1)
         if (command.equals("<")) {
-          (new LessThanLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt), offSet + 3)
+          (
+            new LessThanLogicExpression(expressionArray(offSet), expressionArray(offSet + 2).toInt),
+            offSet + 3)
         } else if (command.equals("<=")) {
-          (new LessThanOrEqualLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt), offSet + 3)
+          (
+            new LessThanOrEqualLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt),
+            offSet + 3)
         } else if (command.equals(">")) {
-          (new GreaterThanLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt), offSet + 3)
+          (
+            new GreaterThanLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt),
+            offSet + 3)
         } else if (command.equals(">=")) {
-          (new GreaterThanOrEqualLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt), offSet + 3)
+          (
+            new GreaterThanOrEqualLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt),
+            offSet + 3)
         } else if (command.equals("==")) {
-          (new EqualLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt, false), offSet + 3)
+          (
+            new EqualLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt,
+              false),
+            offSet + 3)
         } else if (command.equals("!=")) {
-          (new EqualLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt, true), offSet + 3)
+          (
+            new EqualLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt,
+              true),
+            offSet + 3)
         } else if (command.equals("startsWith")) {
-          (new StartsWithLogicExpression(expressionArray(offSet),
-            expressionArray(offSet + 2).toInt), offSet + 3)
+          (
+            new StartsWithLogicExpression(
+              expressionArray(offSet),
+              expressionArray(offSet + 2).toInt),
+            offSet + 3)
         } else if (command.equals("isNull")) {
           (new IsNullLogicExpression(expressionArray(offSet), false), offSet + 2)
         } else if (command.equals("isNotNull")) {

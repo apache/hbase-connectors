@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
-
 
 import java.text.SimpleDateFormat
 import java.util.{Date, Locale}
@@ -31,14 +30,16 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 import scala.util.{Failure, Success, Try}
 
-
 // Unit tests for HBASE-20521: change get configuration(TableOutputFormat.conf) object first sequence from jobContext to getConf
 // this suite contains two tests, one for normal case(getConf return null, use jobContext), create new TableOutputformat object without init TableOutputFormat.conf object,
 // configuration object inside checkOutputSpecs came from jobContext.
 // The other one(getConf return conf object) we manually call "setConf" to init TableOutputFormat.conf, for making it more straight forward, we specify a nonexistent table
 // name in conf object, checkOutputSpecs will then throw TableNotFoundException exception
-class TableOutputFormatSuite extends FunSuite with
-  BeforeAndAfterEach with BeforeAndAfterAll with Logging{
+class TableOutputFormatSuite
+    extends FunSuite
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Logging {
   @transient var sc: SparkContext = null
   var TEST_UTIL = new HBaseTestingUtility
 
@@ -52,15 +53,14 @@ class TableOutputFormatSuite extends FunSuite with
     logInfo(" - minicluster started")
     try {
       TEST_UTIL.deleteTable(TableName.valueOf(tableName))
-    }
-    catch {
+    } catch {
       case e: Exception => logInfo(" - no table " + tableName + " found")
     }
 
     TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
     logInfo(" - created table")
 
-    //set "validateOutputSpecs" true anyway, force to validate output spec
+    // set "validateOutputSpecs" true anyway, force to validate output spec
     val sparkConf = new SparkConf()
       .setMaster("local")
       .setAppName("test")
@@ -92,7 +92,8 @@ class TableOutputFormatSuite extends FunSuite with
   // Mock up jobContext object and execute actions in "write" function
   // from "org.apache.spark.internal.io.SparkHadoopMapReduceWriter"
   // this case should run normally without any exceptions
-  test("TableOutputFormat.checkOutputSpecs test without setConf called, should return true and without exceptions") {
+  test(
+    "TableOutputFormat.checkOutputSpecs test without setConf called, should return true and without exceptions") {
     val jobContext = getJobContext()
     val format = jobContext.getOutputFormatClass
     val jobFormat = format.newInstance
@@ -106,7 +107,8 @@ class TableOutputFormatSuite extends FunSuite with
 
   // Set configuration externally, checkOutputSpec should use configuration object set by "SetConf" method
   // rather than jobContext, this case should throw "TableNotFoundException" exception
-  test("TableOutputFormat.checkOutputSpecs test without setConf called, should throw TableNotFoundException") {
+  test(
+    "TableOutputFormat.checkOutputSpecs test without setConf called, should throw TableNotFoundException") {
     val jobContext = getJobContext()
     val format = jobContext.getOutputFormatClass
     val jobFormat = format.newInstance
@@ -119,12 +121,12 @@ class TableOutputFormatSuite extends FunSuite with
     } match {
       case Success(_) => assert(false)
       case Failure(e: Exception) => {
-        if(e.isInstanceOf[TableNotFoundException])
+        if (e.isInstanceOf[TableNotFoundException])
           assert(true)
         else
           assert(false)
       }
-     case _ => None
+      case _ => None
     }
   }
 

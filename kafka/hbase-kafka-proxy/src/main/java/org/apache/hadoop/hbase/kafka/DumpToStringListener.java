@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.VersionInfo;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -44,14 +42,14 @@ import org.apache.hbase.thirdparty.org.apache.commons.cli.Options;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.ParseException;
 
 /**
- * connects to kafka and reads from the passed in topics.  Parses each message into an avro object
+ * connects to kafka and reads from the passed in topics. Parses each message into an avro object
  * and dumps it to the console.
  */
 @InterfaceAudience.Private
 public final class DumpToStringListener {
   private static final Logger LOG = LoggerFactory.getLogger(DumpToStringListener.class);
 
-  private DumpToStringListener(){
+  private DumpToStringListener() {
   }
 
   public static void main(String[] args) {
@@ -59,10 +57,9 @@ public final class DumpToStringListener {
     VersionInfo.logVersion();
 
     Options options = new Options();
-    options.addRequiredOption("k", "kafkabrokers", true, "Kafka Brokers " +
-            "(comma delimited)");
-    options.addRequiredOption("t", "kafkatopics", true,"Kafka Topics "
-        + "to subscribe to (comma delimited)");
+    options.addRequiredOption("k", "kafkabrokers", true, "Kafka Brokers " + "(comma delimited)");
+    options.addRequiredOption("t", "kafkatopics", true,
+      "Kafka Topics " + "to subscribe to (comma delimited)");
     CommandLine commandLine = null;
 
     try {
@@ -73,7 +70,7 @@ public final class DumpToStringListener {
     }
 
     SpecificDatumReader<HBaseKafkaEvent> dreader =
-            new SpecificDatumReader<>(HBaseKafkaEvent.SCHEMA$);
+      new SpecificDatumReader<>(HBaseKafkaEvent.SCHEMA$);
 
     String topic = commandLine.getOptionValue('t');
     Properties props = new Properties();
@@ -105,8 +102,9 @@ public final class DumpToStringListener {
   private static void printUsageAndExit(Options options, int exitCode) {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp("hbase " + DumpToStringListener.class.getName(), "", options,
-            "\n[--kafkabrokers <kafka brokers (comma delmited)>] " +
-                    "[-k <kafka brokers (comma delmited)>] \n", true);
+      "\n[--kafkabrokers <kafka brokers (comma delmited)>] "
+        + "[-k <kafka brokers (comma delmited)>] \n",
+      true);
     System.exit(exitCode);
   }
 }

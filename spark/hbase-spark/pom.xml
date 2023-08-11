@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -72,8 +72,8 @@
           <artifactId>scalap</artifactId>
         </exclusion>
         <exclusion>
-           <groupId>com.google.code.findbugs</groupId>
-           <artifactId>jsr305</artifactId>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
           <!-- exclude the wrong snappy-java version in spark-1.6 -->
@@ -110,8 +110,8 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
-      <type>test-jar</type>
       <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -130,10 +130,10 @@
       <version>3.0.5</version>
       <scope>test</scope>
       <exclusions>
-       <exclusion>
-         <groupId>org.scala-lang</groupId>
-         <artifactId>scala-library</artifactId>
-       </exclusion>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -172,7 +172,7 @@
       <artifactId>scala-reflect</artifactId>
       <version>${scala.version}</version>
     </dependency>
-     <dependency>
+    <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-unsafe_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
@@ -200,10 +200,10 @@
         <executions>
           <execution>
             <id>add-source</id>
-            <phase>validate</phase>
             <goals>
               <goal>add-source</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <sources>
                 <source>src/main/scala</source>
@@ -212,10 +212,10 @@
           </execution>
           <execution>
             <id>add-test-source</id>
-            <phase>validate</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <sources>
                 <source>src/test/scala</source>
@@ -452,15 +452,13 @@
             <version>1.5</version>
             <executions>
               <execution>
-                <phase>validate</phase>
                 <goals>
                   <goal>execute</goal>
                 </goals>
+                <phase>validate</phase>
                 <configuration>
-                  <source><![CDATA[
-                    pom.properties['target.jvm'] =
-                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';
-                    ]]></source>
+                  <source><![CDATA[pom.properties['target.jvm'] =
+                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';]]></source>
                 </configuration>
               </execution>
             </executions>
@@ -484,18 +482,18 @@
             <executions>
               <execution>
                 <id>scala-compile-first</id>
-                <phase>process-resources</phase>
                 <goals>
                   <goal>add-source</goal>
                   <goal>compile</goal>
                 </goals>
+                <phase>process-resources</phase>
               </execution>
               <execution>
                 <id>scala-test-compile</id>
-                <phase>process-test-resources</phase>
                 <goals>
                   <goal>testCompile</goal>
                 </goals>
+                <phase>process-test-resources</phase>
               </execution>
             </executions>
           </plugin>
@@ -512,10 +510,10 @@
             <executions>
               <execution>
                 <id>test</id>
-                <phase>test</phase>
                 <goals>
                   <goal>test</goal>
                 </goals>
+                <phase>test</phase>
                 <configuration>
                   <argLine>-Xmx1536m -XX:ReservedCodeCacheSize=512m</argLine>
                   <parallel>false</parallel>

@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -32,8 +32,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Files
 
-class BulkLoadSuite extends FunSuite with
-BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
+class BulkLoadSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfterAll with Logging {
   @transient var sc: SparkContext = null
   var TEST_UTIL = new HBaseTestingUtility
 
@@ -41,7 +40,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
   val columnFamily1 = "f1"
   val columnFamily2 = "f2"
   val testFolder = new TemporaryFolder()
-
 
   override def beforeAll() {
     TEST_UTIL.startMiniCluster()
@@ -56,7 +54,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
 
     logInfo(" - created table")
 
-    val envMap = Map[String,String](("Xmx", "512m"))
+    val envMap = Map[String, String](("Xmx", "512m"))
 
     sc = new SparkContext("local", "test", null, Nil, envMap)
   }
@@ -69,11 +67,12 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     sc.stop()
   }
 
-  test ("Staging dir: Test usage of staging dir on a separate filesystem") {
+  test("Staging dir: Test usage of staging dir on a separate filesystem") {
     val config = TEST_UTIL.getConfiguration
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
 
     // Test creates rdd with 2 column families and
@@ -81,11 +80,14 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     // using bulkLoad functionality. We don't check the load functionality
     // due the limitations of the HBase Minicluster
 
-    val rdd = sc.parallelize(Array(
-      (Bytes.toBytes("1"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+    val rdd = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("1"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
 
     val hbaseContext = new HBaseContext(sc, config)
     val uri = Files.createTempDirectory("tmpDirPrefix").toUri
@@ -93,21 +95,22 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val stagingFolder = new File(stagingUri)
     val fs = new Path(stagingUri.toString).getFileSystem(config)
     try {
-    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](rdd,
-      TableName.valueOf(tableName),
-      t => {
-        val rowKey = t._1
-        val family: Array[Byte] = t._2._1
-        val qualifier = t._2._2
-        val value: Array[Byte] = t._2._3
+      hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](
+        rdd,
+        TableName.valueOf(tableName),
+        t => {
+          val rowKey = t._1
+          val family: Array[Byte] = t._2._1
+          val qualifier = t._2._2
+          val value: Array[Byte] = t._2._3
 
-        val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
+          val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
 
-        Seq((keyFamilyQualifier, value)).iterator
-      },
-      stagingUri.toString)
+          Seq((keyFamilyQualifier, value)).iterator
+        },
+        stagingUri.toString)
 
-    assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
+      assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
 
     } finally {
       val admin = ConnectionFactory.createConnection(config).getAdmin
@@ -124,56 +127,67 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     }
   }
 
-  test("Wide Row Bulk Load: Test multi family and multi column tests " +
-    "with all default HFile Configs.") {
+  test(
+    "Wide Row Bulk Load: Test multi family and multi column tests " +
+      "with all default HFile Configs.") {
     val config = TEST_UTIL.getConfiguration
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      (Bytes.toBytes("1"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
-      (Bytes.toBytes("5"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
-
-
+    val rdd = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("1"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
+        (
+          Bytes.toBytes("5"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
 
     val hbaseContext = new HBaseContext(sc, config)
 
     testFolder.create()
     val stagingFolder = testFolder.newFolder()
 
-    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](rdd,
+    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](
+      rdd,
       TableName.valueOf(tableName),
       t => {
         val rowKey = t._1
-        val family:Array[Byte] = t._2._1
+        val family: Array[Byte] = t._2._1
         val qualifier = t._2._2
-        val value:Array[Byte] = t._2._3
+        val value: Array[Byte] = t._2._3
 
-        val keyFamilyQualifier= new KeyFamilyQualifier(rowKey, family, qualifier)
+        val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
 
         Seq((keyFamilyQualifier, value)).iterator
       },
@@ -187,7 +201,10 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath), conn.getAdmin, table,
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
         conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
@@ -216,7 +233,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       assert(Bytes.toString(CellUtil.cloneValue(cells3.get(2))).equals("foo2.a"))
       assert(Bytes.toString(CellUtil.cloneFamily(cells3.get(2))).equals("f2"))
       assert(Bytes.toString(CellUtil.cloneQualifier(cells3.get(2))).equals("b"))
-
 
       val cells2 = table.get(new Get(Bytes.toBytes("2"))).listCells()
       assert(cells2.size == 2)
@@ -249,54 +265,67 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     }
   }
 
-  test("Wide Row Bulk Load: Test HBase client: Test Roll Over and " +
-    "using an implicit call to bulk load") {
+  test(
+    "Wide Row Bulk Load: Test HBase client: Test Roll Over and " +
+      "using an implicit call to bulk load") {
     val config = TEST_UTIL.getConfiguration
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      (Bytes.toBytes("1"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
-      (Bytes.toBytes("5"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+    val rdd = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("1"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
+        (
+          Bytes.toBytes("5"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
 
     val hbaseContext = new HBaseContext(sc, config)
 
     testFolder.create()
     val stagingFolder = testFolder.newFolder()
 
-    rdd.hbaseBulkLoad(hbaseContext,
+    rdd.hbaseBulkLoad(
+      hbaseContext,
       TableName.valueOf(tableName),
       t => {
         val rowKey = t._1
-        val family:Array[Byte] = t._2._1
+        val family: Array[Byte] = t._2._1
         val qualifier = t._2._2
         val value = t._2._3
 
-        val keyFamilyQualifier= new KeyFamilyQualifier(rowKey, family, qualifier)
+        val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
 
         Seq((keyFamilyQualifier, value)).iterator
       },
@@ -308,15 +337,18 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val fs = FileSystem.get(config)
     assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 1)
 
-    assert(fs.listStatus(new Path(stagingFolder.getPath+ "/f1")).length == 5)
+    assert(fs.listStatus(new Path(stagingFolder.getPath + "/f1")).length == 5)
 
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath),
-        conn.getAdmin, table, conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
+        conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -375,44 +407,56 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     }
   }
 
-  test("Wide Row Bulk Load: Test multi family and multi column tests" +
-    " with one column family with custom configs plus multi region") {
+  test(
+    "Wide Row Bulk Load: Test multi family and multi column tests" +
+      " with one column family with custom configs plus multi region") {
     val config = TEST_UTIL.getConfiguration
 
-    val splitKeys:Array[Array[Byte]] = new Array[Array[Byte]](2)
+    val splitKeys: Array[Array[Byte]] = new Array[Array[Byte]](2)
     splitKeys(0) = Bytes.toBytes("2")
     splitKeys(1) = Bytes.toBytes("4")
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)),
       splitKeys)
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      (Bytes.toBytes("1"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
-      (Bytes.toBytes("3"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
-      (Bytes.toBytes("5"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      (Bytes.toBytes("4"),
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      (Bytes.toBytes("2"),
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+    val rdd = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("1"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
+        (
+          Bytes.toBytes("3"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
+        (
+          Bytes.toBytes("5"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+        (
+          Bytes.toBytes("4"),
+          (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+        (
+          Bytes.toBytes("2"),
+          (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
 
     val hbaseContext = new HBaseContext(sc, config)
 
@@ -421,20 +465,20 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
 
     val familyHBaseWriterOptions = new java.util.HashMap[Array[Byte], FamilyHFileWriteOptions]
 
-    val f1Options = new FamilyHFileWriteOptions("GZ", "ROW", 128,
-      "PREFIX")
+    val f1Options = new FamilyHFileWriteOptions("GZ", "ROW", 128, "PREFIX")
 
     familyHBaseWriterOptions.put(Bytes.toBytes(columnFamily1), f1Options)
 
-    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](rdd,
+    hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](
+      rdd,
       TableName.valueOf(tableName),
       t => {
         val rowKey = t._1
-        val family:Array[Byte] = t._2._1
+        val family: Array[Byte] = t._2._1
         val qualifier = t._2._2
         val value = t._2._3
 
-        val keyFamilyQualifier= new KeyFamilyQualifier(rowKey, family, qualifier)
+        val keyFamilyQualifier = new KeyFamilyQualifier(rowKey, family, qualifier)
 
         Seq((keyFamilyQualifier, value)).iterator
       },
@@ -446,34 +490,36 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val fs = FileSystem.get(config)
     assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
 
-    val f1FileList = fs.listStatus(new Path(stagingFolder.getPath +"/f1"))
-    for ( i <- 0 until f1FileList.length) {
-      val reader = HFile.createReader(fs, f1FileList(i).getPath,
-        new CacheConfig(config), true, config)
+    val f1FileList = fs.listStatus(new Path(stagingFolder.getPath + "/f1"))
+    for (i <- 0 until f1FileList.length) {
+      val reader =
+        HFile.createReader(fs, f1FileList(i).getPath, new CacheConfig(config), true, config)
       assert(reader.getTrailer.getCompressionCodec().getName.equals("gz"))
       assert(reader.getDataBlockEncoding.name().equals("PREFIX"))
     }
 
-    assert( 3 ==  f1FileList.length)
+    assert(3 == f1FileList.length)
 
-    val f2FileList = fs.listStatus(new Path(stagingFolder.getPath +"/f2"))
-    for ( i <- 0 until f2FileList.length) {
-      val reader = HFile.createReader(fs, f2FileList(i).getPath,
-        new CacheConfig(config), true, config)
+    val f2FileList = fs.listStatus(new Path(stagingFolder.getPath + "/f2"))
+    for (i <- 0 until f2FileList.length) {
+      val reader =
+        HFile.createReader(fs, f2FileList(i).getPath, new CacheConfig(config), true, config)
       assert(reader.getTrailer.getCompressionCodec().getName.equals("none"))
       assert(reader.getDataBlockEncoding.name().equals("NONE"))
     }
 
-    assert( 2 ==  f2FileList.length)
-
+    assert(2 == f2FileList.length)
 
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath),
-        conn.getAdmin, table, conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
+        conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -501,7 +547,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       assert(Bytes.toString(CellUtil.cloneValue(cells3.get(2))).equals("foo2.a"))
       assert(Bytes.toString(CellUtil.cloneFamily(cells3.get(2))).equals("f2"))
       assert(Bytes.toString(CellUtil.cloneQualifier(cells3.get(2))).equals("b"))
-
 
       val cells2 = table.get(new Get(Bytes.toBytes("2"))).listCells()
       assert(cells2.size == 2)
@@ -536,7 +581,7 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
 
   test("Test partitioner") {
 
-    var splitKeys:Array[Array[Byte]] = new Array[Array[Byte]](3)
+    var splitKeys: Array[Array[Byte]] = new Array[Array[Byte]](3)
     splitKeys(0) = Bytes.toBytes("")
     splitKeys(1) = Bytes.toBytes("3")
     splitKeys(2) = Bytes.toBytes("7")
@@ -551,7 +596,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     assert(1 == partitioner.getPartition(Bytes.toBytes("6")))
     assert(2 == partitioner.getPartition(Bytes.toBytes("7")))
     assert(2 == partitioner.getPartition(Bytes.toBytes("8")))
-
 
     splitKeys = new Array[Array[Byte]](1)
     splitKeys(0) = Bytes.toBytes("")
@@ -593,58 +637,54 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     assert(6 == partitioner.getPartition(Bytes.toBytes("13")))
   }
 
-  test("Thin Row Bulk Load: Test multi family and multi column tests " +
-    "with all default HFile Configs") {
+  test(
+    "Thin Row Bulk Load: Test multi family and multi column tests " +
+      "with all default HFile Configs") {
     val config = TEST_UTIL.getConfiguration
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      ("1",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      ("3",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
-      ("3",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
-      ("3",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
-      ("5",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      ("4",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      ("4",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2"))))).
-      groupByKey()
+    val rdd = sc
+      .parallelize(
+        Array(
+          ("1", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+          ("3", (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
+          ("3", (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
+          ("3", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
+          ("5", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+          ("4", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+          ("4", (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+      .groupByKey()
 
     val hbaseContext = new HBaseContext(sc, config)
 
     testFolder.create()
     val stagingFolder = testFolder.newFolder()
 
-    hbaseContext.bulkLoadThinRows[(String, Iterable[(Array[Byte], Array[Byte], Array[Byte])])](rdd,
+    hbaseContext.bulkLoadThinRows[(String, Iterable[(Array[Byte], Array[Byte], Array[Byte])])](
+      rdd,
       TableName.valueOf(tableName),
       t => {
         val rowKey = Bytes.toBytes(t._1)
 
         val familyQualifiersValues = new FamiliesQualifiersValues
         t._2.foreach(f => {
-          val family:Array[Byte] = f._1
+          val family: Array[Byte] = f._1
           val qualifier = f._2
-          val value:Array[Byte] = f._3
+          val value: Array[Byte] = f._3
 
-          familyQualifiersValues +=(family, qualifier, value)
+          familyQualifiersValues += (family, qualifier, value)
         })
         (new ByteArrayWrapper(rowKey), familyQualifiersValues)
       },
@@ -658,7 +698,10 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath), conn.getAdmin, table,
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
         conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
@@ -687,7 +730,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       assert(Bytes.toString(CellUtil.cloneValue(cells3.get(2))).equals("foo2.a"))
       assert(Bytes.toString(CellUtil.cloneFamily(cells3.get(2))).equals("f2"))
       assert(Bytes.toString(CellUtil.cloneQualifier(cells3.get(2))).equals("b"))
-
 
       val cells2 = table.get(new Get(Bytes.toBytes("2"))).listCells()
       assert(cells2.size == 2)
@@ -720,58 +762,54 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     }
   }
 
-  test("Thin Row Bulk Load: Test HBase client: Test Roll Over and " +
-    "using an implicit call to bulk load") {
+  test(
+    "Thin Row Bulk Load: Test HBase client: Test Roll Over and " +
+      "using an implicit call to bulk load") {
     val config = TEST_UTIL.getConfiguration
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)))
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      ("1",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      ("3",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
-      ("3",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
-      ("3",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
-      ("5",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      ("4",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      ("4",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2"))))).
-      groupByKey()
+    val rdd = sc
+      .parallelize(
+        Array(
+          ("1", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+          ("3", (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
+          ("3", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
+          ("3", (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
+          ("5", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+          ("4", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+          ("4", (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+      .groupByKey()
 
     val hbaseContext = new HBaseContext(sc, config)
 
     testFolder.create()
     val stagingFolder = testFolder.newFolder()
 
-    rdd.hbaseBulkLoadThinRows(hbaseContext,
+    rdd.hbaseBulkLoadThinRows(
+      hbaseContext,
       TableName.valueOf(tableName),
       t => {
         val rowKey = t._1
 
         val familyQualifiersValues = new FamiliesQualifiersValues
         t._2.foreach(f => {
-          val family:Array[Byte] = f._1
+          val family: Array[Byte] = f._1
           val qualifier = f._2
-          val value:Array[Byte] = f._3
+          val value: Array[Byte] = f._3
 
-          familyQualifiersValues +=(family, qualifier, value)
+          familyQualifiersValues += (family, qualifier, value)
         })
         (new ByteArrayWrapper(Bytes.toBytes(rowKey)), familyQualifiersValues)
       },
@@ -783,15 +821,18 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val fs = FileSystem.get(config)
     assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 1)
 
-    assert(fs.listStatus(new Path(stagingFolder.getPath+ "/f1")).length == 5)
+    assert(fs.listStatus(new Path(stagingFolder.getPath + "/f1")).length == 5)
 
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath),
-        conn.getAdmin, table, conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
+        conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -850,45 +891,40 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     }
   }
 
-  test("Thin Row Bulk Load: Test multi family and multi column tests" +
-    " with one column family with custom configs plus multi region") {
+  test(
+    "Thin Row Bulk Load: Test multi family and multi column tests" +
+      " with one column family with custom configs plus multi region") {
     val config = TEST_UTIL.getConfiguration
 
-    val splitKeys:Array[Array[Byte]] = new Array[Array[Byte]](2)
+    val splitKeys: Array[Array[Byte]] = new Array[Array[Byte]](2)
     splitKeys(0) = Bytes.toBytes("2")
     splitKeys(1) = Bytes.toBytes("4")
 
     logInfo(" - creating table " + tableName)
-    TEST_UTIL.createTable(TableName.valueOf(tableName),
+    TEST_UTIL.createTable(
+      TableName.valueOf(tableName),
       Array(Bytes.toBytes(columnFamily1), Bytes.toBytes(columnFamily2)),
       splitKeys)
 
-    //There are a number of tests in here.
+    // There are a number of tests in here.
     // 1. Row keys are not in order
     // 2. Qualifiers are not in order
     // 3. Column Families are not in order
     // 4. There are tests for records in one column family and some in two column families
     // 5. There are records will a single qualifier and some with two
-    val rdd = sc.parallelize(Array(
-      ("1",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
-      ("3",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
-      ("3",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
-      ("3",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
-      ("5",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-      ("4",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-      ("4",
-        (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-      ("2",
-        (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2"))))).
-      groupByKey()
+    val rdd = sc
+      .parallelize(
+        Array(
+          ("1", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+          ("3", (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo2.a"))),
+          ("3", (Bytes.toBytes(columnFamily2), Bytes.toBytes("a"), Bytes.toBytes("foo2.b"))),
+          ("3", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.c"))),
+          ("5", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+          ("4", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+          ("4", (Bytes.toBytes(columnFamily2), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+          ("2", (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("bar.2")))))
+      .groupByKey()
 
     val hbaseContext = new HBaseContext(sc, config)
 
@@ -897,23 +933,23 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
 
     val familyHBaseWriterOptions = new java.util.HashMap[Array[Byte], FamilyHFileWriteOptions]
 
-    val f1Options = new FamilyHFileWriteOptions("GZ", "ROW", 128,
-      "PREFIX")
+    val f1Options = new FamilyHFileWriteOptions("GZ", "ROW", 128, "PREFIX")
 
     familyHBaseWriterOptions.put(Bytes.toBytes(columnFamily1), f1Options)
 
-    hbaseContext.bulkLoadThinRows[(String, Iterable[(Array[Byte], Array[Byte], Array[Byte])])](rdd,
+    hbaseContext.bulkLoadThinRows[(String, Iterable[(Array[Byte], Array[Byte], Array[Byte])])](
+      rdd,
       TableName.valueOf(tableName),
       t => {
         val rowKey = t._1
 
         val familyQualifiersValues = new FamiliesQualifiersValues
         t._2.foreach(f => {
-          val family:Array[Byte] = f._1
+          val family: Array[Byte] = f._1
           val qualifier = f._2
-          val value:Array[Byte] = f._3
+          val value: Array[Byte] = f._3
 
-          familyQualifiersValues +=(family, qualifier, value)
+          familyQualifiersValues += (family, qualifier, value)
         })
         (new ByteArrayWrapper(Bytes.toBytes(rowKey)), familyQualifiersValues)
       },
@@ -925,34 +961,36 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
     val fs = FileSystem.get(config)
     assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
 
-    val f1FileList = fs.listStatus(new Path(stagingFolder.getPath +"/f1"))
-    for ( i <- 0 until f1FileList.length) {
-      val reader = HFile.createReader(fs, f1FileList(i).getPath,
-        new CacheConfig(config), true, config)
+    val f1FileList = fs.listStatus(new Path(stagingFolder.getPath + "/f1"))
+    for (i <- 0 until f1FileList.length) {
+      val reader =
+        HFile.createReader(fs, f1FileList(i).getPath, new CacheConfig(config), true, config)
       assert(reader.getTrailer.getCompressionCodec().getName.equals("gz"))
       assert(reader.getDataBlockEncoding.name().equals("PREFIX"))
     }
 
-    assert( 3 ==  f1FileList.length)
+    assert(3 == f1FileList.length)
 
-    val f2FileList = fs.listStatus(new Path(stagingFolder.getPath +"/f2"))
-    for ( i <- 0 until f2FileList.length) {
-      val reader = HFile.createReader(fs, f2FileList(i).getPath,
-        new CacheConfig(config), true, config)
+    val f2FileList = fs.listStatus(new Path(stagingFolder.getPath + "/f2"))
+    for (i <- 0 until f2FileList.length) {
+      val reader =
+        HFile.createReader(fs, f2FileList(i).getPath, new CacheConfig(config), true, config)
       assert(reader.getTrailer.getCompressionCodec().getName.equals("none"))
       assert(reader.getDataBlockEncoding.name().equals("NONE"))
     }
 
-    assert( 2 ==  f2FileList.length)
-
+    assert(2 == f2FileList.length)
 
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
     val table = conn.getTable(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(new Path(stagingFolder.getPath),
-        conn.getAdmin, table, conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(
+        new Path(stagingFolder.getPath),
+        conn.getAdmin,
+        table,
+        conn.getRegionLocator(TableName.valueOf(tableName)))
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -980,7 +1018,6 @@ BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
       assert(Bytes.toString(CellUtil.cloneValue(cells3.get(2))).equals("foo2.a"))
       assert(Bytes.toString(CellUtil.cloneFamily(cells3.get(2))).equals("f2"))
       assert(Bytes.toString(CellUtil.cloneQualifier(cells3.get(2))).equals("b"))
-
 
       val cells2 = table.get(new Get(Bytes.toBytes("2"))).listCells()
       assert(cells2.size == 2)

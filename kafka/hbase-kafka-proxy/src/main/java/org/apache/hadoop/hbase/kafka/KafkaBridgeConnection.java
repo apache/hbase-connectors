@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.lang3.StringUtils;
@@ -44,27 +43,25 @@ import org.apache.yetus.audience.InterfaceAudience;
 /**
  * a alternative implementation of a connection object that forwards the mutations to a kafka queue
  * depending on the routing rules (see kafka-route-rules.xml).
- * */
+ */
 @InterfaceAudience.Private
 public class KafkaBridgeConnection implements Connection {
   private final Configuration conf;
   private volatile boolean closed = false;
   private TopicRoutingRules routingRules;
-  private Producer<byte[],byte[]> producer;
+  private Producer<byte[], byte[]> producer;
   private DatumWriter<HBaseKafkaEvent> avroWriter =
-      new SpecificDatumWriter<>(HBaseKafkaEvent.getClassSchema());
+    new SpecificDatumWriter<>(HBaseKafkaEvent.getClassSchema());
 
-
-    /**
-     * Public constructor
-     * @param conf hbase configuration
-     * @param pool executor pool
-     * @param user user who requested connection
-     * @throws IOException on error
-     */
-  public KafkaBridgeConnection(Configuration conf,
-                               ExecutorService pool,
-                               User user) throws IOException {
+  /**
+   * Public constructor
+   * @param conf hbase configuration
+   * @param pool executor pool
+   * @param user user who requested connection
+   * @throws IOException on error
+   */
+  public KafkaBridgeConnection(Configuration conf, ExecutorService pool, User user)
+    throws IOException {
     this.conf = conf;
     setupRules();
     startKafkaConnection();
@@ -72,12 +69,12 @@ public class KafkaBridgeConnection implements Connection {
 
   /**
    * for testing.
-   * @param conf hbase configuration
+   * @param conf         hbase configuration
    * @param routingRules a set of routing rules
-   * @param producer a kafka producer
+   * @param producer     a kafka producer
    */
   public KafkaBridgeConnection(Configuration conf, TopicRoutingRules routingRules,
-                               Producer<byte[],byte[]> producer) {
+    Producer<byte[], byte[]> producer) {
     this.conf = conf;
     this.producer = producer;
     this.routingRules = routingRules;
@@ -86,7 +83,7 @@ public class KafkaBridgeConnection implements Connection {
   private void setupRules() throws IOException {
     String file = this.conf.get(KafkaProxy.KAFKA_PROXY_RULES_FILE);
     routingRules = new TopicRoutingRules();
-    try (FileInputStream fin = new FileInputStream(file);){
+    try (FileInputStream fin = new FileInputStream(file);) {
       routingRules.parseRules(fin);
     }
   }
@@ -94,28 +91,26 @@ public class KafkaBridgeConnection implements Connection {
   private void startKafkaConnection() throws IOException {
     Properties configProperties = new Properties();
 
-    String kafkaPropsFile = conf.get(KafkaProxy.KAFKA_PROXY_KAFKA_PROPERTIES,"");
-    if (!StringUtils.isEmpty(kafkaPropsFile)){
-      try (FileInputStream fs = new java.io.FileInputStream(
-          new File(kafkaPropsFile))){
+    String kafkaPropsFile = conf.get(KafkaProxy.KAFKA_PROXY_KAFKA_PROPERTIES, "");
+    if (!StringUtils.isEmpty(kafkaPropsFile)) {
+      try (FileInputStream fs = new java.io.FileInputStream(new File(kafkaPropsFile))) {
         configProperties.load(fs);
       }
     } else {
-      String kafkaServers =conf.get(KafkaProxy.KAFKA_PROXY_KAFKA_BROKERS);
+      String kafkaServers = conf.get(KafkaProxy.KAFKA_PROXY_KAFKA_BROKERS);
       configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServers);
     }
 
     configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.ByteArraySerializer");
+      "org.apache.kafka.common.serialization.ByteArraySerializer");
     configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.ByteArraySerializer");
+      "org.apache.kafka.common.serialization.ByteArraySerializer");
     this.producer = new KafkaProducer<byte[], byte[]>(configProperties);
   }
 
-
-
   @Override
-  public void abort(String why, Throwable e) {}
+  public void abort(String why, Throwable e) {
+  }
 
   @Override
   public boolean isAborted() {
@@ -194,7 +189,8 @@ public class KafkaBridgeConnection implements Connection {
 
       @Override
       public Table build() {
-        return new KafkaTableForBridge(tn,passedInConfiguration,routingRules,producer,avroWriter) ;
+        return new KafkaTableForBridge(tn, passedInConfiguration, routingRules, producer,
+          avroWriter);
       }
     };
   }

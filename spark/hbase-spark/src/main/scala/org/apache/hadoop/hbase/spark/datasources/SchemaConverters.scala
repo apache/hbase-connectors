@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import java.io.ByteArrayInputStream
@@ -50,22 +50,23 @@ abstract class AvroException(msg: String) extends Exception(msg)
 @InterfaceAudience.Private
 case class SchemaConversionException(msg: String) extends AvroException(msg)
 
-/***
-  * On top level, the converters provide three high level interface.
-  * 1. toSqlType: This function takes an avro schema and returns a sql schema.
-  * 2. createConverterToSQL: Returns a function that is used to convert avro types to their
-  *    corresponding sparkSQL representations.
-  * 3. convertTypeToAvro: This function constructs converter function for a given sparkSQL
-  *    datatype. This is used in writing Avro records out to disk
-  */
+/**
+ * *
+ * On top level, the converters provide three high level interface.
+ * 1. toSqlType: This function takes an avro schema and returns a sql schema.
+ * 2. createConverterToSQL: Returns a function that is used to convert avro types to their
+ *    corresponding sparkSQL representations.
+ * 3. convertTypeToAvro: This function constructs converter function for a given sparkSQL
+ *    datatype. This is used in writing Avro records out to disk
+ */
 @InterfaceAudience.Private
 object SchemaConverters {
 
   case class SchemaType(dataType: DataType, nullable: Boolean)
 
   /**
-    * This function takes an avro schema and returns a sql schema.
-    */
+   * This function takes an avro schema and returns a sql schema.
+   */
   def toSqlType(avroSchema: Schema): SchemaType = {
     avroSchema.getType match {
       case INT => SchemaType(IntegerType, nullable = false)
@@ -107,98 +108,112 @@ object SchemaConverters {
           } else {
             toSqlType(Schema.createUnion(remainingUnionTypes)).copy(nullable = true)
           }
-        } else avroSchema.getTypes.map(_.getType) match {
-          case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
-            SchemaType(LongType, nullable = false)
-          case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
-            SchemaType(DoubleType, nullable = false)
-          case other => throw new SchemaConversionException(
-            s"This mix of union types is not supported: $other")
-        }
+        } else
+          avroSchema.getTypes.map(_.getType) match {
+            case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
+              SchemaType(LongType, nullable = false)
+            case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
+              SchemaType(DoubleType, nullable = false)
+            case other =>
+              throw new SchemaConversionException(
+                s"This mix of union types is not supported: $other")
+          }
 
       case other => throw new SchemaConversionException(s"Unsupported type $other")
     }
   }
 
   /**
-    * This function converts sparkSQL StructType into avro schema. This method uses two other
-    * converter methods in order to do the conversion.
-    */
+   * This function converts sparkSQL StructType into avro schema. This method uses two other
+   * converter methods in order to do the conversion.
+   */
   private def convertStructToAvro[T](
-                                      structType: StructType,
-                                      schemaBuilder: RecordBuilder[T],
-                                      recordNamespace: String): T = {
+      structType: StructType,
+      schemaBuilder: RecordBuilder[T],
+      recordNamespace: String): T = {
     val fieldsAssembler: FieldAssembler[T] = schemaBuilder.fields()
     structType.fields.foreach { field =>
       val newField = fieldsAssembler.name(field.name).`type`()
 
       if (field.nullable) {
-        convertFieldTypeToAvro(field.dataType, newField.nullable(), field.name, recordNamespace)
-          .noDefault
+        convertFieldTypeToAvro(
+          field.dataType,
+          newField.nullable(),
+          field.name,
+          recordNamespace).noDefault
       } else {
-        convertFieldTypeToAvro(field.dataType, newField, field.name, recordNamespace)
-          .noDefault
+        convertFieldTypeToAvro(field.dataType, newField, field.name, recordNamespace).noDefault
       }
     }
     fieldsAssembler.endRecord()
   }
 
   /**
-    * Returns a function that is used to convert avro types to their
-    * corresponding sparkSQL representations.
-    */
+   * Returns a function that is used to convert avro types to their
+   * corresponding sparkSQL representations.
+   */
   def createConverterToSQL(schema: Schema): Any => Any = {
     schema.getType match {
       // Avro strings are in Utf8, so we have to call toString on them
       case STRING | ENUM => (item: Any) => if (item == null) null else item.toString
       case INT | BOOLEAN | DOUBLE | FLOAT | LONG => identity
       // Byte arrays are reused by avro, so we have to make a copy of them.
-      case FIXED => (item: Any) => if (item == null) {
-        null
-      } else {
-        item.asInstanceOf[Fixed].bytes().clone()
-      }
-      case BYTES => (item: Any) => if (item == null) {
-        null
-      } else {
-        val bytes = item.asInstanceOf[ByteBuffer]
-        val javaBytes = new Array[Byte](bytes.remaining)
-        bytes.get(javaBytes)
-        javaBytes
-      }
+      case FIXED =>
+        (item: Any) =>
+          if (item == null) {
+            null
+          } else {
+            item.asInstanceOf[Fixed].bytes().clone()
+          }
+      case BYTES =>
+        (item: Any) =>
+          if (item == null) {
+            null
+          } else {
+            val bytes = item.asInstanceOf[ByteBuffer]
+            val javaBytes = new Array[Byte](bytes.remaining)
+            bytes.get(javaBytes)
+            javaBytes
+          }
       case RECORD =>
         val fieldConverters = schema.getFields.map(f => createConverterToSQL(f.schema))
-        (item: Any) => if (item == null) {
-          null
-        } else {
-          val record = item.asInstanceOf[GenericRecord]
-          val converted = new Array[Any](fieldConverters.size)
-          var idx = 0
-          while (idx < fieldConverters.size) {
-            converted(idx) = fieldConverters.apply(idx)(record.get(idx))
-            idx += 1
+        (item: Any) =>
+          if (item == null) {
+            null
+          } else {
+            val record = item.asInstanceOf[GenericRecord]
+            val converted = new Array[Any](fieldConverters.size)
+            var idx = 0
+            while (idx < fieldConverters.size) {
+              converted(idx) = fieldConverters.apply(idx)(record.get(idx))
+              idx += 1
+            }
+            Row.fromSeq(converted.toSeq)
           }
-          Row.fromSeq(converted.toSeq)
-        }
       case ARRAY =>
         val elementConverter = createConverterToSQL(schema.getElementType)
-        (item: Any) => if (item == null) {
-          null
-        } else {
-          try {
-            item.asInstanceOf[GenericData.Array[Any]].map(elementConverter)
-          } catch {
-            case e: Throwable =>
-              item.asInstanceOf[util.ArrayList[Any]].map(elementConverter)
+        (item: Any) =>
+          if (item == null) {
+            null
+          } else {
+            try {
+              item.asInstanceOf[GenericData.Array[Any]].map(elementConverter)
+            } catch {
+              case e: Throwable =>
+                item.asInstanceOf[util.ArrayList[Any]].map(elementConverter)
+            }
           }
-        }
       case MAP =>
         val valueConverter = createConverterToSQL(schema.getValueType)
-        (item: Any) => if (item == null) {
-          null
-        } else {
-          item.asInstanceOf[HashMap[Any, Any]].map(x => (x._1.toString, valueConverter(x._2))).toMap
-        }
+        (item: Any) =>
+          if (item == null) {
+            null
+          } else {
+            item
+              .asInstanceOf[HashMap[Any, Any]]
+              .map(x => (x._1.toString, valueConverter(x._2)))
+              .toMap
+          }
       case UNION =>
         if (schema.getTypes.exists(_.getType == NULL)) {
           val remainingUnionTypes = schema.getTypes.filterNot(_.getType == NULL)
@@ -207,39 +222,41 @@ object SchemaConverters {
           } else {
             createConverterToSQL(Schema.createUnion(remainingUnionTypes))
           }
-        } else schema.getTypes.map(_.getType) match {
-          case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
-            (item: Any) => {
-              item match {
-                case l: Long => l
-                case i: Int => i.toLong
-                case null => null
+        } else
+          schema.getTypes.map(_.getType) match {
+            case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
+              (item: Any) => {
+                item match {
+                  case l: Long => l
+                  case i: Int => i.toLong
+                  case null => null
+                }
               }
-            }
-          case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
-            (item: Any) => {
-              item match {
-                case d: Double => d
-                case f: Float => f.toDouble
-                case null => null
+            case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
+              (item: Any) => {
+                item match {
+                  case d: Double => d
+                  case f: Float => f.toDouble
+                  case null => null
+                }
               }
-            }
-          case other => throw new SchemaConversionException(
-            s"This mix of union types is not supported (see README): $other")
-        }
+            case other =>
+              throw new SchemaConversionException(
+                s"This mix of union types is not supported (see README): $other")
+          }
       case other => throw new SchemaConversionException(s"invalid avro type: $other")
     }
   }
 
   /**
-    * This function is used to convert some sparkSQL type to avro type. Note that this function won't
-    * be used to construct fields of avro record (convertFieldTypeToAvro is used for that).
-    */
+   * This function is used to convert some sparkSQL type to avro type. Note that this function won't
+   * be used to construct fields of avro record (convertFieldTypeToAvro is used for that).
+   */
   private def convertTypeToAvro[T](
-                                    dataType: DataType,
-                                    schemaBuilder: BaseTypeBuilder[T],
-                                    structName: String,
-                                    recordNamespace: String): T = {
+      dataType: DataType,
+      schemaBuilder: BaseTypeBuilder[T],
+      structName: String,
+      recordNamespace: String): T = {
     dataType match {
       case ByteType => schemaBuilder.intType()
       case ShortType => schemaBuilder.intType()
@@ -274,15 +291,15 @@ object SchemaConverters {
   }
 
   /**
-    * This function is used to construct fields of the avro record, where schema of the field is
-    * specified by avro representation of dataType. Since builders for record fields are different
-    * from those for everything else, we have to use a separate method.
-    */
+   * This function is used to construct fields of the avro record, where schema of the field is
+   * specified by avro representation of dataType. Since builders for record fields are different
+   * from those for everything else, we have to use a separate method.
+   */
   private def convertFieldTypeToAvro[T](
-                                         dataType: DataType,
-                                         newFieldBuilder: BaseFieldTypeBuilder[T],
-                                         structName: String,
-                                         recordNamespace: String): FieldDefault[T, _] = {
+      dataType: DataType,
+      newFieldBuilder: BaseFieldTypeBuilder[T],
+      structName: String,
+      recordNamespace: String): FieldDefault[T, _] = {
     dataType match {
       case ByteType => newFieldBuilder.intType()
       case ShortType => newFieldBuilder.intType()
@@ -323,24 +340,28 @@ object SchemaConverters {
       SchemaBuilder.builder()
     }
   }
+
   /**
-    * This function constructs converter function for a given sparkSQL datatype. This is used in
-    * writing Avro records out to disk
-    */
+   * This function constructs converter function for a given sparkSQL datatype. This is used in
+   * writing Avro records out to disk
+   */
   def createConverterToAvro(
-                             dataType: DataType,
-                             structName: String,
-                             recordNamespace: String): (Any) => Any = {
+      dataType: DataType,
+      structName: String,
+      recordNamespace: String): (Any) => Any = {
     dataType match {
-      case BinaryType => (item: Any) => item match {
-        case null => null
-        case bytes: Array[Byte] => ByteBuffer.wrap(bytes)
-      }
-      case ByteType | ShortType | IntegerType | LongType |
-           FloatType | DoubleType | StringType | BooleanType => identity
+      case BinaryType =>
+        (item: Any) =>
+          item match {
+            case null => null
+            case bytes: Array[Byte] => ByteBuffer.wrap(bytes)
+          }
+      case ByteType | ShortType | IntegerType | LongType | FloatType | DoubleType | StringType |
+          BooleanType =>
+        identity
       case _: DecimalType => (item: Any) => if (item == null) null else item.toString
-      case TimestampType => (item: Any) =>
-        if (item == null) null else item.asInstanceOf[Timestamp].getTime
+      case TimestampType =>
+        (item: Any) => if (item == null) null else item.asInstanceOf[Timestamp].getTime
       case ArrayType(elementType, _) =>
         val elementConverter = createConverterToAvro(elementType, structName, recordNamespace)
         (item: Any) => {
@@ -373,8 +394,8 @@ object SchemaConverters {
         }
       case structType: StructType =>
         val builder = SchemaBuilder.record(structName).namespace(recordNamespace)
-        val schema: Schema = SchemaConverters.convertStructToAvro(
-          structType, builder, recordNamespace)
+        val schema: Schema =
+          SchemaConverters.convertStructToAvro(structType, builder, recordNamespace)
         val fieldConverters = structType.fields.map(field =>
           createConverterToAvro(field.dataType, field.name, recordNamespace))
         (item: Any) => {
@@ -400,10 +421,10 @@ object SchemaConverters {
 @InterfaceAudience.Private
 object AvroSerdes {
   // We only handle top level is record or primary type now
-  def serialize(input: Any, schema: Schema): Array[Byte]= {
+  def serialize(input: Any, schema: Schema): Array[Byte] = {
     schema.getType match {
       case BOOLEAN => Bytes.toBytes(input.asInstanceOf[Boolean])
-      case BYTES | FIXED=> input.asInstanceOf[Array[Byte]]
+      case BYTES | FIXED => input.asInstanceOf[Array[Byte]]
       case DOUBLE => Bytes.toBytes(input.asInstanceOf[Double])
       case FLOAT => Bytes.toBytes(input.asInstanceOf[Float])
       case INT => Bytes.toBytes(input.asInstanceOf[Int])
@@ -416,7 +437,7 @@ object AvroSerdes {
         val encoder2: BinaryEncoder = EncoderFactory.get().directBinaryEncoder(bao2, null)
         writer2.write(gr, encoder2)
         bao2.toByteArray()
-      case _ => throw new Exception(s"unsupported data type ${schema.getType}") //TODO
+      case _ => throw new Exception(s"unsupported data type ${schema.getType}") // TODO
     }
   }
 

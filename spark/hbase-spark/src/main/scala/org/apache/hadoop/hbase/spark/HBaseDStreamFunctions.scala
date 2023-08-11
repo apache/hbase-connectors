@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -50,9 +51,7 @@ object HBaseDStreamFunctions {
      * @param f          The function that will turn the DStream values
      *                   into HBase Put objects.
      */
-    def hbaseBulkPut(hc: HBaseContext,
-                     tableName: TableName,
-                     f: (T) => Put): Unit = {
+    def hbaseBulkPut(hc: HBaseContext, tableName: TableName, f: (T) => Put): Unit = {
       hc.streamBulkPut(dStream, tableName, f)
     }
 
@@ -75,10 +74,12 @@ object HBaseDStreamFunctions {
      *                       out of the resulting DStream
      * @return               A resulting DStream with type R objects
      */
-    def hbaseBulkGet[R: ClassTag](hc: HBaseContext,
-                     tableName: TableName,
-                     batchSize:Int, f: (T) => Get, convertResult: (Result) => R):
-    DStream[R] = {
+    def hbaseBulkGet[R: ClassTag](
+        hc: HBaseContext,
+        tableName: TableName,
+        batchSize: Int,
+        f: (T) => Get,
+        convertResult: (Result) => R): DStream[R] = {
       hc.streamBulkGet[T, R](tableName, batchSize, dStream, f, convertResult)
     }
 
@@ -96,12 +97,17 @@ object HBaseDStreamFunctions {
      *                       in HBase Get objects
      * @return               A resulting DStream with type R objects
      */
-    def hbaseBulkGet(hc: HBaseContext,
-                     tableName: TableName, batchSize:Int,
-                     f: (T) => Get): DStream[(ImmutableBytesWritable, Result)] = {
-        hc.streamBulkGet[T, (ImmutableBytesWritable, Result)](
-          tableName, batchSize, dStream, f,
-          result => (new ImmutableBytesWritable(result.getRow), result))
+    def hbaseBulkGet(
+        hc: HBaseContext,
+        tableName: TableName,
+        batchSize: Int,
+        f: (T) => Get): DStream[(ImmutableBytesWritable, Result)] = {
+      hc.streamBulkGet[T, (ImmutableBytesWritable, Result)](
+        tableName,
+        batchSize,
+        dStream,
+        f,
+        result => (new ImmutableBytesWritable(result.getRow), result))
     }
 
     /**
@@ -115,9 +121,11 @@ object HBaseDStreamFunctions {
      *                   a HBase Delete Object
      * @param batchSize  The number of Deletes to be sent in a single batch
      */
-    def hbaseBulkDelete(hc: HBaseContext,
-                        tableName: TableName,
-                        f:(T) => Delete, batchSize:Int): Unit = {
+    def hbaseBulkDelete(
+        hc: HBaseContext,
+        tableName: TableName,
+        f: (T) => Delete,
+        batchSize: Int): Unit = {
       hc.streamBulkDelete(dStream, tableName, f, batchSize)
     }
 
@@ -132,8 +140,7 @@ object HBaseDStreamFunctions {
      * @param f   This function will get an iterator for a Partition of an
      *            DStream along with a connection object to HBase
      */
-    def hbaseForeachPartition(hc: HBaseContext,
-                              f: (Iterator[T], Connection) => Unit): Unit = {
+    def hbaseForeachPartition(hc: HBaseContext, f: (Iterator[T], Connection) => Unit): Unit = {
       hc.streamForeachPartition(dStream, f)
     }
 
@@ -151,9 +158,9 @@ object HBaseDStreamFunctions {
      *            DStream
      * @return    A resulting DStream of type R
      */
-    def hbaseMapPartitions[R: ClassTag](hc: HBaseContext,
-                                        f: (Iterator[T], Connection) => Iterator[R]):
-    DStream[R] = {
+    def hbaseMapPartitions[R: ClassTag](
+        hc: HBaseContext,
+        f: (Iterator[T], Connection) => Iterator[R]): DStream[R] = {
       hc.streamMapPartitions(dStream, f)
     }
   }

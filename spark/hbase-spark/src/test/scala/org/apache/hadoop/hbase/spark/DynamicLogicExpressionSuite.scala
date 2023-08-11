@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import java.util
@@ -24,8 +24,11 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
-class DynamicLogicExpressionSuite  extends FunSuite with
-BeforeAndAfterEach with BeforeAndAfterAll with Logging {
+class DynamicLogicExpressionSuite
+    extends FunSuite
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Logging {
 
   val encoder = JavaBytesEncoder.create(HBaseSparkConf.DEFAULT_QUERY_ENCODER)
 
@@ -137,34 +140,31 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     columnToCurrentRowValueMap.put("Col1", new ByteArrayComparable(Bytes.toBytes(10)))
     val valueFromQueryValueArray = new Array[Array[Byte]](1)
 
-    //great than
+    // great than
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 10)
     assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 20)
     assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //great than and equal
+    // great than and equal
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 5)
-    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 10)
-    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 20)
-    assert(!greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(!greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //less than
+    // less than
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 10)
     assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 5)
     assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //less than and equal
+    // less than and equal
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 20)
     assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
@@ -174,28 +174,27 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     valueFromQueryValueArray(0) = encoder.encode(IntegerType, 10)
     assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //equal too
+    // equal too
     valueFromQueryValueArray(0) = Bytes.toBytes(10)
     assert(equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = Bytes.toBytes(5)
     assert(!equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //not equal too
+    // not equal too
     valueFromQueryValueArray(0) = Bytes.toBytes(10)
     assert(!notEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = Bytes.toBytes(5)
     assert(notEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //pass through
+    // pass through
     valueFromQueryValueArray(0) = Bytes.toBytes(10)
     assert(passThrough.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = Bytes.toBytes(5)
     assert(passThrough.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
   }
-
 
   test("Double Type") {
     val leftLogic = new LessThanLogicExpression("Col1", 0)
@@ -295,34 +294,31 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     columnToCurrentRowValueMap.put("Col1", new ByteArrayComparable(Bytes.toBytes(10L)))
     val valueFromQueryValueArray = new Array[Array[Byte]](1)
 
-    //great than
+    // great than
     valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
     assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
     assert(!greaterLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //great than and equal
+    // great than and equal
     valueFromQueryValueArray(0) = encoder.encode(LongType, 5L)
-    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
-    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
-    assert(!greaterAndEqualLogic.execute(columnToCurrentRowValueMap,
-      valueFromQueryValueArray))
+    assert(!greaterAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //less than
+    // less than
     valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
     assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = encoder.encode(LongType, 5L)
     assert(!lessLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //less than and equal
+    // less than and equal
     valueFromQueryValueArray(0) = encoder.encode(LongType, 20L)
     assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
@@ -332,14 +328,14 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     valueFromQueryValueArray(0) = encoder.encode(LongType, 10L)
     assert(lessAndEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //equal too
+    // equal too
     valueFromQueryValueArray(0) = Bytes.toBytes(10L)
     assert(equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
     valueFromQueryValueArray(0) = Bytes.toBytes(5L)
     assert(!equalLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 
-    //not equal too
+    // not equal too
     valueFromQueryValueArray(0) = Bytes.toBytes(10L)
     assert(!notEqualLogic.execute(columnToCurrentRowValueMap, valueFromQueryValueArray))
 

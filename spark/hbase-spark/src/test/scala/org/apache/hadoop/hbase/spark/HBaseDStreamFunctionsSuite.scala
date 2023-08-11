@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,8 +28,11 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 import scala.collection.mutable
 
-class HBaseDStreamFunctionsSuite  extends FunSuite with
-BeforeAndAfterEach with BeforeAndAfterAll with Logging {
+class HBaseDStreamFunctionsSuite
+    extends FunSuite
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Logging {
   @transient var sc: SparkContext = null
 
   var TEST_UTIL: HBaseTestingUtility = new HBaseTestingUtility
@@ -62,27 +66,33 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
 
   test("bulkput to test HBase client") {
     val config = TEST_UTIL.getConfiguration
-    val rdd1 = sc.parallelize(Array(
-      (Bytes.toBytes("1"),
-        Array((Bytes.toBytes(columnFamily), Bytes.toBytes("a"), Bytes.toBytes("foo1")))),
-      (Bytes.toBytes("2"),
-        Array((Bytes.toBytes(columnFamily), Bytes.toBytes("b"), Bytes.toBytes("foo2")))),
-      (Bytes.toBytes("3"),
-        Array((Bytes.toBytes(columnFamily), Bytes.toBytes("c"), Bytes.toBytes("foo3"))))))
+    val rdd1 = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("1"),
+          Array((Bytes.toBytes(columnFamily), Bytes.toBytes("a"), Bytes.toBytes("foo1")))),
+        (
+          Bytes.toBytes("2"),
+          Array((Bytes.toBytes(columnFamily), Bytes.toBytes("b"), Bytes.toBytes("foo2")))),
+        (
+          Bytes.toBytes("3"),
+          Array((Bytes.toBytes(columnFamily), Bytes.toBytes("c"), Bytes.toBytes("foo3"))))))
 
-    val rdd2 = sc.parallelize(Array(
-      (Bytes.toBytes("4"),
-        Array((Bytes.toBytes(columnFamily), Bytes.toBytes("d"), Bytes.toBytes("foo")))),
-      (Bytes.toBytes("5"),
-        Array((Bytes.toBytes(columnFamily), Bytes.toBytes("e"), Bytes.toBytes("bar"))))))
+    val rdd2 = sc.parallelize(
+      Array(
+        (
+          Bytes.toBytes("4"),
+          Array((Bytes.toBytes(columnFamily), Bytes.toBytes("d"), Bytes.toBytes("foo")))),
+        (
+          Bytes.toBytes("5"),
+          Array((Bytes.toBytes(columnFamily), Bytes.toBytes("e"), Bytes.toBytes("bar"))))))
 
     var isFinished = false
 
     val hbaseContext = new HBaseContext(sc, config)
     val ssc = new StreamingContext(sc, Milliseconds(200))
 
-    val queue = mutable.Queue[RDD[(Array[Byte], Array[(Array[Byte],
-      Array[Byte], Array[Byte])])]]()
+    val queue = mutable.Queue[RDD[(Array[Byte], Array[(Array[Byte], Array[Byte], Array[Byte])])]]()
     queue += rdd1
     queue += rdd2
     val dStream = ssc.queueStream(queue)
@@ -114,24 +124,39 @@ BeforeAndAfterEach with BeforeAndAfterAll with Logging {
     val table = connection.getTable(TableName.valueOf("t1"))
 
     try {
-      val foo1 = Bytes.toString(CellUtil.cloneValue(table.get(new Get(Bytes.toBytes("1"))).
-        getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("a"))))
+      val foo1 = Bytes.toString(
+        CellUtil.cloneValue(
+          table
+            .get(new Get(Bytes.toBytes("1")))
+            .getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("a"))))
       assert(foo1 == "foo1")
 
-      val foo2 = Bytes.toString(CellUtil.cloneValue(table.get(new Get(Bytes.toBytes("2"))).
-        getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("b"))))
+      val foo2 = Bytes.toString(
+        CellUtil.cloneValue(
+          table
+            .get(new Get(Bytes.toBytes("2")))
+            .getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("b"))))
       assert(foo2 == "foo2")
 
-      val foo3 = Bytes.toString(CellUtil.cloneValue(table.get(new Get(Bytes.toBytes("3"))).
-        getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("c"))))
+      val foo3 = Bytes.toString(
+        CellUtil.cloneValue(
+          table
+            .get(new Get(Bytes.toBytes("3")))
+            .getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("c"))))
       assert(foo3 == "foo3")
 
-      val foo4 = Bytes.toString(CellUtil.cloneValue(table.get(new Get(Bytes.toBytes("4"))).
-        getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("d"))))
+      val foo4 = Bytes.toString(
+        CellUtil.cloneValue(
+          table
+            .get(new Get(Bytes.toBytes("4")))
+            .getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("d"))))
       assert(foo4 == "foo")
 
-      val foo5 = Bytes.toString(CellUtil.cloneValue(table.get(new Get(Bytes.toBytes("5"))).
-        getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("e"))))
+      val foo5 = Bytes.toString(
+        CellUtil.cloneValue(
+          table
+            .get(new Get(Bytes.toBytes("5")))
+            .getColumnLatestCell(Bytes.toBytes(columnFamily), Bytes.toBytes("e"))))
       assert(foo5 == "bar")
     } finally {
       table.close()
