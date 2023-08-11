@@ -41,10 +41,11 @@ case class Field(
   override def toString = s"$colName $cf $col"
   val isRowKey = cf == HBaseTableCatalog.rowKey
   var start: Int = _
-  def schema: Option[Schema] = avroSchema.map { x =>
-    logDebug(s"avro: $x")
-    val p = new Schema.Parser
-    p.parse(x)
+  def schema: Option[Schema] = avroSchema.map {
+    x =>
+      logDebug(s"avro: $x")
+      val p = new Schema.Parser
+      p.parse(x)
   }
 
   lazy val exeSchema = schema
@@ -76,8 +77,9 @@ case class Field(
 
   val dt = {
     sType.map(DataTypeParserWrapper.parse(_)).getOrElse {
-      schema.map { x =>
-        SchemaConverters.toSqlType(x).dataType
+      schema.map {
+        x =>
+          SchemaConverters.toSqlType(x).dataType
       }.get
     }
   }
@@ -119,8 +121,9 @@ case class RowKey(k: String) {
     if (varLength) {
       -1
     } else {
-      fields.foldLeft(0) { case (x, y) =>
-        x + y.length
+      fields.foldLeft(0) {
+        case (x, y) =>
+          x + y.length
       }
     }
   }
@@ -128,8 +131,9 @@ case class RowKey(k: String) {
 // The map between the column presented to Spark and the HBase field
 @InterfaceAudience.Private
 case class SchemaMap(map: mutable.HashMap[String, Field]) {
-  def toFields = map.map { case (name, field) =>
-    StructField(name, field.dt)
+  def toFields = map.map {
+    case (name, field) =>
+      StructField(name, field.dt)
   }.toSeq
 
   def fields = map.values
@@ -161,41 +165,44 @@ case class HBaseTableCatalog(
     logDebug(s"length: ${rowKey.length}")
     if (row.varLength) {
       var start = 0
-      row.fields.foreach { f =>
-        logDebug(s"start: $start")
-        f.start = start
-        f.length = {
-          // If the length is not defined
-          if (f.length == -1) {
-            f.dt match {
-              case StringType =>
-                var pos = rowKey.indexOf(HBaseTableCatalog.delimiter, start)
-                if (pos == -1 || pos > rowKey.length) {
-                  // this is at the last dimension
-                  pos = rowKey.length
-                }
-                pos - start
-              // We don't know the length, assume it extend to the end of the rowkey.
-              case _ => rowKey.length - start
+      row.fields.foreach {
+        f =>
+          logDebug(s"start: $start")
+          f.start = start
+          f.length = {
+            // If the length is not defined
+            if (f.length == -1) {
+              f.dt match {
+                case StringType =>
+                  var pos = rowKey.indexOf(HBaseTableCatalog.delimiter, start)
+                  if (pos == -1 || pos > rowKey.length) {
+                    // this is at the last dimension
+                    pos = rowKey.length
+                  }
+                  pos - start
+                // We don't know the length, assume it extend to the end of the rowkey.
+                case _ => rowKey.length - start
+              }
+            } else {
+              f.length
             }
-          } else {
-            f.length
           }
-        }
-        start += f.length
+          start += f.length
       }
     }
   }
 
   def initRowKey = {
     val fields = sMap.fields.filter(_.cf == HBaseTableCatalog.rowKey)
-    row.fields = row.keys.flatMap(n => fields.find(_.col == n))
+    row.fields = row.keys.flatMap(
+      n => fields.find(_.col == n))
     // The length is determined at run time if it is string or binary and the length is undefined.
     if (row.fields.filter(_.length == -1).isEmpty) {
       var start = 0
-      row.fields.foreach { f =>
-        f.start = start
-        start += f.length
+      row.fields.foreach {
+        f =>
+          f.start = start
+          start += f.length
       }
     } else {
       row.varLength = true
@@ -250,24 +257,26 @@ object HBaseTableCatalog {
     val tName = tableMeta.get(tableName).get.asInstanceOf[String]
     val cIter = map.get(columns).get.asInstanceOf[Map[String, Map[String, String]]].toIterator
     val schemaMap = mutable.HashMap.empty[String, Field]
-    cIter.foreach { case (name, column) =>
-      val sd = {
-        column
-          .get(serdes)
-          .asInstanceOf[Option[String]]
-          .map(n => Class.forName(n).newInstance().asInstanceOf[SerDes])
-      }
-      val len = column.get(length).map(_.toInt).getOrElse(-1)
-      val sAvro = column.get(avro).map(parameters(_))
-      val f = Field(
-        name,
-        column.getOrElse(cf, rowKey),
-        column.get(col).get,
-        column.get(`type`),
-        sAvro,
-        sd,
-        len)
-      schemaMap.+=((name, f))
+    cIter.foreach {
+      case (name, column) =>
+        val sd = {
+          column
+            .get(serdes)
+            .asInstanceOf[Option[String]]
+            .map(
+              n => Class.forName(n).newInstance().asInstanceOf[SerDes])
+        }
+        val len = column.get(length).map(_.toInt).getOrElse(-1)
+        val sAvro = column.get(avro).map(parameters(_))
+        val f = Field(
+          name,
+          column.getOrElse(cf, rowKey),
+          column.get(col).get,
+          column.get(`type`),
+          sAvro,
+          sd,
+          len)
+        schemaMap.+=((name, f))
     }
     val rKey = RowKey(map.get(rowKey).get.asInstanceOf[String])
     HBaseTableCatalog(nSpace, tName, rKey, SchemaMap(schemaMap), parameters)
@@ -319,8 +328,9 @@ object HBaseTableCatalog {
         _.columnFamily == "rowkey"
       }
       .map(_.columnName)
-    val cols = schemaMap.map { x =>
-      s""""${x.columnName}":{"cf":"${x.columnFamily}", "col":"${x.qualifier}", "type":"${x.colType}"}""".stripMargin
+    val cols = schemaMap.map {
+      x =>
+        s""""${x.columnName}":{"cf":"${x.columnFamily}", "col":"${x.qualifier}", "type":"${x.colType}"}""".stripMargin
     }
     val jsonCatalog =
       s"""{
@@ -348,31 +358,32 @@ object HBaseTableCatalog {
     try {
       val columnDefinitions = schemaMappingString.split(',')
       val resultingMap = new java.util.HashMap[String, SchemaQualifierDefinition]()
-      columnDefinitions.map(cd => {
-        val parts = cd.trim.split(' ')
+      columnDefinitions.map(
+        cd => {
+          val parts = cd.trim.split(' ')
 
-        // Make sure we get three parts
-        // <ColumnName> <ColumnType> <ColumnFamily:Qualifier>
-        if (parts.length == 3) {
-          val hbaseDefinitionParts = if (parts(2).charAt(0) == ':') {
-            Array[String]("rowkey", parts(0))
-          } else {
-            parts(2).split(':')
-          }
-          resultingMap.put(
-            parts(0),
-            new SchemaQualifierDefinition(
+          // Make sure we get three parts
+          // <ColumnName> <ColumnType> <ColumnFamily:Qualifier>
+          if (parts.length == 3) {
+            val hbaseDefinitionParts = if (parts(2).charAt(0) == ':') {
+              Array[String]("rowkey", parts(0))
+            } else {
+              parts(2).split(':')
+            }
+            resultingMap.put(
               parts(0),
-              parts(1),
-              hbaseDefinitionParts(0),
-              hbaseDefinitionParts(1)))
-        } else {
-          throw new IllegalArgumentException(
-            "Invalid value for schema mapping '" + cd +
-              "' should be '<columnName> <columnType> <columnFamily>:<qualifier>' " +
-              "for columns and '<columnName> <columnType> :<qualifier>' for rowKeys")
-        }
-      })
+              new SchemaQualifierDefinition(
+                parts(0),
+                parts(1),
+                hbaseDefinitionParts(0),
+                hbaseDefinitionParts(1)))
+          } else {
+            throw new IllegalArgumentException(
+              "Invalid value for schema mapping '" + cd +
+                "' should be '<columnName> <columnType> <columnFamily>:<qualifier>' " +
+                "for columns and '<columnName> <columnType> :<qualifier>' for rowKeys")
+          }
+        })
       resultingMap
     } catch {
       case e: Exception =>

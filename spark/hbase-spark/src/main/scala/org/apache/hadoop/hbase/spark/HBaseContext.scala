@@ -99,7 +99,8 @@ class HBaseContext(
    *             with HBase
    */
   def foreachPartition[T](rdd: RDD[T], f: (Iterator[T], Connection) => Unit): Unit = {
-    rdd.foreachPartition(it => hbaseForeachPartition(broadcastedConf, it, f))
+    rdd.foreachPartition(
+      it => hbaseForeachPartition(broadcastedConf, it, f))
   }
 
   /**
@@ -116,9 +117,10 @@ class HBaseContext(
    *                 interact with HBase
    */
   def foreachPartition[T](dstream: DStream[T], f: (Iterator[T], Connection) => Unit): Unit = {
-    dstream.foreachRDD((rdd, time) => {
-      foreachPartition(rdd, f)
-    })
+    dstream.foreachRDD(
+      (rdd, time) => {
+        foreachPartition(rdd, f)
+      })
   }
 
   /**
@@ -140,7 +142,8 @@ class HBaseContext(
       rdd: RDD[T],
       mp: (Iterator[T], Connection) => Iterator[R]): RDD[R] = {
 
-    rdd.mapPartitions[R](it => hbaseMapPartition[T, R](broadcastedConf, it, mp))
+    rdd.mapPartitions[R](
+      it => hbaseMapPartition[T, R](broadcastedConf, it, mp))
 
   }
 
@@ -166,7 +169,8 @@ class HBaseContext(
    */
   def streamForeachPartition[T](dstream: DStream[T], f: (Iterator[T], Connection) => Unit): Unit = {
 
-    dstream.foreachRDD(rdd => this.foreachPartition(rdd, f))
+    dstream.foreachRDD(
+      rdd => this.foreachPartition(rdd, f))
   }
 
   /**
@@ -192,7 +196,8 @@ class HBaseContext(
   def streamMapPartitions[T, U: ClassTag](
       dstream: DStream[T],
       f: (Iterator[T], Connection) => Iterator[U]): DStream[U] = {
-    dstream.mapPartitions(it => hbaseMapPartition[T, U](broadcastedConf, it, f))
+    dstream.mapPartitions(
+      it => hbaseMapPartition[T, U](broadcastedConf, it, f))
   }
 
   /**
@@ -210,16 +215,18 @@ class HBaseContext(
   def bulkPut[T](rdd: RDD[T], tableName: TableName, f: (T) => Put) {
 
     val tName = tableName.getName
-    rdd.foreachPartition(it =>
-      hbaseForeachPartition[T](
-        broadcastedConf,
-        it,
-        (iterator, connection) => {
-          val m = connection.getBufferedMutator(TableName.valueOf(tName))
-          iterator.foreach(T => m.mutate(f(T)))
-          m.flush()
-          m.close()
-        }))
+    rdd.foreachPartition(
+      it =>
+        hbaseForeachPartition[T](
+          broadcastedConf,
+          it,
+          (iterator, connection) => {
+            val m = connection.getBufferedMutator(TableName.valueOf(tName))
+            iterator.foreach(
+              T => m.mutate(f(T)))
+            m.flush()
+            m.close()
+          }))
   }
 
   def applyCreds[T]() {
@@ -248,9 +255,10 @@ class HBaseContext(
    */
   def streamBulkPut[T](dstream: DStream[T], tableName: TableName, f: (T) => Put) = {
     val tName = tableName.getName
-    dstream.foreachRDD((rdd, time) => {
-      bulkPut(rdd, TableName.valueOf(tName), f)
-    })
+    dstream.foreachRDD(
+      (rdd, time) => {
+        bulkPut(rdd, TableName.valueOf(tName), f)
+      })
   }
 
   /**
@@ -305,26 +313,28 @@ class HBaseContext(
       batchSize: Integer) {
 
     val tName = tableName.getName
-    rdd.foreachPartition(it =>
-      hbaseForeachPartition[T](
-        broadcastedConf,
-        it,
-        (iterator, connection) => {
-          val table = connection.getTable(TableName.valueOf(tName))
-          val mutationList = new java.util.ArrayList[Mutation]
-          iterator.foreach(T => {
-            mutationList.add(f(T))
-            if (mutationList.size >= batchSize) {
+    rdd.foreachPartition(
+      it =>
+        hbaseForeachPartition[T](
+          broadcastedConf,
+          it,
+          (iterator, connection) => {
+            val table = connection.getTable(TableName.valueOf(tName))
+            val mutationList = new java.util.ArrayList[Mutation]
+            iterator.foreach(
+              T => {
+                mutationList.add(f(T))
+                if (mutationList.size >= batchSize) {
+                  table.batch(mutationList, null)
+                  mutationList.clear()
+                }
+              })
+            if (mutationList.size() > 0) {
               table.batch(mutationList, null)
               mutationList.clear()
             }
-          })
-          if (mutationList.size() > 0) {
-            table.batch(mutationList, null)
-            mutationList.clear()
-          }
-          table.close()
-        }))
+            table.close()
+          }))
   }
 
   /**
@@ -338,9 +348,10 @@ class HBaseContext(
       f: (T) => Mutation,
       batchSize: Integer) = {
     val tName = tableName.getName
-    dstream.foreachRDD((rdd, time) => {
-      bulkMutation(rdd, TableName.valueOf(tName), f, batchSize)
-    })
+    dstream.foreachRDD(
+      (rdd, time) => {
+        bulkMutation(rdd, TableName.valueOf(tName), f, batchSize)
+      })
   }
 
   /**
@@ -367,7 +378,8 @@ class HBaseContext(
 
     val getMapPartition = new GetMapPartition(tableName, batchSize, makeGet, convertResult)
 
-    rdd.mapPartitions[U](it => hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
+    rdd.mapPartitions[U](
+      it => hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
   }
 
   /**
@@ -396,8 +408,8 @@ class HBaseContext(
 
     val getMapPartition = new GetMapPartition(tableName, batchSize, makeGet, convertResult)
 
-    dStream.mapPartitions[U](it =>
-      hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
+    dStream.mapPartitions[U](
+      it => hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
   }
 
   /**
@@ -644,7 +656,8 @@ class HBaseContext(
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
-        .flatMap(r => flatMap(r))
+        .flatMap(
+          r => flatMap(r))
         .repartitionAndSortWithinPartitions(regionSplitPartitioner)
         .hbaseForeachPartition(
           this,
@@ -659,33 +672,34 @@ class HBaseContext(
 
             // Here is where we finally iterate through the data in this partition of the
             // RDD that has been sorted and partitioned
-            it.foreach { case (keyFamilyQualifier, cellValue: Array[Byte]) =>
-              val wl = writeValueToHFile(
-                keyFamilyQualifier.rowKey,
-                keyFamilyQualifier.family,
-                keyFamilyQualifier.qualifier,
-                cellValue,
-                nowTimeStamp,
-                fs,
-                conn,
-                localTableName,
-                conf,
-                familyHFileWriteOptionsMapInternal,
-                hfileCompression,
-                writerMap,
-                stagingDir)
+            it.foreach {
+              case (keyFamilyQualifier, cellValue: Array[Byte]) =>
+                val wl = writeValueToHFile(
+                  keyFamilyQualifier.rowKey,
+                  keyFamilyQualifier.family,
+                  keyFamilyQualifier.qualifier,
+                  cellValue,
+                  nowTimeStamp,
+                  fs,
+                  conn,
+                  localTableName,
+                  conf,
+                  familyHFileWriteOptionsMapInternal,
+                  hfileCompression,
+                  writerMap,
+                  stagingDir)
 
-              rollOverRequested = rollOverRequested || wl.written > maxSize
+                rollOverRequested = rollOverRequested || wl.written > maxSize
 
-              // This will only roll if we have at least one column family file that is
-              // bigger then maxSize and we have finished a given row key
-              if (rollOverRequested && Bytes
-                  .compareTo(previousRow, keyFamilyQualifier.rowKey) != 0) {
-                rollWriters(fs, writerMap, regionSplitPartitioner, previousRow, compactionExclude)
-                rollOverRequested = false
-              }
+                // This will only roll if we have at least one column family file that is
+                // bigger then maxSize and we have finished a given row key
+                if (rollOverRequested && Bytes
+                    .compareTo(previousRow, keyFamilyQualifier.rowKey) != 0) {
+                  rollWriters(fs, writerMap, regionSplitPartitioner, previousRow, compactionExclude)
+                  rollOverRequested = false
+                }
 
-              previousRow = keyFamilyQualifier.rowKey
+                previousRow = keyFamilyQualifier.rowKey
             }
             // We have finished all the data so lets close up the writers
             rollWriters(fs, writerMap, regionSplitPartitioner, previousRow, compactionExclude)
@@ -775,7 +789,8 @@ class HBaseContext(
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
-        .map(r => mapFunction(r))
+        .map(
+          r => mapFunction(r))
         .repartitionAndSortWithinPartitions(regionSplitPartitioner)
         .hbaseForeachPartition(
           this,
@@ -832,21 +847,22 @@ class HBaseContext(
                     previousRow = rowKey.value
                   }
 
-                  writerMap.values.foreach(wl => {
-                    rollOverRequested = rollOverRequested || wl.written > maxSize
+                  writerMap.values.foreach(
+                    wl => {
+                      rollOverRequested = rollOverRequested || wl.written > maxSize
 
-                    // This will only roll if we have at least one column family file that is
-                    // bigger then maxSize and we have finished a given row key
-                    if (rollOverRequested) {
-                      rollWriters(
-                        fs,
-                        writerMap,
-                        regionSplitPartitioner,
-                        previousRow,
-                        compactionExclude)
-                      rollOverRequested = false
-                    }
-                  })
+                      // This will only roll if we have at least one column family file that is
+                      // bigger then maxSize and we have finished a given row key
+                      if (rollOverRequested) {
+                        rollWriters(
+                          fs,
+                          writerMap,
+                          regionSplitPartitioner,
+                          previousRow,
+                          compactionExclude)
+                        rollOverRequested = false
+                      }
+                    })
                 }
             }
 
@@ -1056,14 +1072,15 @@ class HBaseContext(
       regionSplitPartitioner: BulkLoadPartitioner,
       previousRow: Array[Byte],
       compactionExclude: Boolean): Unit = {
-    writerMap.values.foreach(wl => {
-      if (wl.writer != null) {
-        logDebug(
-          "Writer=" + wl.writer.getPath +
-            (if (wl.written == 0) "" else ", wrote=" + wl.written))
-        closeHFileWriter(fs, wl.writer, regionSplitPartitioner, previousRow, compactionExclude)
-      }
-    })
+    writerMap.values.foreach(
+      wl => {
+        if (wl.writer != null) {
+          logDebug(
+            "Writer=" + wl.writer.getPath +
+              (if (wl.written == 0) "" else ", wrote=" + wl.written))
+          closeHFileWriter(fs, wl.writer, regionSplitPartitioner, previousRow, compactionExclude)
+        }
+      })
     writerMap.clear()
 
   }

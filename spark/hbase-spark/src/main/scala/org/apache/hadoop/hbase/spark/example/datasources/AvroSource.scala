@@ -116,8 +116,9 @@ object AvroSource {
         .load()
     }
 
-    val data = (0 to 255).map { i =>
-      AvroHBaseRecord(i)
+    val data = (0 to 255).map {
+      i =>
+        AvroHBaseRecord(i)
     }
 
     sc.parallelize(data)

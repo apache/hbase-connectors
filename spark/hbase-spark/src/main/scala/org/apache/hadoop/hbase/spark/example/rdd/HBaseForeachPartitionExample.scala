@@ -76,11 +76,13 @@ object HBaseForeachPartitionExample {
         (it, connection) => {
           val m = connection.getBufferedMutator(TableName.valueOf(tableName))
 
-          it.foreach(r => {
-            val put = new Put(r._1)
-            r._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
-            m.mutate(put)
-          })
+          it.foreach(
+            r => {
+              val put = new Put(r._1)
+              r._2.foreach(
+                (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+              m.mutate(put)
+            })
           m.flush()
           m.close()
         })

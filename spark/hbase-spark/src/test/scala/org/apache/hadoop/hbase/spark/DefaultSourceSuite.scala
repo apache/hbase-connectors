@@ -1059,8 +1059,9 @@ class DefaultSourceSuite
   test("populate table") {
     val sql = sqlContext
     import sql.implicits._
-    val data = (0 to 255).map { i =>
-      HBaseRecord(i, "extra")
+    val data = (0 to 255).map {
+      i =>
+        HBaseRecord(i, "extra")
     }
     sc.parallelize(data)
       .toDF
@@ -1160,11 +1161,13 @@ class DefaultSourceSuite
     // and get an old view.
     val oldMs = 754869600000L
     val startMs = System.currentTimeMillis()
-    val oldData = (0 to 100).map { i =>
-      HBaseRecord(i, "old")
+    val oldData = (0 to 100).map {
+      i =>
+        HBaseRecord(i, "old")
     }
-    val newData = (200 to 255).map { i =>
-      HBaseRecord(i, "new")
+    val newData = (200 to 255).map {
+      i =>
+        HBaseRecord(i, "new")
     }
 
     sc.parallelize(oldData)
@@ -1281,8 +1284,9 @@ class DefaultSourceSuite
     val sql = sqlContext
     import sql.implicits._
 
-    val data = (0 to 255).map { i =>
-      AvroHBaseKeyRecord(i)
+    val data = (0 to 255).map {
+      i =>
+        AvroHBaseKeyRecord(i)
     }
     sc.parallelize(data)
       .toDF

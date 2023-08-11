@@ -85,8 +85,9 @@ object HBaseSource {
         .load()
     }
 
-    val data = (0 to 255).map { i =>
-      HBaseRecord(i)
+    val data = (0 to 255).map {
+      i =>
+        HBaseRecord(i)
     }
 
     sc.parallelize(data)

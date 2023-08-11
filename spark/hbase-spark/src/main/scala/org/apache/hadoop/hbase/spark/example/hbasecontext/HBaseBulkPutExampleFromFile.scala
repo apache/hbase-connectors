@@ -55,10 +55,11 @@ object HBaseBulkPutExampleFromFile {
     try {
       var rdd = sc
         .hadoopFile(inputFile, classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
-        .map(v => {
-          System.out.println("reading-" + v._2.toString)
-          v._2.toString
-        })
+        .map(
+          v => {
+            System.out.println("reading-" + v._2.toString)
+            v._2.toString
+          })
 
       val conf = HBaseConfiguration.create()
 

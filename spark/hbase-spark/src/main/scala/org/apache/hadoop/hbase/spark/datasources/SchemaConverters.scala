@@ -80,9 +80,10 @@ object SchemaConverters {
       case ENUM => SchemaType(StringType, nullable = false)
 
       case RECORD =>
-        val fields = avroSchema.getFields.map { f =>
-          val schemaType = toSqlType(f.schema())
-          StructField(f.name, schemaType.dataType, schemaType.nullable)
+        val fields = avroSchema.getFields.map {
+          f =>
+            val schemaType = toSqlType(f.schema())
+            StructField(f.name, schemaType.dataType, schemaType.nullable)
         }
 
         SchemaType(StructType(fields), nullable = false)
@@ -132,18 +133,19 @@ object SchemaConverters {
       schemaBuilder: RecordBuilder[T],
       recordNamespace: String): T = {
     val fieldsAssembler: FieldAssembler[T] = schemaBuilder.fields()
-    structType.fields.foreach { field =>
-      val newField = fieldsAssembler.name(field.name).`type`()
+    structType.fields.foreach {
+      field =>
+        val newField = fieldsAssembler.name(field.name).`type`()
 
-      if (field.nullable) {
-        convertFieldTypeToAvro(
-          field.dataType,
-          newField.nullable(),
-          field.name,
-          recordNamespace).noDefault
-      } else {
-        convertFieldTypeToAvro(field.dataType, newField, field.name, recordNamespace).noDefault
-      }
+        if (field.nullable) {
+          convertFieldTypeToAvro(
+            field.dataType,
+            newField.nullable(),
+            field.name,
+            recordNamespace).noDefault
+        } else {
+          convertFieldTypeToAvro(field.dataType, newField, field.name, recordNamespace).noDefault
+        }
     }
     fieldsAssembler.endRecord()
   }
@@ -176,7 +178,8 @@ object SchemaConverters {
             javaBytes
           }
       case RECORD =>
-        val fieldConverters = schema.getFields.map(f => createConverterToSQL(f.schema))
+        val fieldConverters = schema.getFields.map(
+          f => createConverterToSQL(f.schema))
         (item: Any) =>
           if (item == null) {
             null
@@ -211,7 +214,8 @@ object SchemaConverters {
           } else {
             item
               .asInstanceOf[HashMap[Any, Any]]
-              .map(x => (x._1.toString, valueConverter(x._2)))
+              .map(
+                x => (x._1.toString, valueConverter(x._2)))
               .toMap
           }
       case UNION =>
@@ -386,8 +390,9 @@ object SchemaConverters {
             null
           } else {
             val javaMap = new HashMap[String, Any]()
-            item.asInstanceOf[Map[String, Any]].foreach { case (key, value) =>
-              javaMap.put(key, valueConverter(value))
+            item.asInstanceOf[Map[String, Any]].foreach {
+              case (key, value) =>
+                javaMap.put(key, valueConverter(value))
             }
             javaMap
           }
@@ -396,8 +401,8 @@ object SchemaConverters {
         val builder = SchemaBuilder.record(structName).namespace(recordNamespace)
         val schema: Schema =
           SchemaConverters.convertStructToAvro(structType, builder, recordNamespace)
-        val fieldConverters = structType.fields.map(field =>
-          createConverterToAvro(field.dataType, field.name, recordNamespace))
+        val fieldConverters = structType.fields.map(
+          field => createConverterToAvro(field.dataType, field.name, recordNamespace))
         (item: Any) => {
           if (item == null) {
             null

@@ -53,9 +53,15 @@ object HBaseDistributedScanExample {
 
       val getRdd = hbaseContext.hbaseRDD(TableName.valueOf(tableName), scan)
 
-      getRdd.foreach(v => println(Bytes.toString(v._1.get())))
+      getRdd.foreach(
+        v => println(Bytes.toString(v._1.get())))
 
-      println("Length: " + getRdd.map(r => r._1.copyBytes()).collect().length);
+      println(
+        "Length: " + getRdd
+          .map(
+            r => r._1.copyBytes())
+          .collect()
+          .length);
     } finally {
       sc.stop()
     }

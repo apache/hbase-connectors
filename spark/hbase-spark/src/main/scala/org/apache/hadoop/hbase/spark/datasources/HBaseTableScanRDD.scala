@@ -74,23 +74,31 @@ class HBaseTableScanRDD(
     val regions = RegionResource(relation)
     var idx = 0
     logDebug(s"There are ${regions.size} regions")
-    val ps = regions.flatMap { x =>
-      val rs = Ranges.and(Range(x), ranges)
-      val ps = Points.and(Range(x), points)
-      if (rs.size > 0 || ps.size > 0) {
-        if (log.isDebugEnabled) {
-          rs.foreach(x => logDebug(x.toString))
+    val ps = regions.flatMap {
+      x =>
+        val rs = Ranges.and(Range(x), ranges)
+        val ps = Points.and(Range(x), points)
+        if (rs.size > 0 || ps.size > 0) {
+          if (log.isDebugEnabled) {
+            rs.foreach(
+              x => logDebug(x.toString))
+          }
+          idx += 1
+          Some(
+            HBaseScanPartition(
+              idx - 1,
+              x,
+              rs,
+              ps,
+              SerializedFilter.toSerializedTypedFilter(filter)))
+        } else {
+          None
         }
-        idx += 1
-        Some(
-          HBaseScanPartition(idx - 1, x, rs, ps, SerializedFilter.toSerializedTypedFilter(filter)))
-      } else {
-        None
-      }
     }.toArray
     if (log.isDebugEnabled) {
       logDebug(s"Partitions: ${ps.size}");
-      ps.foreach(x => logDebug(x.toString))
+      ps.foreach(
+        x => logDebug(x.toString))
     }
     regions.release()
     ShutdownHookManager.affixShutdownHook(
@@ -120,27 +128,30 @@ class HBaseTableScanRDD(
       filter: Option[SparkSQLPushDownFilter],
       columns: Seq[Field],
       hbaseContext: HBaseContext): Iterator[Result] = {
-    g.grouped(relation.bulkGetSize).flatMap { x =>
-      val gets = new ArrayList[Get](x.size)
-      val rowkeySet = new mutable.HashSet[String]()
-      x.foreach { y =>
-        if (!rowkeySet.contains(y.mkString("Array(", ", ", ")"))) {
-          val g = new Get(y)
-          handleTimeSemantics(g)
-          columns.foreach { d =>
-            if (!d.isRowKey) {
-              g.addColumn(d.cfBytes, d.colBytes)
+    g.grouped(relation.bulkGetSize).flatMap {
+      x =>
+        val gets = new ArrayList[Get](x.size)
+        val rowkeySet = new mutable.HashSet[String]()
+        x.foreach {
+          y =>
+            if (!rowkeySet.contains(y.mkString("Array(", ", ", ")"))) {
+              val g = new Get(y)
+              handleTimeSemantics(g)
+              columns.foreach {
+                d =>
+                  if (!d.isRowKey) {
+                    g.addColumn(d.cfBytes, d.colBytes)
+                  }
+              }
+              filter.foreach(g.setFilter(_))
+              gets.add(g)
+              rowkeySet.add(y.mkString("Array(", ", ", ")"))
             }
-          }
-          filter.foreach(g.setFilter(_))
-          gets.add(g)
-          rowkeySet.add(y.mkString("Array(", ", ", ")"))
         }
-      }
-      hbaseContext.applyCreds()
-      val tmp = tbr.get(gets)
-      rddResources.addResource(tmp)
-      toResultIterator(tmp)
+        hbaseContext.applyCreds()
+        val tmp = tbr.get(gets)
+        rddResources.addResource(tmp)
+        toResultIterator(tmp)
     }
   }
 
@@ -183,10 +194,11 @@ class HBaseTableScanRDD(
     }
     handleTimeSemantics(scan)
 
-    columns.foreach { d =>
-      if (!d.isRowKey) {
-        scan.addColumn(d.cfBytes, d.colBytes)
-      }
+    columns.foreach {
+      d =>
+        if (!d.isRowKey) {
+          scan.addColumn(d.cfBytes, d.colBytes)
+        }
     }
     scan.setCacheBlocks(relation.blockCacheEnable)
     scan.setBatch(relation.batchNum)
@@ -230,7 +242,8 @@ class HBaseTableScanRDD(
     val scans = partition.scanRanges
       .map(buildScan(_, filter, columns))
     val tableResource = TableResource(relation)
-    context.addTaskCompletionListener[Unit](context => close())
+    context.addTaskCompletionListener[Unit](
+      context => close())
     val points = partition.points
     val gIt: Iterator[Result] = {
       if (points.isEmpty) {
@@ -240,15 +253,17 @@ class HBaseTableScanRDD(
       }
     }
     val rIts = scans.par
-      .map { scan =>
-        hbaseContext.applyCreds()
-        val scanner = tableResource.getScanner(scan)
-        rddResources.addResource(scanner)
-        scanner
+      .map {
+        scan =>
+          hbaseContext.applyCreds()
+          val scanner = tableResource.getScanner(scan)
+          rddResources.addResource(scanner)
+          scanner
       }
       .map(toResultIterator(_))
-      .fold(Iterator.empty: Iterator[Result]) { case (x, y) =>
-        x ++ y
+      .fold(Iterator.empty: Iterator[Result]) {
+        case (x, y) =>
+          x ++ y
       } ++ gIt
     ShutdownHookManager.affixShutdownHook(
       new Thread() {

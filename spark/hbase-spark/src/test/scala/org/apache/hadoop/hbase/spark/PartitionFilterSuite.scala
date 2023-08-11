@@ -93,8 +93,9 @@ class PartitionFilterSuite
 
   // The original raw data used for construct result set without going through
   // data frame logic. It is used to verify the result set retrieved from data frame logic.
-  val rawResult = (0 until 32).map { i =>
-    FilterRangeRecord(i)
+  val rawResult = (0 until 32).map {
+    i =>
+      FilterRangeRecord(i)
   }
 
   def collectToSet[T](df: DataFrame): Set[T] = {
@@ -437,7 +438,11 @@ class PartitionFilterSuite
     val s = df.filter($"intCol0" > -10 && $"intCol0" <= 10).select($"intCol0")
     s.show
     // filter results without going through dataframe
-    val expected = rawResult.filter(x => x.intCol0 > -10 && x.intCol0 <= 10).map(_.intCol0).toSet
+    val expected = rawResult
+      .filter(
+        x => x.intCol0 > -10 && x.intCol0 <= 10)
+      .map(_.intCol0)
+      .toSet
     // filter results going through dataframe
     val result = collectToSet[Int](s)
     assert(expected === result)
@@ -478,7 +483,11 @@ class PartitionFilterSuite
     val s = df.filter($"intCol0" <= -10 || $"intCol0" > 10).select($"intCol0")
     s.show
     // filter results without going through dataframe
-    val expected = rawResult.filter(x => x.intCol0 <= -10 || x.intCol0 > 10).map(_.intCol0).toSet
+    val expected = rawResult
+      .filter(
+        x => x.intCol0 <= -10 || x.intCol0 > 10)
+      .map(_.intCol0)
+      .toSet
     // filter results going through dataframe
     val result = collectToSet[Int](s)
     assert(expected === result)

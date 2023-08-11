@@ -96,8 +96,9 @@ object DataType {
     }
 
     // test populate table
-    val data = (0 until 32).map { i =>
-      IntKeyRecord(i)
+    val data = (0 until 32).map {
+      i =>
+        IntKeyRecord(i)
     }
     sc.parallelize(data)
       .toDF

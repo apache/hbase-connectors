@@ -52,58 +52,65 @@ object Ranges {
   // 1. r.lower.inc is true, and r.upper.inc is false
   // 2. for each range in rs, its upper.inc is false
   def and(r: Range, rs: Seq[Range]): Seq[Range] = {
-    rs.flatMap { s =>
-      val lower = s.lower
-        .map { x =>
-          // the scan has lower bound
-          r.lower
-            .map { y =>
-              // the region has lower bound
-              if (ord.compare(x.b, y.b) < 0) {
-                // scan lower bound is smaller than region server lower bound
-                Some(y)
-              } else {
-                // scan low bound is greater or equal to region server lower bound
-                Some(x)
-              }
-            }
-            .getOrElse(Some(x))
-        }
-        .getOrElse(r.lower)
+    rs.flatMap {
+      s =>
+        val lower = s.lower
+          .map {
+            x =>
+              // the scan has lower bound
+              r.lower
+                .map {
+                  y =>
+                    // the region has lower bound
+                    if (ord.compare(x.b, y.b) < 0) {
+                      // scan lower bound is smaller than region server lower bound
+                      Some(y)
+                    } else {
+                      // scan low bound is greater or equal to region server lower bound
+                      Some(x)
+                    }
+                }
+                .getOrElse(Some(x))
+          }
+          .getOrElse(r.lower)
 
-      val upper = s.upper
-        .map { x =>
-          // the scan has upper bound
-          r.upper
-            .map { y =>
-              // the region has upper bound
-              if (ord.compare(x.b, y.b) >= 0) {
-                // scan upper bound is larger than server upper bound
-                // but region server scan stop is exclusive. It is OK here.
-                Some(y)
-              } else {
-                // scan upper bound is less or equal to region server upper bound
-                Some(x)
-              }
-            }
-            .getOrElse(Some(x))
-        }
-        .getOrElse(r.upper)
+        val upper = s.upper
+          .map {
+            x =>
+              // the scan has upper bound
+              r.upper
+                .map {
+                  y =>
+                    // the region has upper bound
+                    if (ord.compare(x.b, y.b) >= 0) {
+                      // scan upper bound is larger than server upper bound
+                      // but region server scan stop is exclusive. It is OK here.
+                      Some(y)
+                    } else {
+                      // scan upper bound is less or equal to region server upper bound
+                      Some(x)
+                    }
+                }
+                .getOrElse(Some(x))
+          }
+          .getOrElse(r.upper)
 
-      val c = lower
-        .map { case x =>
-          upper
-            .map { case y =>
-              ord.compare(x.b, y.b)
-            }
-            .getOrElse(-1)
+        val c = lower
+          .map {
+            case x =>
+              upper
+                .map {
+                  case y =>
+                    ord.compare(x.b, y.b)
+                }
+                .getOrElse(-1)
+          }
+          .getOrElse(-1)
+        if (c < 0) {
+          Some(Range(lower, upper))
+        } else {
+          None
         }
-        .getOrElse(-1)
-      if (c < 0) {
-        Some(Range(lower, upper))
-      } else {
-        None
-      }
     }.seq
   }
 }
@@ -111,24 +118,25 @@ object Ranges {
 @InterfaceAudience.Private
 object Points {
   def and(r: Range, ps: Seq[Array[Byte]]): Seq[Array[Byte]] = {
-    ps.flatMap { p =>
-      if (ord.compare(r.lower.get.b, p) <= 0) {
-        // if region lower bound is less or equal to the point
-        if (r.upper.isDefined) {
-          // if region upper bound is defined
-          if (ord.compare(r.upper.get.b, p) > 0) {
-            // if the upper bound is greater than the point (because upper bound is exclusive)
-            Some(p)
+    ps.flatMap {
+      p =>
+        if (ord.compare(r.lower.get.b, p) <= 0) {
+          // if region lower bound is less or equal to the point
+          if (r.upper.isDefined) {
+            // if region upper bound is defined
+            if (ord.compare(r.upper.get.b, p) > 0) {
+              // if the upper bound is greater than the point (because upper bound is exclusive)
+              Some(p)
+            } else {
+              None
+            }
           } else {
-            None
+            // if the region upper bound is not defined (infinity)
+            Some(p)
           }
         } else {
-          // if the region upper bound is not defined (infinity)
-          Some(p)
+          None
         }
-      } else {
-        None
-      }
     }
   }
 }

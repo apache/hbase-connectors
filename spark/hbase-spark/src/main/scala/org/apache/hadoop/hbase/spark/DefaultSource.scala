@@ -144,7 +144,12 @@ case class HBaseRelation(
   } else {
     val hadoopConfig = sqlContext.sparkContext.hadoopConfiguration
     val config = HBaseConfiguration.create(hadoopConfig)
-    configResources.map(resource => resource.split(",").foreach(r => config.addResource(r)))
+    configResources.map(
+      resource =>
+        resource
+          .split(",")
+          .foreach(
+            r => config.addResource(r)))
     new HBaseContext(sqlContext.sparkContext, config)
   }
 
@@ -160,7 +165,11 @@ case class HBaseRelation(
   override val schema: StructType = userSpecifiedSchema.getOrElse(catalog.toDataType)
 
   def createTable() {
-    val numReg = parameters.get(HBaseTableCatalog.newTable).map(x => x.toInt).getOrElse(0)
+    val numReg = parameters
+      .get(HBaseTableCatalog.newTable)
+      .map(
+        x => x.toInt)
+      .getOrElse(0)
     val startKey = Bytes.toBytes(
       parameters
         .get(HBaseTableCatalog.regionStart)
@@ -179,10 +188,11 @@ case class HBaseRelation(
       try {
         if (!admin.tableExists(tName)) {
           val tableDesc = new HTableDescriptor(tName)
-          cfs.foreach { x =>
-            val cf = new HColumnDescriptor(x.getBytes())
-            logDebug(s"add family $x to ${tableName}")
-            tableDesc.addFamily(cf)
+          cfs.foreach {
+            x =>
+              val cf = new HColumnDescriptor(x.getBytes())
+              logDebug(s"add family $x to ${tableName}")
+              tableDesc.addFamily(cf)
           }
           val splitKeys = Bytes.split(startKey, endKey, numReg);
           admin.createTable(tableDesc, splitKeys)
@@ -208,36 +218,43 @@ case class HBaseRelation(
     jobConfig.set(TableOutputFormat.OUTPUT_TABLE, tableName)
     var count = 0
     val rkFields = catalog.getRowKey
-    val rkIdxedFields = rkFields.map { case x =>
-      (schema.fieldIndex(x.colName), x)
+    val rkIdxedFields = rkFields.map {
+      case x =>
+        (schema.fieldIndex(x.colName), x)
     }
     val colsIdxedFields = schema.fieldNames
-      .partition(x => rkFields.map(_.colName).contains(x))
+      .partition(
+        x => rkFields.map(_.colName).contains(x))
       ._2
-      .map(x => (schema.fieldIndex(x), catalog.getField(x)))
+      .map(
+        x => (schema.fieldIndex(x), catalog.getField(x)))
     val rdd = data.rdd
     def convertToPut(row: Row) = {
       // construct bytes for row key
-      val rowBytes = rkIdxedFields.map { case (x, y) =>
-        Utils.toBytes(row(x), y)
+      val rowBytes = rkIdxedFields.map {
+        case (x, y) =>
+          Utils.toBytes(row(x), y)
       }
-      val rLen = rowBytes.foldLeft(0) { case (x, y) =>
-        x + y.length
+      val rLen = rowBytes.foldLeft(0) {
+        case (x, y) =>
+          x + y.length
       }
       val rBytes = new Array[Byte](rLen)
       var offset = 0
-      rowBytes.foreach { x =>
-        System.arraycopy(x, 0, rBytes, offset, x.length)
-        offset += x.length
+      rowBytes.foreach {
+        x =>
+          System.arraycopy(x, 0, rBytes, offset, x.length)
+          offset += x.length
       }
       val put = timestamp.fold(new Put(rBytes))(new Put(rBytes, _))
 
-      colsIdxedFields.foreach { case (x, y) =>
-        val r = row(x)
-        if (r != null) {
-          val b = Utils.toBytes(r, y)
-          put.addColumn(Bytes.toBytes(y.cf), Bytes.toBytes(y.col), b)
-        }
+      colsIdxedFields.foreach {
+        case (x, y) =>
+          val r = row(x)
+          if (r != null) {
+            val b = Utils.toBytes(r, y)
+            put.addColumn(Bytes.toBytes(y.cf), Bytes.toBytes(y.col), b)
+          }
       }
       count += 1
       (new ImmutableBytesWritable, put)
@@ -259,33 +276,34 @@ case class HBaseRelation(
    */
   def parseRowKey(row: Array[Byte], keyFields: Seq[Field]): Map[Field, Any] = {
     keyFields
-      .foldLeft((0, Seq[(Field, Any)]()))((state, field) => {
-        val idx = state._1
-        val parsed = state._2
-        if (field.length != -1) {
-          val value = Utils.hbaseFieldToScalaType(field, row, idx, field.length)
-          // Return the new index and appended value
-          (idx + field.length, parsed ++ Seq((field, value)))
-        } else {
-          field.dt match {
-            case StringType =>
-              val pos = row.indexOf(HBaseTableCatalog.delimiter, idx)
-              if (pos == -1 || pos > row.length) {
-                // this is at the last dimension
-                val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length)
-                (row.length + 1, parsed ++ Seq((field, value)))
-              } else {
-                val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
-                (pos, parsed ++ Seq((field, value)))
-              }
-            // We don't know the length, assume it extends to the end of the rowkey.
-            case _ =>
-              (
-                row.length + 1,
-                parsed ++ Seq((field, Utils.hbaseFieldToScalaType(field, row, idx, row.length))))
+      .foldLeft((0, Seq[(Field, Any)]()))(
+        (state, field) => {
+          val idx = state._1
+          val parsed = state._2
+          if (field.length != -1) {
+            val value = Utils.hbaseFieldToScalaType(field, row, idx, field.length)
+            // Return the new index and appended value
+            (idx + field.length, parsed ++ Seq((field, value)))
+          } else {
+            field.dt match {
+              case StringType =>
+                val pos = row.indexOf(HBaseTableCatalog.delimiter, idx)
+                if (pos == -1 || pos > row.length) {
+                  // this is at the last dimension
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length)
+                  (row.length + 1, parsed ++ Seq((field, value)))
+                } else {
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
+                  (pos, parsed ++ Seq((field, value)))
+                }
+              // We don't know the length, assume it extends to the end of the rowkey.
+              case _ =>
+                (
+                  row.length + 1,
+                  parsed ++ Seq((field, Utils.hbaseFieldToScalaType(field, row, idx, row.length))))
+            }
           }
-        }
-      })
+        })
       ._2
       .toMap
   }
@@ -295,20 +313,21 @@ case class HBaseRelation(
     val keySeq = parseRowKey(r, catalog.getRowKey)
     val valueSeq = fields
       .filter(!_.isRowKey)
-      .map { x =>
-        val kv = result.getColumnLatestCell(Bytes.toBytes(x.cf), Bytes.toBytes(x.col))
-        if (kv == null || kv.getValueLength == 0) {
-          (x, null)
-        } else {
-          val v = CellUtil.cloneValue(kv)
-          (
-            x,
-            x.dt match {
-              // Here, to avoid arraycopy, return v directly instead of calling hbaseFieldToScalaType
-              case BinaryType => v
-              case _ => Utils.hbaseFieldToScalaType(x, v, 0, v.length)
-            })
-        }
+      .map {
+        x =>
+          val kv = result.getColumnLatestCell(Bytes.toBytes(x.cf), Bytes.toBytes(x.col))
+          if (kv == null || kv.getValueLength == 0) {
+            (x, null)
+          } else {
+            val v = CellUtil.cloneValue(kv)
+            (
+              x,
+              x.dt match {
+                // Here, to avoid arraycopy, return v directly instead of calling hbaseFieldToScalaType
+                case BinaryType => v
+                case _ => Utils.hbaseFieldToScalaType(x, v, 0, v.length)
+              })
+          }
       }
       .toMap
     val unionedRow = keySeq ++ valueSeq
@@ -350,10 +369,11 @@ case class HBaseRelation(
     val requiredQualifierDefinitionList =
       new mutable.MutableList[Field]
 
-    requiredColumns.foreach(c => {
-      val field = catalog.getField(c)
-      requiredQualifierDefinitionList += field
-    })
+    requiredColumns.foreach(
+      c => {
+        val field = catalog.getField(c)
+        requiredQualifierDefinitionList += field
+      })
 
     // retain the information for unit testing checks
     DefaultSourceStaticUtils.populateLatestExecutionRules(
@@ -364,14 +384,16 @@ case class HBaseRelation(
     val rddList = new util.ArrayList[RDD[Row]]()
 
     // add points to getList
-    pushDownRowKeyFilter.points.foreach(p => {
-      val get = new Get(p)
-      requiredQualifierDefinitionList.foreach(d => {
-        if (d.isRowKey)
-          get.addColumn(d.cfBytes, d.colBytes)
+    pushDownRowKeyFilter.points.foreach(
+      p => {
+        val get = new Get(p)
+        requiredQualifierDefinitionList.foreach(
+          d => {
+            if (d.isRowKey)
+              get.addColumn(d.cfBytes, d.colBytes)
+          })
+        getList.add(get)
       })
-      getList.add(get)
-    })
 
     val pushDownFilterJava =
       if (usePushDownColumnFilter && pushDownDynamicLogicExpression != null) {
@@ -393,9 +415,10 @@ case class HBaseRelation(
     pushDownRowKeyFilter.ranges.foreach(hRdd.addRange(_))
 
     var resultRDD: RDD[Row] = {
-      val tmp = hRdd.map { r =>
-        val indexedFields = getIndexedProjections(requiredColumns).map(_._1)
-        buildRow(indexedFields, r)
+      val tmp = hRdd.map {
+        r =>
+          val indexedFields = getIndexedProjections(requiredColumns).map(_._1)
+          buildRow(indexedFields, r)
 
       }
       if (tmp.partitions.size > 0) {
@@ -410,14 +433,16 @@ case class HBaseRelation(
       scan.setCacheBlocks(blockCacheEnable)
       scan.setBatch(batchNum)
       scan.setCaching(cacheSize)
-      requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
+      requiredQualifierDefinitionList.foreach(
+        d => scan.addColumn(d.cfBytes, d.colBytes))
 
       val rdd = hbaseContext
         .hbaseRDD(TableName.valueOf(tableName), scan)
-        .map(r => {
-          val indexedFields = getIndexedProjections(requiredColumns).map(_._1)
-          buildRow(indexedFields, r._2)
-        })
+        .map(
+          r => {
+            val indexedFields = getIndexedProjections(requiredColumns).map(_._1)
+            buildRow(indexedFields, r._2)
+          })
       resultRDD = rdd
     }
     resultRDD
@@ -429,19 +454,20 @@ case class HBaseRelation(
     val queryValueList = new mutable.MutableList[Array[Byte]]
     var superDynamicLogicExpression: DynamicLogicExpression = null
 
-    filters.foreach(f => {
-      val rowKeyFilter = new RowKeyFilter()
-      val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
-      if (superDynamicLogicExpression == null) {
-        superDynamicLogicExpression = logicExpression
-        superRowKeyFilter = rowKeyFilter
-      } else {
-        superDynamicLogicExpression =
-          new AndLogicExpression(superDynamicLogicExpression, logicExpression)
-        superRowKeyFilter.mergeIntersect(rowKeyFilter)
-      }
+    filters.foreach(
+      f => {
+        val rowKeyFilter = new RowKeyFilter()
+        val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
+        if (superDynamicLogicExpression == null) {
+          superDynamicLogicExpression = logicExpression
+          superRowKeyFilter = rowKeyFilter
+        } else {
+          superDynamicLogicExpression =
+            new AndLogicExpression(superDynamicLogicExpression, logicExpression)
+          superRowKeyFilter.mergeIntersect(rowKeyFilter)
+        }
 
-    })
+      })
 
     val queryValueArray = queryValueList.toArray
 
@@ -498,14 +524,17 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             var inc = false
-            b.map(_.less.map { x =>
-              val r = new RowKeyFilter(null, new ScanRange(x.upper, inc, x.low, true))
-              inc = true
-              r
-            }).map { x =>
-              x.reduce { (i, j) =>
-                i.mergeUnion(j)
-              }
+            b.map(_.less.map {
+              x =>
+                val r = new RowKeyFilter(null, new ScanRange(x.upper, inc, x.low, true))
+                inc = true
+                r
+            }).map {
+              x =>
+                x.reduce {
+                  (i, j) =>
+                    i.mergeUnion(j)
+                }
             }.map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
@@ -518,14 +547,17 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             var inc = false
-            b.map(_.greater.map { x =>
-              val r = new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, inc))
-              inc = true
-              r
-            }).map { x =>
-              x.reduce { (i, j) =>
-                i.mergeUnion(j)
-              }
+            b.map(_.greater.map {
+              x =>
+                val r = new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, inc))
+                inc = true
+                r
+            }).map {
+              x =>
+                x.reduce {
+                  (i, j) =>
+                    i.mergeUnion(j)
+                }
             }.map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
@@ -538,11 +570,14 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             b.map(
-              _.less.map(x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
-              .map { x =>
-                x.reduce { (i, j) =>
-                  i.mergeUnion(j)
-                }
+              _.less.map(
+                x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
+              .map {
+                x =>
+                  x.reduce {
+                    (i, j) =>
+                      i.mergeUnion(j)
+                  }
               }
               .map(parentRowKeyFilter.mergeIntersect(_))
           }
@@ -556,11 +591,14 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             b.map(
-              _.greater.map(x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
-              .map { x =>
-                x.reduce { (i, j) =>
-                  i.mergeUnion(j)
-                }
+              _.greater.map(
+                x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
+              .map {
+                x =>
+                  x.reduce {
+                    (i, j) =>
+                      i.mergeUnion(j)
+                  }
               }
               .map(parentRowKeyFilter.mergeIntersect(_))
           }
@@ -799,35 +837,44 @@ class ColumnFilter(
   def validate(value: Array[Byte], valueOffSet: Int, valueLength: Int): Boolean = {
     var result = false
 
-    points.foreach(p => {
-      if (Bytes.equals(p, 0, p.length, value, valueOffSet, valueLength)) {
-        result = true
-      }
-    })
+    points.foreach(
+      p => {
+        if (Bytes.equals(p, 0, p.length, value, valueOffSet, valueLength)) {
+          result = true
+        }
+      })
 
-    ranges.foreach(r => {
-      val upperBoundPass = r.upperBound == null ||
-        (r.isUpperBoundEqualTo &&
-          Bytes.compareTo(
-            r.upperBound,
-            0,
-            r.upperBound.length,
-            value,
-            valueOffSet,
-            valueLength) >= 0) ||
-        (!r.isUpperBoundEqualTo &&
+    ranges.foreach(
+      r => {
+        val upperBoundPass = r.upperBound == null ||
+          (r.isUpperBoundEqualTo &&
+            Bytes.compareTo(
+              r.upperBound,
+              0,
+              r.upperBound.length,
+              value,
+              valueOffSet,
+              valueLength) >= 0) ||
+          (!r.isUpperBoundEqualTo &&
+            Bytes
+              .compareTo(r.upperBound, 0, r.upperBound.length, value, valueOffSet, valueLength) > 0)
+
+        val lowerBoundPass = r.lowerBound == null || r.lowerBound.length == 0
+        (r.isLowerBoundEqualTo &&
           Bytes
-            .compareTo(r.upperBound, 0, r.upperBound.length, value, valueOffSet, valueLength) > 0)
+            .compareTo(
+              r.lowerBound,
+              0,
+              r.lowerBound.length,
+              value,
+              valueOffSet,
+              valueLength) <= 0) ||
+        (!r.isLowerBoundEqualTo &&
+          Bytes
+            .compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) < 0)
 
-      val lowerBoundPass = r.lowerBound == null || r.lowerBound.length == 0
-      (r.isLowerBoundEqualTo &&
-        Bytes
-          .compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) <= 0) ||
-      (!r.isLowerBoundEqualTo &&
-        Bytes.compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) < 0)
-
-      result = result || (upperBoundPass && lowerBoundPass)
-    })
+        result = result || (upperBoundPass && lowerBoundPass)
+      })
     result
   }
 
@@ -838,18 +885,21 @@ class ColumnFilter(
    * @param other Filter to merge
    */
   def mergeUnion(other: ColumnFilter): Unit = {
-    other.points.foreach(p => points += p)
+    other.points.foreach(
+      p => points += p)
 
-    other.ranges.foreach(otherR => {
-      var doesOverLap = false
-      ranges.foreach { r =>
-        if (r.getOverLapScanRange(otherR) != null) {
-          r.mergeUnion(otherR)
-          doesOverLap = true
+    other.ranges.foreach(
+      otherR => {
+        var doesOverLap = false
+        ranges.foreach {
+          r =>
+            if (r.getOverLapScanRange(otherR) != null) {
+              r.mergeUnion(otherR)
+              doesOverLap = true
+            }
         }
-      }
-      if (!doesOverLap) ranges.+=(otherR)
-    })
+        if (!doesOverLap) ranges.+=(otherR)
+      })
   }
 
   /**
@@ -860,25 +910,29 @@ class ColumnFilter(
    */
   def mergeIntersect(other: ColumnFilter): Unit = {
     val survivingPoints = new mutable.MutableList[Array[Byte]]()
-    points.foreach(p => {
-      other.points.foreach(otherP => {
-        if (Bytes.equals(p, otherP)) {
-          survivingPoints.+=(p)
-        }
+    points.foreach(
+      p => {
+        other.points.foreach(
+          otherP => {
+            if (Bytes.equals(p, otherP)) {
+              survivingPoints.+=(p)
+            }
+          })
       })
-    })
     points = survivingPoints
 
     val survivingRanges = new mutable.MutableList[ScanRange]()
 
-    other.ranges.foreach(otherR => {
-      ranges.foreach(r => {
-        if (r.getOverLapScanRange(otherR) != null) {
-          r.mergeIntersect(otherR)
-          survivingRanges += r
-        }
+    other.ranges.foreach(
+      otherR => {
+        ranges.foreach(
+          r => {
+            if (r.getOverLapScanRange(otherR) != null) {
+              r.mergeIntersect(otherR)
+              survivingRanges += r
+            }
+          })
       })
-    })
     ranges = survivingRanges
   }
 
@@ -886,18 +940,20 @@ class ColumnFilter(
     val strBuilder = new StringBuilder
     strBuilder.append("(points:(")
     var isFirst = true
-    points.foreach(p => {
-      if (isFirst) isFirst = false
-      else strBuilder.append(",")
-      strBuilder.append(Bytes.toString(p))
-    })
+    points.foreach(
+      p => {
+        if (isFirst) isFirst = false
+        else strBuilder.append(",")
+        strBuilder.append(Bytes.toString(p))
+      })
     strBuilder.append("),ranges:")
     isFirst = true
-    ranges.foreach(r => {
-      if (isFirst) isFirst = false
-      else strBuilder.append(",")
-      strBuilder.append(r)
-    })
+    ranges.foreach(
+      r => {
+        if (isFirst) isFirst = false
+        else strBuilder.append(",")
+        strBuilder.append(r)
+      })
     strBuilder.append("))")
     strBuilder.toString()
   }
@@ -941,9 +997,10 @@ class ColumnFilterCollection {
    * @param other The other Column Filter Collection to be merged
    */
   def mergeUnion(other: ColumnFilterCollection): Unit = {
-    other.columnFilterMap.foreach(e => {
-      mergeUnion(e._1, e._2)
-    })
+    other.columnFilterMap.foreach(
+      e => {
+        mergeUnion(e._1, e._2)
+      })
   }
 
   /**
@@ -954,19 +1011,21 @@ class ColumnFilterCollection {
    * @param other The column filter from the other collection
    */
   def mergeIntersect(other: ColumnFilterCollection): Unit = {
-    other.columnFilterMap.foreach(e => {
-      val existingColumnFilter = columnFilterMap.get(e._1)
-      if (existingColumnFilter.isEmpty) {
-        columnFilterMap += e
-      } else {
-        existingColumnFilter.get.mergeIntersect(e._2)
-      }
-    })
+    other.columnFilterMap.foreach(
+      e => {
+        val existingColumnFilter = columnFilterMap.get(e._1)
+        if (existingColumnFilter.isEmpty) {
+          columnFilterMap += e
+        } else {
+          existingColumnFilter.get.mergeIntersect(e._2)
+        }
+      })
   }
 
   override def toString: String = {
     val strBuilder = new StringBuilder
-    columnFilterMap.foreach(e => strBuilder.append(e))
+    columnFilterMap.foreach(
+      e => strBuilder.append(e))
     strBuilder.toString()
   }
 }
@@ -1050,35 +1109,44 @@ class RowKeyFilter(
   def validate(value: Array[Byte], valueOffSet: Int, valueLength: Int): Boolean = {
     var result = false
 
-    points.foreach(p => {
-      if (Bytes.equals(p, 0, p.length, value, valueOffSet, valueLength)) {
-        result = true
-      }
-    })
+    points.foreach(
+      p => {
+        if (Bytes.equals(p, 0, p.length, value, valueOffSet, valueLength)) {
+          result = true
+        }
+      })
 
-    ranges.foreach(r => {
-      val upperBoundPass = r.upperBound == null ||
-        (r.isUpperBoundEqualTo &&
-          Bytes.compareTo(
-            r.upperBound,
-            0,
-            r.upperBound.length,
-            value,
-            valueOffSet,
-            valueLength) >= 0) ||
-        (!r.isUpperBoundEqualTo &&
+    ranges.foreach(
+      r => {
+        val upperBoundPass = r.upperBound == null ||
+          (r.isUpperBoundEqualTo &&
+            Bytes.compareTo(
+              r.upperBound,
+              0,
+              r.upperBound.length,
+              value,
+              valueOffSet,
+              valueLength) >= 0) ||
+          (!r.isUpperBoundEqualTo &&
+            Bytes
+              .compareTo(r.upperBound, 0, r.upperBound.length, value, valueOffSet, valueLength) > 0)
+
+        val lowerBoundPass = r.lowerBound == null || r.lowerBound.length == 0
+        (r.isLowerBoundEqualTo &&
           Bytes
-            .compareTo(r.upperBound, 0, r.upperBound.length, value, valueOffSet, valueLength) > 0)
+            .compareTo(
+              r.lowerBound,
+              0,
+              r.lowerBound.length,
+              value,
+              valueOffSet,
+              valueLength) <= 0) ||
+        (!r.isLowerBoundEqualTo &&
+          Bytes
+            .compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) < 0)
 
-      val lowerBoundPass = r.lowerBound == null || r.lowerBound.length == 0
-      (r.isLowerBoundEqualTo &&
-        Bytes
-          .compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) <= 0) ||
-      (!r.isLowerBoundEqualTo &&
-        Bytes.compareTo(r.lowerBound, 0, r.lowerBound.length, value, valueOffSet, valueLength) < 0)
-
-      result = result || (upperBoundPass && lowerBoundPass)
-    })
+        result = result || (upperBoundPass && lowerBoundPass)
+      })
     result
   }
 
@@ -1089,18 +1157,21 @@ class RowKeyFilter(
    * @param other Filter to merge
    */
   def mergeUnion(other: RowKeyFilter): RowKeyFilter = {
-    other.points.foreach(p => points += p)
+    other.points.foreach(
+      p => points += p)
 
-    other.ranges.foreach(otherR => {
-      var doesOverLap = false
-      ranges.foreach { r =>
-        if (r.getOverLapScanRange(otherR) != null) {
-          r.mergeUnion(otherR)
-          doesOverLap = true
+    other.ranges.foreach(
+      otherR => {
+        var doesOverLap = false
+        ranges.foreach {
+          r =>
+            if (r.getOverLapScanRange(otherR) != null) {
+              r.mergeUnion(otherR)
+              doesOverLap = true
+            }
         }
-      }
-      if (!doesOverLap) ranges.+=(otherR)
-    })
+        if (!doesOverLap) ranges.+=(otherR)
+      })
     this
   }
 
@@ -1114,45 +1185,52 @@ class RowKeyFilter(
     val survivingPoints = new mutable.MutableList[Array[Byte]]()
     val didntSurviveFirstPassPoints = new mutable.MutableList[Array[Byte]]()
     if (points == null || points.length == 0) {
-      other.points.foreach(otherP => {
-        didntSurviveFirstPassPoints += otherP
-      })
+      other.points.foreach(
+        otherP => {
+          didntSurviveFirstPassPoints += otherP
+        })
     } else {
-      points.foreach(p => {
-        if (other.points.length == 0) {
-          didntSurviveFirstPassPoints += p
-        } else {
-          other.points.foreach(otherP => {
-            if (Bytes.equals(p, otherP)) {
-              survivingPoints += p
-            } else {
-              didntSurviveFirstPassPoints += p
-            }
-          })
-        }
-      })
+      points.foreach(
+        p => {
+          if (other.points.length == 0) {
+            didntSurviveFirstPassPoints += p
+          } else {
+            other.points.foreach(
+              otherP => {
+                if (Bytes.equals(p, otherP)) {
+                  survivingPoints += p
+                } else {
+                  didntSurviveFirstPassPoints += p
+                }
+              })
+          }
+        })
     }
 
     val survivingRanges = new mutable.MutableList[ScanRange]()
 
     if (ranges.length == 0) {
-      didntSurviveFirstPassPoints.foreach(p => {
-        survivingPoints += p
-      })
+      didntSurviveFirstPassPoints.foreach(
+        p => {
+          survivingPoints += p
+        })
     } else {
-      ranges.foreach(r => {
-        other.ranges.foreach(otherR => {
-          val overLapScanRange = r.getOverLapScanRange(otherR)
-          if (overLapScanRange != null) {
-            survivingRanges += overLapScanRange
-          }
+      ranges.foreach(
+        r => {
+          other.ranges.foreach(
+            otherR => {
+              val overLapScanRange = r.getOverLapScanRange(otherR)
+              if (overLapScanRange != null) {
+                survivingRanges += overLapScanRange
+              }
+            })
+          didntSurviveFirstPassPoints.foreach(
+            p => {
+              if (r.containsPoint(p)) {
+                survivingPoints += p
+              }
+            })
         })
-        didntSurviveFirstPassPoints.foreach(p => {
-          if (r.containsPoint(p)) {
-            survivingPoints += p
-          }
-        })
-      })
     }
     points = survivingPoints
     ranges = survivingRanges
@@ -1163,18 +1241,20 @@ class RowKeyFilter(
     val strBuilder = new StringBuilder
     strBuilder.append("(points:(")
     var isFirst = true
-    points.foreach(p => {
-      if (isFirst) isFirst = false
-      else strBuilder.append(",")
-      strBuilder.append(Bytes.toString(p))
-    })
+    points.foreach(
+      p => {
+        if (isFirst) isFirst = false
+        else strBuilder.append(",")
+        strBuilder.append(Bytes.toString(p))
+      })
     strBuilder.append("),ranges:")
     isFirst = true
-    ranges.foreach(r => {
-      if (isFirst) isFirst = false
-      else strBuilder.append(",")
-      strBuilder.append(r)
-    })
+    ranges.foreach(
+      r => {
+        if (isFirst) isFirst = false
+        else strBuilder.append(",")
+        strBuilder.append(r)
+      })
     strBuilder.append("))")
     strBuilder.toString()
   }

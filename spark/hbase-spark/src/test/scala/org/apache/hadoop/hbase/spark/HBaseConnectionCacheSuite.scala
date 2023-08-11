@@ -171,7 +171,9 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       threads(i).run()
     }
     try {
-      threads.foreach { x => x.join() }
+      threads.foreach {
+        x => x.join()
+      }
     } catch {
       case e: InterruptedException => println(e.getMessage)
     }
@@ -184,15 +186,17 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       assert(HBaseConnectionCache.getStat.numActiveConnections === 10)
 
       var totalRc: Int = 0
-      HBaseConnectionCache.connectionMap.foreach { x =>
-        totalRc += x._2.refCount
+      HBaseConnectionCache.connectionMap.foreach {
+        x =>
+          totalRc += x._2.refCount
       }
       assert(totalRc === 100 * 1000)
-      HBaseConnectionCache.connectionMap.foreach { x =>
-        {
-          x._2.refCount = 0
-          x._2.timestamp = System.currentTimeMillis() - 1000
-        }
+      HBaseConnectionCache.connectionMap.foreach {
+        x =>
+          {
+            x._2.refCount = 0
+            x._2.timestamp = System.currentTimeMillis() - 1000
+          }
       }
     }
     Thread.sleep(1000)
@@ -223,7 +227,9 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       threads(i).run()
     }
     try {
-      threads.foreach { x => x.join() }
+      threads.foreach {
+        x => x.join()
+      }
     } catch {
       case e: InterruptedException => println(e.getMessage)
     }

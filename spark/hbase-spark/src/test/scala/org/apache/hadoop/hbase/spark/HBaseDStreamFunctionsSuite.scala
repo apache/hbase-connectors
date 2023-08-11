@@ -102,15 +102,17 @@ class HBaseDStreamFunctionsSuite
       TableName.valueOf(tableName),
       (putRecord) => {
         val put = new Put(putRecord._1)
-        putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+        putRecord._2.foreach(
+          (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
         put
       })
 
-    dStream.foreachRDD(rdd => {
-      if (rdd.count() == 0) {
-        isFinished = true
-      }
-    })
+    dStream.foreachRDD(
+      rdd => {
+        if (rdd.count() == 0) {
+          isFinished = true
+        }
+      })
 
     ssc.start()
 

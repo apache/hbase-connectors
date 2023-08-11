@@ -679,13 +679,14 @@ class BulkLoadSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfter
         val rowKey = Bytes.toBytes(t._1)
 
         val familyQualifiersValues = new FamiliesQualifiersValues
-        t._2.foreach(f => {
-          val family: Array[Byte] = f._1
-          val qualifier = f._2
-          val value: Array[Byte] = f._3
+        t._2.foreach(
+          f => {
+            val family: Array[Byte] = f._1
+            val qualifier = f._2
+            val value: Array[Byte] = f._3
 
-          familyQualifiersValues += (family, qualifier, value)
-        })
+            familyQualifiersValues += (family, qualifier, value)
+          })
         (new ByteArrayWrapper(rowKey), familyQualifiersValues)
       },
       stagingFolder.getPath)
@@ -804,13 +805,14 @@ class BulkLoadSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfter
         val rowKey = t._1
 
         val familyQualifiersValues = new FamiliesQualifiersValues
-        t._2.foreach(f => {
-          val family: Array[Byte] = f._1
-          val qualifier = f._2
-          val value: Array[Byte] = f._3
+        t._2.foreach(
+          f => {
+            val family: Array[Byte] = f._1
+            val qualifier = f._2
+            val value: Array[Byte] = f._3
 
-          familyQualifiersValues += (family, qualifier, value)
-        })
+            familyQualifiersValues += (family, qualifier, value)
+          })
         (new ByteArrayWrapper(Bytes.toBytes(rowKey)), familyQualifiersValues)
       },
       stagingFolder.getPath,
@@ -944,13 +946,14 @@ class BulkLoadSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfter
         val rowKey = t._1
 
         val familyQualifiersValues = new FamiliesQualifiersValues
-        t._2.foreach(f => {
-          val family: Array[Byte] = f._1
-          val qualifier = f._2
-          val value: Array[Byte] = f._3
+        t._2.foreach(
+          f => {
+            val family: Array[Byte] = f._1
+            val qualifier = f._2
+            val value: Array[Byte] = f._3
 
-          familyQualifiersValues += (family, qualifier, value)
-        })
+            familyQualifiersValues += (family, qualifier, value)
+          })
         (new ByteArrayWrapper(Bytes.toBytes(rowKey)), familyQualifiersValues)
       },
       stagingFolder.getPath,

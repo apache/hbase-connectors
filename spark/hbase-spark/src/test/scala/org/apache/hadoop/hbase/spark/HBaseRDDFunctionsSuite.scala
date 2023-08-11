@@ -90,7 +90,8 @@ class HBaseRDDFunctionsSuite
       TableName.valueOf(tableName),
       (putRecord) => {
         val put = new Put(putRecord._1)
-        putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+        putRecord._2.foreach(
+          (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
         put
       })
 
@@ -288,27 +289,28 @@ class HBaseRDDFunctionsSuite
         record => {
           new Get(record)
         })
-      .map((row) => {
-        if (row != null && row._2.listCells() != null) {
-          val it = row._2.listCells().iterator()
-          val B = new StringBuilder
+      .map(
+        (row) => {
+          if (row != null && row._2.listCells() != null) {
+            val it = row._2.listCells().iterator()
+            val B = new StringBuilder
 
-          B.append(Bytes.toString(row._2.getRow) + ":")
+            B.append(Bytes.toString(row._2.getRow) + ":")
 
-          while (it.hasNext) {
-            val cell = it.next
-            val q = Bytes.toString(CellUtil.cloneQualifier(cell))
-            if (q.equals("counter")) {
-              B.append("(" + q + "," + Bytes.toLong(CellUtil.cloneValue(cell)) + ")")
-            } else {
-              B.append("(" + q + "," + Bytes.toString(CellUtil.cloneValue(cell)) + ")")
+            while (it.hasNext) {
+              val cell = it.next
+              val q = Bytes.toString(CellUtil.cloneQualifier(cell))
+              if (q.equals("counter")) {
+                B.append("(" + q + "," + Bytes.toLong(CellUtil.cloneValue(cell)) + ")")
+              } else {
+                B.append("(" + q + "," + Bytes.toString(CellUtil.cloneValue(cell)) + ")")
+              }
             }
+            "" + B.toString
+          } else {
+            ""
           }
-          "" + B.toString
-        } else {
-          ""
-        }
-      })
+        })
 
     val getArray = getRdd.collect()
 
@@ -344,11 +346,13 @@ class HBaseRDDFunctionsSuite
       hbaseContext,
       (it, conn) => {
         val bufferedMutator = conn.getBufferedMutator(TableName.valueOf("t1"))
-        it.foreach((putRecord) => {
-          val put = new Put(putRecord._1)
-          putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
-          bufferedMutator.mutate(put)
-        })
+        it.foreach(
+          (putRecord) => {
+            val put = new Put(putRecord._1)
+            putRecord._2.foreach(
+              (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+            bufferedMutator.mutate(put)
+          })
         bufferedMutator.flush()
         bufferedMutator.close()
       })
@@ -432,29 +436,30 @@ class HBaseRDDFunctionsSuite
         val table = conn.getTable(TableName.valueOf("t1"))
         var res = mutable.MutableList[String]()
 
-        it.foreach(r => {
-          val get = new Get(r)
-          val result = table.get(get)
-          if (result.listCells != null) {
-            val it = result.listCells().iterator()
-            val B = new StringBuilder
+        it.foreach(
+          r => {
+            val get = new Get(r)
+            val result = table.get(get)
+            if (result.listCells != null) {
+              val it = result.listCells().iterator()
+              val B = new StringBuilder
 
-            B.append(Bytes.toString(result.getRow) + ":")
+              B.append(Bytes.toString(result.getRow) + ":")
 
-            while (it.hasNext) {
-              val cell = it.next()
-              val q = Bytes.toString(CellUtil.cloneQualifier(cell))
-              if (q.equals("counter")) {
-                B.append("(" + q + "," + Bytes.toLong(CellUtil.cloneValue(cell)) + ")")
-              } else {
-                B.append("(" + q + "," + Bytes.toString(CellUtil.cloneValue(cell)) + ")")
+              while (it.hasNext) {
+                val cell = it.next()
+                val q = Bytes.toString(CellUtil.cloneQualifier(cell))
+                if (q.equals("counter")) {
+                  B.append("(" + q + "," + Bytes.toLong(CellUtil.cloneValue(cell)) + ")")
+                } else {
+                  B.append("(" + q + "," + Bytes.toString(CellUtil.cloneValue(cell)) + ")")
+                }
               }
+              res += "" + B.toString
+            } else {
+              res += ""
             }
-            res += "" + B.toString
-          } else {
-            res += ""
-          }
-        })
+          })
         res.iterator
       })
 

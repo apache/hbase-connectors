@@ -65,29 +65,33 @@ object HBaseMapPartitionExample {
         hbaseContext,
         (it, connection) => {
           val table = connection.getTable(TableName.valueOf(tableName))
-          it.map { r =>
-            // batching would be faster.  This is just an example
-            val result = table.get(new Get(r))
+          it.map {
+            r =>
+              // batching would be faster.  This is just an example
+              val result = table.get(new Get(r))
 
-            val it = result.listCells().iterator()
-            val b = new StringBuilder
+              val it = result.listCells().iterator()
+              val b = new StringBuilder
 
-            b.append(Bytes.toString(result.getRow) + ":")
+              b.append(Bytes.toString(result.getRow) + ":")
 
-            while (it.hasNext) {
-              val cell = it.next()
-              val q = Bytes.toString(cell.getQualifierArray)
-              if (q.equals("counter")) {
-                b.append("(" + q + "," + Bytes.toLong(cell.getValueArray) + ")")
-              } else {
-                b.append("(" + q + "," + Bytes.toString(cell.getValueArray) + ")")
+              while (it.hasNext) {
+                val cell = it.next()
+                val q = Bytes.toString(cell.getQualifierArray)
+                if (q.equals("counter")) {
+                  b.append("(" + q + "," + Bytes.toLong(cell.getValueArray) + ")")
+                } else {
+                  b.append("(" + q + "," + Bytes.toString(cell.getValueArray) + ")")
+                }
               }
-            }
-            b.toString()
+              b.toString()
           }
         })
 
-      getRdd.collect().foreach(v => println(v))
+      getRdd
+        .collect()
+        .foreach(
+          v => println(v))
 
     } finally {
       sc.stop()

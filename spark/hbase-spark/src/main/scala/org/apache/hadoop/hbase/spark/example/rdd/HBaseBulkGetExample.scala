@@ -90,7 +90,10 @@ object HBaseBulkGetExample {
           b.toString()
         })
 
-      getRdd.collect().foreach(v => println(v))
+      getRdd
+        .collect()
+        .foreach(
+          v => println(v))
 
     } finally {
       sc.stop()

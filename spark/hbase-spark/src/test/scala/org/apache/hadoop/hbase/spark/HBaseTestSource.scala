@@ -47,12 +47,13 @@ case class DummyScan(cacheSize: Int, batchNum: Int, blockCachingEnable: Boolean,
   override def buildScan(): RDD[Row] = sqlContext.sparkContext
     .parallelize(0 until rowNum)
     .map(Row(_))
-    .map { x =>
-      if (sparkConf.getInt(HBaseSparkConf.QUERY_BATCHSIZE, -1) != batchNum ||
-        sparkConf.getInt(HBaseSparkConf.QUERY_CACHEDROWS, -1) != cacheSize ||
-        sparkConf.getBoolean(HBaseSparkConf.QUERY_CACHEBLOCKS, false) != blockCachingEnable) {
-        throw new Exception("HBase Spark configuration cannot be set properly")
-      }
-      x
+    .map {
+      x =>
+        if (sparkConf.getInt(HBaseSparkConf.QUERY_BATCHSIZE, -1) != batchNum ||
+          sparkConf.getInt(HBaseSparkConf.QUERY_CACHEDROWS, -1) != cacheSize ||
+          sparkConf.getBoolean(HBaseSparkConf.QUERY_CACHEBLOCKS, false) != blockCachingEnable) {
+          throw new Exception("HBase Spark configuration cannot be set properly")
+        }
+        x
     }
 }

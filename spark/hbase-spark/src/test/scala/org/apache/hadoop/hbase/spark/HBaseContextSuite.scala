@@ -92,7 +92,8 @@ class HBaseContextSuite
       TableName.valueOf(tableName),
       (putRecord) => {
         val put = new Put(putRecord._1)
-        putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+        putRecord._2.foreach(
+          (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
         put
       })
 
@@ -330,10 +331,11 @@ class HBaseContextSuite
     var noValueCounter = 0
     getRdd
       .collect()
-      .foreach(r => {
-        if ("null".equals(r)) nullCounter += 1
-        else if ("noValue".equals(r)) noValueCounter += 1
-      })
+      .foreach(
+        r => {
+          if ("null".equals(r)) nullCounter += 1
+          else if ("noValue".equals(r)) noValueCounter += 1
+        })
     assert(nullCounter == 3)
     assert(noValueCounter == 1)
   }
@@ -377,15 +379,20 @@ class HBaseContextSuite
     val scanRdd = hbaseContext.hbaseRDD(TableName.valueOf(tableName), scan)
 
     try {
-      val scanList = scanRdd.map(r => r._1.copyBytes()).collect()
+      val scanList = scanRdd
+        .map(
+          r => r._1.copyBytes())
+        .collect()
       assert(scanList.length == 3)
       var cnt = 0
       scanRdd
-        .map(r => r._2.listCells().size())
+        .map(
+          r => r._2.listCells().size())
         .collect()
-        .foreach(l => {
-          cnt += l
-        })
+        .foreach(
+          l => {
+            cnt += l
+          })
       // the number of cells returned would be 4 without the Filter
       assert(cnt == 3);
     } catch {

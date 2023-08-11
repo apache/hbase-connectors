@@ -127,12 +127,13 @@ case class RegionResource(relation: HBaseRelation) extends ReferencedResource {
     keys.getFirst
       .zip(keys.getSecond)
       .zipWithIndex
-      .map(x =>
-        HBaseRegion(
-          x._2,
-          Some(x._1._1),
-          Some(x._1._2),
-          Some(rl.getRegionLocation(x._1._1).getHostname)))
+      .map(
+        x =>
+          HBaseRegion(
+            x._2,
+            Some(x._1._1),
+            Some(x._1._2),
+            Some(rl.getRegionLocation(x._1._1).getHostname)))
   }
 
   override def init(): Unit = {
