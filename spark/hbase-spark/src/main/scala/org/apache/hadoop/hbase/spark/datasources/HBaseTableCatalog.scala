@@ -18,11 +18,10 @@
 package org.apache.hadoop.hbase.spark.datasources
 
 import org.apache.avro.Schema
-import org.apache.yetus.audience.InterfaceAudience
 import org.apache.hadoop.hbase.spark.{Logging, SchemaConverters}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 import scala.util.parsing.json.JSON
 
@@ -77,10 +76,7 @@ case class Field(
 
   val dt = {
     sType.map(DataTypeParserWrapper.parse(_)).getOrElse {
-      schema.map {
-        x =>
-          SchemaConverters.toSqlType(x).dataType
-      }.get
+      schema.map { x => SchemaConverters.toSqlType(x).dataType }.get
     }
   }
 
@@ -194,8 +190,7 @@ case class HBaseTableCatalog(
 
   def initRowKey = {
     val fields = sMap.fields.filter(_.cf == HBaseTableCatalog.rowKey)
-    row.fields = row.keys.flatMap(
-      n => fields.find(_.col == n))
+    row.fields = row.keys.flatMap(n => fields.find(_.col == n))
     // The length is determined at run time if it is string or binary and the length is undefined.
     if (row.fields.filter(_.length == -1).isEmpty) {
       var start = 0
@@ -263,8 +258,7 @@ object HBaseTableCatalog {
           column
             .get(serdes)
             .asInstanceOf[Option[String]]
-            .map(
-              n => Class.forName(n).newInstance().asInstanceOf[SerDes])
+            .map(n => Class.forName(n).newInstance().asInstanceOf[SerDes])
         }
         val len = column.get(length).map(_.toInt).getOrElse(-1)
         val sAvro = column.get(avro).map(parameters(_))

@@ -17,8 +17,8 @@
  */
 package org.apache.hadoop.hbase.spark.datasources
 
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.spark.hbase._
+import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * The Bound represent the boudary for the scan

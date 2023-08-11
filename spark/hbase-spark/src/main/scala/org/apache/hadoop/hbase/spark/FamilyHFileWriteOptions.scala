@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.spark
 
 import java.io.Serializable
-
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**

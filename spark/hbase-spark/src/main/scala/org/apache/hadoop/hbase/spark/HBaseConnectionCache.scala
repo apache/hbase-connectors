@@ -19,6 +19,8 @@ package org.apache.hadoop.hbase.spark
 
 import java.io.IOException
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.HConstants
+import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Admin
 import org.apache.hadoop.hbase.client.Connection
 import org.apache.hadoop.hbase.client.ConnectionFactory
@@ -28,8 +30,6 @@ import org.apache.hadoop.hbase.ipc.RpcControllerFactory
 import org.apache.hadoop.hbase.security.User
 import org.apache.hadoop.hbase.security.UserProvider
 import org.apache.hadoop.hbase.spark.datasources.HBaseSparkConf
-import org.apache.hadoop.hbase.HConstants
-import org.apache.hadoop.hbase.TableName
 import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 

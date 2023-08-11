@@ -20,9 +20,9 @@ package org.apache.hadoop.hbase.spark.datasources
 import org.apache.hadoop.hbase.HBaseInterfaceAudience
 import org.apache.hadoop.hbase.spark.Logging
 import org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder.JavaBytesEncoder
+import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
 import org.apache.yetus.audience.InterfaceStability
-import org.apache.spark.sql.types._
 
 /**
  * The ranges for the data type whose size is known. Whether the bound is inclusive

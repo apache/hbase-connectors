@@ -17,14 +17,14 @@
  */
 package org.apache.hadoop.hbase.spark.example.rdd
 
+import org.apache.hadoop.hbase.CellUtil
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.spark.HBaseContext
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.CellUtil
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.TableName
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.yetus.audience.InterfaceAudience
@@ -92,8 +92,7 @@ object HBaseBulkGetExample {
 
       getRdd
         .collect()
-        .foreach(
-          v => println(v))
+        .foreach(v => println(v))
 
     } finally {
       sc.stop()

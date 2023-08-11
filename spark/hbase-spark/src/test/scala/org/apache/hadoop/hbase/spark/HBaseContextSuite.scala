@@ -17,11 +17,11 @@
  */
 package org.apache.hadoop.hbase.spark
 
+import org.apache.hadoop.hbase.{CellUtil, HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{CellUtil, TableName, HBaseTestingUtility}
-import org.apache.spark.{SparkException, SparkContext}
+import org.apache.spark.{SparkContext, SparkException}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 class HBaseContextSuite
@@ -92,8 +92,7 @@ class HBaseContextSuite
       TableName.valueOf(tableName),
       (putRecord) => {
         val put = new Put(putRecord._1)
-        putRecord._2.foreach(
-          (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+        putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
         put
       })
 
@@ -380,14 +379,12 @@ class HBaseContextSuite
 
     try {
       val scanList = scanRdd
-        .map(
-          r => r._1.copyBytes())
+        .map(r => r._1.copyBytes())
         .collect()
       assert(scanList.length == 3)
       var cnt = 0
       scanRdd
-        .map(
-          r => r._2.listCells().size())
+        .map(r => r._2.listCells().size())
         .collect()
         .foreach(
           l => {

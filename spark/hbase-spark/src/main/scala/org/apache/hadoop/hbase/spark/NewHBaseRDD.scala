@@ -18,10 +18,10 @@
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.mapreduce.InputFormat
-import org.apache.spark.rdd.NewHadoopRDD
 import org.apache.spark.{InterruptibleIterator, Partition, SparkContext, TaskContext}
+import org.apache.spark.rdd.NewHadoopRDD
+import org.apache.yetus.audience.InterfaceAudience
 
 @InterfaceAudience.Public
 class NewHBaseRDD[K, V](

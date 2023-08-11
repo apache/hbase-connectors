@@ -17,10 +17,10 @@
  */
 package org.apache.hadoop.hbase.spark.datasources
 
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.hbase.spark.{HBaseConnectionKey, SmartConnection, HBaseConnectionCache, HBaseRelation}
+import org.apache.hadoop.hbase.spark.{HBaseConnectionCache, HBaseConnectionKey, HBaseRelation, SmartConnection}
+import org.apache.yetus.audience.InterfaceAudience
 import scala.language.implicitConversions
 
 // Resource and ReferencedResources are defined for extensibility,

@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.hbase.util.Bytes
-
 import scala.math.Ordering
 
 // TODO: add @InterfaceAudience.Private if https://issues.scala-lang.org/browse/SI-3600 is resolved

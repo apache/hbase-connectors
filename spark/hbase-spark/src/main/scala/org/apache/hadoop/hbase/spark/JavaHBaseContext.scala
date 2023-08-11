@@ -17,20 +17,17 @@
  */
 package org.apache.hadoop.hbase.spark
 
+import java.lang.Iterable
 import java.util.Map
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.util.Pair
-import org.apache.yetus.audience.InterfaceAudience
 import org.apache.hadoop.hbase.client.{Connection, Delete, Get, Put, Result, Scan}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.util.Pair
 import org.apache.spark.api.java.{JavaRDD, JavaSparkContext}
 import org.apache.spark.api.java.function.{FlatMapFunction, Function, VoidFunction}
 import org.apache.spark.streaming.api.java.JavaDStream
-
-import java.lang.Iterable
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 

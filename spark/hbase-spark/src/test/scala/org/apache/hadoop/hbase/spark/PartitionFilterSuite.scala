@@ -17,10 +17,10 @@
  */
 package org.apache.hadoop.hbase.spark
 
-import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 case class FilterRangeRecord(
@@ -93,10 +93,7 @@ class PartitionFilterSuite
 
   // The original raw data used for construct result set without going through
   // data frame logic. It is used to verify the result set retrieved from data frame logic.
-  val rawResult = (0 until 32).map {
-    i =>
-      FilterRangeRecord(i)
-  }
+  val rawResult = (0 until 32).map { i => FilterRangeRecord(i) }
 
   def collectToSet[T](df: DataFrame): Set[T] = {
     df.collect().map(_.getAs[T](0)).toSet
@@ -439,8 +436,7 @@ class PartitionFilterSuite
     s.show
     // filter results without going through dataframe
     val expected = rawResult
-      .filter(
-        x => x.intCol0 > -10 && x.intCol0 <= 10)
+      .filter(x => x.intCol0 > -10 && x.intCol0 <= 10)
       .map(_.intCol0)
       .toSet
     // filter results going through dataframe
@@ -484,8 +480,7 @@ class PartitionFilterSuite
     s.show
     // filter results without going through dataframe
     val expected = rawResult
-      .filter(
-        x => x.intCol0 <= -10 || x.intCol0 > 10)
+      .filter(x => x.intCol0 <= -10 || x.intCol0 > 10)
       .map(_.intCol0)
       .toSet
     // filter results going through dataframe

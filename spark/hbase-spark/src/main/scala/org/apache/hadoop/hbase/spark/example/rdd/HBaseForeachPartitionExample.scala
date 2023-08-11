@@ -79,8 +79,7 @@ object HBaseForeachPartitionExample {
           it.foreach(
             r => {
               val put = new Put(r._1)
-              r._2.foreach(
-                (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+              r._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
               m.mutate(put)
             })
           m.flush()

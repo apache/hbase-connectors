@@ -19,25 +19,23 @@ package org.apache.hadoop.hbase.spark
 
 import java.util
 import java.util.concurrent.ConcurrentLinkedQueue
-
-import org.apache.yetus.audience.InterfaceAudience;
+import org.apache.hadoop.hbase.CellUtil
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.HColumnDescriptor
+import org.apache.hadoop.hbase.HTableDescriptor
+import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.hbase.spark.datasources._
 import org.apache.hadoop.hbase.types._
 import org.apache.hadoop.hbase.util.{Bytes, PositionedByteRange, SimplePositionedMutableByteRange}
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.HTableDescriptor
-import org.apache.hadoop.hbase.HColumnDescriptor
-import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.CellUtil
 import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SaveMode, Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 
 /**
@@ -148,8 +146,7 @@ case class HBaseRelation(
       resource =>
         resource
           .split(",")
-          .foreach(
-            r => config.addResource(r)))
+          .foreach(r => config.addResource(r)))
     new HBaseContext(sqlContext.sparkContext, config)
   }
 
@@ -167,8 +164,7 @@ case class HBaseRelation(
   def createTable() {
     val numReg = parameters
       .get(HBaseTableCatalog.newTable)
-      .map(
-        x => x.toInt)
+      .map(x => x.toInt)
       .getOrElse(0)
     val startKey = Bytes.toBytes(
       parameters
@@ -223,11 +219,9 @@ case class HBaseRelation(
         (schema.fieldIndex(x.colName), x)
     }
     val colsIdxedFields = schema.fieldNames
-      .partition(
-        x => rkFields.map(_.colName).contains(x))
+      .partition(x => rkFields.map(_.colName).contains(x))
       ._2
-      .map(
-        x => (schema.fieldIndex(x), catalog.getField(x)))
+      .map(x => (schema.fieldIndex(x), catalog.getField(x)))
     val rdd = data.rdd
     def convertToPut(row: Row) = {
       // construct bytes for row key
@@ -433,8 +427,7 @@ case class HBaseRelation(
       scan.setCacheBlocks(blockCacheEnable)
       scan.setBatch(batchNum)
       scan.setCaching(cacheSize)
-      requiredQualifierDefinitionList.foreach(
-        d => scan.addColumn(d.cfBytes, d.colBytes))
+      requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
 
       val rdd = hbaseContext
         .hbaseRDD(TableName.valueOf(tableName), scan)
@@ -529,13 +522,8 @@ case class HBaseRelation(
                 val r = new RowKeyFilter(null, new ScanRange(x.upper, inc, x.low, true))
                 inc = true
                 r
-            }).map {
-              x =>
-                x.reduce {
-                  (i, j) =>
-                    i.mergeUnion(j)
-                }
-            }.map(parentRowKeyFilter.mergeIntersect(_))
+            }).map { x => x.reduce { (i, j) => i.mergeUnion(j) } }
+              .map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
           valueArray += byteValue
@@ -552,13 +540,8 @@ case class HBaseRelation(
                 val r = new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, inc))
                 inc = true
                 r
-            }).map {
-              x =>
-                x.reduce {
-                  (i, j) =>
-                    i.mergeUnion(j)
-                }
-            }.map(parentRowKeyFilter.mergeIntersect(_))
+            }).map { x => x.reduce { (i, j) => i.mergeUnion(j) } }
+              .map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
           valueArray += byteValue
@@ -570,15 +553,8 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             b.map(
-              _.less.map(
-                x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
-              .map {
-                x =>
-                  x.reduce {
-                    (i, j) =>
-                      i.mergeUnion(j)
-                  }
-              }
+              _.less.map(x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
+              .map { x => x.reduce { (i, j) => i.mergeUnion(j) } }
               .map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
@@ -591,15 +567,8 @@ case class HBaseRelation(
           if (field.isRowKey) {
             val b = encoder.ranges(value)
             b.map(
-              _.greater.map(
-                x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
-              .map {
-                x =>
-                  x.reduce {
-                    (i, j) =>
-                      i.mergeUnion(j)
-                  }
-              }
+              _.greater.map(x => new RowKeyFilter(null, new ScanRange(x.upper, true, x.low, true))))
+              .map { x => x.reduce { (i, j) => i.mergeUnion(j) } }
               .map(parentRowKeyFilter.mergeIntersect(_))
           }
           val byteValue = encoder.encode(field.dt, value)
@@ -885,8 +854,7 @@ class ColumnFilter(
    * @param other Filter to merge
    */
   def mergeUnion(other: ColumnFilter): Unit = {
-    other.points.foreach(
-      p => points += p)
+    other.points.foreach(p => points += p)
 
     other.ranges.foreach(
       otherR => {
@@ -1024,8 +992,7 @@ class ColumnFilterCollection {
 
   override def toString: String = {
     val strBuilder = new StringBuilder
-    columnFilterMap.foreach(
-      e => strBuilder.append(e))
+    columnFilterMap.foreach(e => strBuilder.append(e))
     strBuilder.toString()
   }
 }
@@ -1157,8 +1124,7 @@ class RowKeyFilter(
    * @param other Filter to merge
    */
   def mergeUnion(other: RowKeyFilter): RowKeyFilter = {
-    other.points.foreach(
-      p => points += p)
+    other.points.foreach(p => points += p)
 
     other.ranges.foreach(
       otherR => {

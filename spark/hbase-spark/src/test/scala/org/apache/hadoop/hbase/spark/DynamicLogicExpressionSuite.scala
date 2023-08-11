@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.spark
 
 import java.util
-
 import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, JavaBytesEncoder}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._

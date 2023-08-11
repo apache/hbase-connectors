@@ -17,20 +17,19 @@
  */
 package org.apache.hadoop.hbase.spark
 
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
-import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile}
-import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles
-import org.apache.hadoop.hbase.{CellUtil, HBaseTestingUtility, HConstants, TableName}
-import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
-import org.apache.spark.SparkContext
-import org.junit.rules.TemporaryFolder
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
-
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.hbase.{CellUtil, HBaseTestingUtility, HConstants, TableName}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
+import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile}
+import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
+import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles
+import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.SparkContext
+import org.junit.rules.TemporaryFolder
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 class BulkLoadSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfterAll with Logging {
   @transient var sc: SparkContext = null

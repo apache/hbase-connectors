@@ -18,9 +18,9 @@
 package org.apache.hadoop.hbase.spark
 
 import org.apache.yetus.audience.InterfaceAudience
-import org.slf4j.impl.StaticLoggerBinder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.impl.StaticLoggerBinder
 
 /**
  * Utility trait for classes that want to log data. Creates a SLF4J logger for the class and allows

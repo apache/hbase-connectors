@@ -18,9 +18,8 @@
 package org.apache.hadoop.hbase.spark
 
 import java.io.Serializable
-
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * This is a wrapper over a byte array so it can work as

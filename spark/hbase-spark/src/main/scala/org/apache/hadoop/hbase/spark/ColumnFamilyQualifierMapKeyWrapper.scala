@@ -17,8 +17,8 @@
  */
 package org.apache.hadoop.hbase.spark
 
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * A wrapper class that will allow both columnFamily and qualifier to

@@ -17,12 +17,12 @@
  */
 package org.apache.hadoop.hbase.spark.example.hbasecontext
 
-import org.apache.hadoop.hbase.spark.HBaseContext
-import org.apache.spark.SparkContext
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.client.Put
+import org.apache.hadoop.hbase.spark.HBaseContext
+import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
 import org.apache.yetus.audience.InterfaceAudience
 
 /**

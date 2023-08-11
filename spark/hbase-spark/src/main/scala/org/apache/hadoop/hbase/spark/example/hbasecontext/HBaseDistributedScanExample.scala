@@ -17,11 +17,11 @@
  */
 package org.apache.hadoop.hbase.spark.example.hbasecontext
 
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.spark.HBaseContext
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.TableName
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.yetus.audience.InterfaceAudience
@@ -53,13 +53,11 @@ object HBaseDistributedScanExample {
 
       val getRdd = hbaseContext.hbaseRDD(TableName.valueOf(tableName), scan)
 
-      getRdd.foreach(
-        v => println(Bytes.toString(v._1.get())))
+      getRdd.foreach(v => println(Bytes.toString(v._1.get())))
 
       println(
         "Length: " + getRdd
-          .map(
-            r => r._1.copyBytes())
+          .map(r => r._1.copyBytes())
           .collect()
           .length);
     } finally {

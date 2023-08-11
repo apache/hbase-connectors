@@ -19,10 +19,9 @@ package org.apache.hadoop.hbase.spark
 
 import java.util
 import java.util.Comparator
-
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.Partitioner
+import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * A Partitioner implementation that will separate records to different

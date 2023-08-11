@@ -18,16 +18,15 @@
 package org.apache.hadoop.hbase.spark
 
 import java.sql.{Date, Timestamp}
-
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
+import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
 import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.functions._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 import org.xml.sax.SAXParseException
 
@@ -1059,10 +1058,7 @@ class DefaultSourceSuite
   test("populate table") {
     val sql = sqlContext
     import sql.implicits._
-    val data = (0 to 255).map {
-      i =>
-        HBaseRecord(i, "extra")
-    }
+    val data = (0 to 255).map { i => HBaseRecord(i, "extra") }
     sc.parallelize(data)
       .toDF
       .write
@@ -1161,14 +1157,8 @@ class DefaultSourceSuite
     // and get an old view.
     val oldMs = 754869600000L
     val startMs = System.currentTimeMillis()
-    val oldData = (0 to 100).map {
-      i =>
-        HBaseRecord(i, "old")
-    }
-    val newData = (200 to 255).map {
-      i =>
-        HBaseRecord(i, "new")
-    }
+    val oldData = (0 to 100).map { i => HBaseRecord(i, "old") }
+    val newData = (200 to 255).map { i => HBaseRecord(i, "new") }
 
     sc.parallelize(oldData)
       .toDF
@@ -1284,10 +1274,7 @@ class DefaultSourceSuite
     val sql = sqlContext
     import sql.implicits._
 
-    val data = (0 to 255).map {
-      i =>
-        AvroHBaseKeyRecord(i)
-    }
+    val data = (0 to 255).map { i => AvroHBaseKeyRecord(i) }
     sc.parallelize(data)
       .toDF
       .write

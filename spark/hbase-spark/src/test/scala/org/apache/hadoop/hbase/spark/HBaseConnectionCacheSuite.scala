@@ -18,12 +18,11 @@
 package org.apache.hadoop.hbase.spark
 
 import java.util.concurrent.ExecutorService
-import scala.util.Random
-
-import org.apache.hadoop.hbase.client.{BufferedMutator, Table, RegionLocator, Connection, BufferedMutatorParams, Admin, TableBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.client.{Admin, BufferedMutator, BufferedMutatorParams, Connection, RegionLocator, Table, TableBuilder}
 import org.scalatest.FunSuite
+import scala.util.Random
 
 case class HBaseConnectionKeyMocker(confId: Int) extends HBaseConnectionKey(null) {
   override def hashCode: Int = {
@@ -171,9 +170,7 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       threads(i).run()
     }
     try {
-      threads.foreach {
-        x => x.join()
-      }
+      threads.foreach { x => x.join() }
     } catch {
       case e: InterruptedException => println(e.getMessage)
     }
@@ -186,10 +183,7 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       assert(HBaseConnectionCache.getStat.numActiveConnections === 10)
 
       var totalRc: Int = 0
-      HBaseConnectionCache.connectionMap.foreach {
-        x =>
-          totalRc += x._2.refCount
-      }
+      HBaseConnectionCache.connectionMap.foreach { x => totalRc += x._2.refCount }
       assert(totalRc === 100 * 1000)
       HBaseConnectionCache.connectionMap.foreach {
         x =>
@@ -227,9 +221,7 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       threads(i).run()
     }
     try {
-      threads.foreach {
-        x => x.join()
-      }
+      threads.foreach { x => x.join() }
     } catch {
       case e: InterruptedException => println(e.getMessage)
     }

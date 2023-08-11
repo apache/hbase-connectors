@@ -21,10 +21,10 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.spark.AvroSerdes
 import org.apache.hadoop.hbase.spark.datasources.HBaseTableCatalog
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SQLContext
 import org.apache.yetus.audience.InterfaceAudience
 
 /**
@@ -116,10 +116,7 @@ object AvroSource {
         .load()
     }
 
-    val data = (0 to 255).map {
-      i =>
-        AvroHBaseRecord(i)
-    }
+    val data = (0 to 255).map { i => AvroHBaseRecord(i) }
 
     sc.parallelize(data)
       .toDF

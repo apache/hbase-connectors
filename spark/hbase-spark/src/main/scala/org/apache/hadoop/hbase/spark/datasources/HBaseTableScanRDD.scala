@@ -18,16 +18,14 @@
 package org.apache.hadoop.hbase.spark.datasources
 
 import java.util.ArrayList
-
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.spark._
-import org.apache.hadoop.hbase.spark.hbase._
 import org.apache.hadoop.hbase.spark.datasources.HBaseResources._
+import org.apache.hadoop.hbase.spark.hbase._
 import org.apache.hadoop.hbase.util.ShutdownHookManager
-import org.apache.spark.{SparkEnv, TaskContext, Partition}
+import org.apache.spark.{Partition, SparkEnv, TaskContext}
 import org.apache.spark.rdd.RDD
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 
 @InterfaceAudience.Private
@@ -80,8 +78,7 @@ class HBaseTableScanRDD(
         val ps = Points.and(Range(x), points)
         if (rs.size > 0 || ps.size > 0) {
           if (log.isDebugEnabled) {
-            rs.foreach(
-              x => logDebug(x.toString))
+            rs.foreach(x => logDebug(x.toString))
           }
           idx += 1
           Some(
@@ -97,8 +94,7 @@ class HBaseTableScanRDD(
     }.toArray
     if (log.isDebugEnabled) {
       logDebug(s"Partitions: ${ps.size}");
-      ps.foreach(
-        x => logDebug(x.toString))
+      ps.foreach(x => logDebug(x.toString))
     }
     regions.release()
     ShutdownHookManager.affixShutdownHook(
@@ -242,8 +238,7 @@ class HBaseTableScanRDD(
     val scans = partition.scanRanges
       .map(buildScan(_, filter, columns))
     val tableResource = TableResource(relation)
-    context.addTaskCompletionListener[Unit](
-      context => close())
+    context.addTaskCompletionListener[Unit](context => close())
     val points = partition.points
     val gIt: Iterator[Result] = {
       if (points.isEmpty) {

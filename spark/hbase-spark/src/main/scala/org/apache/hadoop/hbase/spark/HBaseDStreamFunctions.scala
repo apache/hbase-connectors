@@ -18,11 +18,10 @@
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.hbase.TableName
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.spark.streaming.dstream.DStream
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.reflect.ClassTag
 
 /**

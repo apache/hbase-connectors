@@ -19,15 +19,13 @@ package org.apache.hadoop.hbase.spark
 
 import java.text.SimpleDateFormat
 import java.util.{Date, Locale}
-
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName, TableNotFoundException}
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.mapreduce.{Job, TaskAttemptID, TaskType}
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
-
 import scala.util.{Failure, Success, Try}
 
 // Unit tests for HBASE-20521: change get configuration(TableOutputFormat.conf) object first sequence from jobContext to getConf

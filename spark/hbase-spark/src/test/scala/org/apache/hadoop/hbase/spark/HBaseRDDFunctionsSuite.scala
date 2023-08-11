@@ -17,13 +17,12 @@
  */
 package org.apache.hadoop.hbase.spark
 
+import org.apache.hadoop.hbase.{CellUtil, HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{CellUtil, TableName, HBaseTestingUtility}
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
+import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.SparkContext
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
-
 import scala.collection.mutable
 
 class HBaseRDDFunctionsSuite
@@ -90,8 +89,7 @@ class HBaseRDDFunctionsSuite
       TableName.valueOf(tableName),
       (putRecord) => {
         val put = new Put(putRecord._1)
-        putRecord._2.foreach(
-          (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+        putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
         put
       })
 
@@ -349,8 +347,7 @@ class HBaseRDDFunctionsSuite
         it.foreach(
           (putRecord) => {
             val put = new Put(putRecord._1)
-            putRecord._2.foreach(
-              (putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
+            putRecord._2.foreach((putValue) => put.addColumn(putValue._1, putValue._2, putValue._3))
             bufferedMutator.mutate(put)
           })
         bufferedMutator.flush()

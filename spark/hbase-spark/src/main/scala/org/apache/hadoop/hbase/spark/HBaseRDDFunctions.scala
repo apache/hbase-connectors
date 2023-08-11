@@ -18,13 +18,11 @@
 package org.apache.hadoop.hbase.spark
 
 import java.util
-
 import org.apache.hadoop.hbase.{HConstants, TableName}
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.spark.rdd.RDD
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.reflect.ClassTag
 
 /**

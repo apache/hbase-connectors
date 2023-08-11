@@ -18,10 +18,10 @@
 package org.apache.hadoop.hbase.spark.example.datasources
 
 import org.apache.hadoop.hbase.spark.datasources.HBaseTableCatalog
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SQLContext
 import org.apache.yetus.audience.InterfaceAudience
 
 @InterfaceAudience.Private
@@ -96,10 +96,7 @@ object DataType {
     }
 
     // test populate table
-    val data = (0 until 32).map {
-      i =>
-        IntKeyRecord(i)
-    }
+    val data = (0 until 32).map { i => IntKeyRecord(i) }
     sc.parallelize(data)
       .toDF
       .write

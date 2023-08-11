@@ -17,37 +17,36 @@
  */
 package org.apache.hadoop.hbase.spark
 
+import java.io._
 import java.net.InetSocketAddress
 import java.util
 import java.util.UUID
 import javax.management.openmbean.KeyAlreadyExistsException
-
-import org.apache.yetus.audience.InterfaceAudience;
-import org.apache.hadoop.hbase.fs.HFileSystem
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileAlreadyExistsException, FileSystem, Path}
 import org.apache.hadoop.hbase._
+import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.fs.HFileSystem
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.io.compress.Compression
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm
 import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding
-import org.apache.hadoop.hbase.io.hfile.{HFile, CacheConfig, HFileContextBuilder, HFileWriterImpl}
-import org.apache.hadoop.hbase.regionserver.{HStoreFile, StoreFileWriter, StoreUtils, BloomType}
+import org.apache.hadoop.hbase.io.hfile.{CacheConfig, HFile, HFileContextBuilder, HFileWriterImpl}
+import org.apache.hadoop.hbase.mapreduce.{IdentityTableMapper, TableInputFormat, TableMapReduceUtil}
+import org.apache.hadoop.hbase.regionserver.{BloomType, HStoreFile, StoreFileWriter, StoreUtils}
+import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.hadoop.hbase.util.{Bytes, ChecksumType}
 import org.apache.hadoop.mapred.JobConf
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.rdd.RDD
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
-import org.apache.hadoop.hbase.client._
-import scala.reflect.ClassTag
-import org.apache.spark.{SerializableWritable, SparkContext}
-import org.apache.hadoop.hbase.mapreduce.{TableMapReduceUtil, TableInputFormat, IdentityTableMapper}
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.mapreduce.Job
-import org.apache.spark.streaming.dstream.DStream
-import java.io._
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.hadoop.fs.{Path, FileAlreadyExistsException, FileSystem}
+import org.apache.spark.{SerializableWritable, SparkContext}
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
+import org.apache.spark.streaming.dstream.DStream
+import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
  * HBaseContext is a façade for HBase operations
@@ -99,8 +98,7 @@ class HBaseContext(
    *             with HBase
    */
   def foreachPartition[T](rdd: RDD[T], f: (Iterator[T], Connection) => Unit): Unit = {
-    rdd.foreachPartition(
-      it => hbaseForeachPartition(broadcastedConf, it, f))
+    rdd.foreachPartition(it => hbaseForeachPartition(broadcastedConf, it, f))
   }
 
   /**
@@ -142,8 +140,7 @@ class HBaseContext(
       rdd: RDD[T],
       mp: (Iterator[T], Connection) => Iterator[R]): RDD[R] = {
 
-    rdd.mapPartitions[R](
-      it => hbaseMapPartition[T, R](broadcastedConf, it, mp))
+    rdd.mapPartitions[R](it => hbaseMapPartition[T, R](broadcastedConf, it, mp))
 
   }
 
@@ -169,8 +166,7 @@ class HBaseContext(
    */
   def streamForeachPartition[T](dstream: DStream[T], f: (Iterator[T], Connection) => Unit): Unit = {
 
-    dstream.foreachRDD(
-      rdd => this.foreachPartition(rdd, f))
+    dstream.foreachRDD(rdd => this.foreachPartition(rdd, f))
   }
 
   /**
@@ -196,8 +192,7 @@ class HBaseContext(
   def streamMapPartitions[T, U: ClassTag](
       dstream: DStream[T],
       f: (Iterator[T], Connection) => Iterator[U]): DStream[U] = {
-    dstream.mapPartitions(
-      it => hbaseMapPartition[T, U](broadcastedConf, it, f))
+    dstream.mapPartitions(it => hbaseMapPartition[T, U](broadcastedConf, it, f))
   }
 
   /**
@@ -222,8 +217,7 @@ class HBaseContext(
           it,
           (iterator, connection) => {
             val m = connection.getBufferedMutator(TableName.valueOf(tName))
-            iterator.foreach(
-              T => m.mutate(f(T)))
+            iterator.foreach(T => m.mutate(f(T)))
             m.flush()
             m.close()
           }))
@@ -378,8 +372,7 @@ class HBaseContext(
 
     val getMapPartition = new GetMapPartition(tableName, batchSize, makeGet, convertResult)
 
-    rdd.mapPartitions[U](
-      it => hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
+    rdd.mapPartitions[U](it => hbaseMapPartition[T, U](broadcastedConf, it, getMapPartition.run))
   }
 
   /**
@@ -656,8 +649,7 @@ class HBaseContext(
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
-        .flatMap(
-          r => flatMap(r))
+        .flatMap(r => flatMap(r))
         .repartitionAndSortWithinPartitions(regionSplitPartitioner)
         .hbaseForeachPartition(
           this,
@@ -789,8 +781,7 @@ class HBaseContext(
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
-        .map(
-          r => mapFunction(r))
+        .map(r => mapFunction(r))
         .repartitionAndSortWithinPartitions(regionSplitPartitioner)
         .hbaseForeachPartition(
           this,

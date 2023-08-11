@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.spark.datasources
 
 import java.sql.{Date, Timestamp}
-
 import org.apache.hadoop.hbase.spark.AvroSerdes
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
