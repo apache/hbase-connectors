@@ -77,6 +77,7 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
     testBasic()
     testWithPressureWithoutClose()
     testWithPressureWithClose()
+    testMaxLifeTime()
   }
 
   def cleanEnv() {
@@ -234,6 +235,29 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       assert(HBaseConnectionCache.connectionMap.size === 0)
       assert(HBaseConnectionCache.getStat.numActualConnectionsCreated === 10)
       assert(HBaseConnectionCache.getStat.numActiveConnections === 0)
+    }
+  }
+
+  def testMaxLifeTime(): Unit = {
+    cleanEnv()
+
+    HBaseConnectionCache.setTimeout(1 * 1000)
+    HBaseConnectionCache.setMaxLifeTime(2 * 1000)
+    val coon = HBaseConnectionCache.getConnection(HBaseConnectionKeyMocker(1), new ConnectionMocker)
+    HBaseConnectionCache.connectionMap.synchronized {
+      assert(HBaseConnectionCache.connectionMap.size === 1)
+      assert(HBaseConnectionCache.toCloseConnectionMap.size === 0)
+    }
+    Thread.sleep(3 * 1000)
+    HBaseConnectionCache.connectionMap.synchronized {
+      assert(HBaseConnectionCache.connectionMap.size === 0)
+      assert(HBaseConnectionCache.toCloseConnectionMap.size === 1)
+    }
+    coon.close()
+    HBaseConnectionCache.performHousekeeping(false)
+    HBaseConnectionCache.connectionMap.synchronized {
+      assert(HBaseConnectionCache.connectionMap.size === 0)
+      assert(HBaseConnectionCache.toCloseConnectionMap.size === 0)
     }
   }
 }
