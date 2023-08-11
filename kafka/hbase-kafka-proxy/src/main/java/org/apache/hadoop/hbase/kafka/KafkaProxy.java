@@ -184,7 +184,7 @@ public final class KafkaProxy {
       createPeer=true;
     }
 
-    if (commandLine.hasOption("a")){
+    if (commandLine.hasOption("e")){
       enablePeer=true;
     }
 
