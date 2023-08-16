@@ -44,11 +44,9 @@
   <artifactId>hbase-connectors</artifactId>
   <!-- See https://maven.apache.org/maven-ci-friendly.html -->
   <version>${revision}</version>
-  <name>Apache HBase Connectors</name>
   <packaging>pom</packaging>
-  <description>
-    Connectors to Apache HBase.
-  </description>
+  <name>Apache HBase Connectors</name>
+  <description>Connectors to Apache HBase.</description>
   <url>http://hbase.apache.org</url>
   <inceptionYear>2018</inceptionYear>
   <licenses>
@@ -58,21 +56,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <modules>
-    <module>kafka</module>
-    <module>spark</module>
-    <module>hbase-connectors-assembly</module>
-  </modules>
-  <scm>
-    <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
-    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
-    <url>https://gitbox.apache.org/repos/asf?p=hbase-connectors.git;a=summary</url>
-  </scm>
-  <issueManagement>
-    <!--File issues for this project against Apache HBase JIRA-->
-    <system>JIRA</system>
-    <url>http://issues.apache.org/jira/browse/HBASE</url>
-  </issueManagement>
+  <developers/>
   <!--Currently mail sent by this gitbox project goes to issues@hbase.
        git comments are reflected in referenced JIRA issue.
        https://issues.apache.org/jira/browse/INFRA-16887
@@ -119,7 +103,21 @@
       <archive>https://lists.apache.org/list.html?builds@hbase.apache.org</archive>
     </mailingList>
   </mailingLists>
-  <developers/>
+  <modules>
+    <module>kafka</module>
+    <module>spark</module>
+    <module>hbase-connectors-assembly</module>
+  </modules>
+  <scm>
+    <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
+    <url>https://gitbox.apache.org/repos/asf?p=hbase-connectors.git;a=summary</url>
+  </scm>
+  <issueManagement>
+    <!--File issues for this project against Apache HBase JIRA-->
+    <system>JIRA</system>
+    <url>http://issues.apache.org/jira/browse/HBASE</url>
+  </issueManagement>
   <properties>
     <!-- See https://maven.apache.org/maven-ci-friendly.html -->
     <revision>1.0.1-SNAPSHOT</revision>
@@ -344,8 +342,8 @@
         <version>${hbase.version}</version>
       </dependency>
       <dependency>
-        <artifactId>hbase-it</artifactId>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-it</artifactId>
         <version>${hbase.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
@@ -359,13 +357,6 @@
     </dependencies>
   </dependencyManagement>
   <build>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>${os.maven.version}</version>
-      </extension>
-    </extensions>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -436,18 +427,18 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
           <version>${buildnumber.maven.version}</version>
-          <executions>
-            <execution>
-              <phase>validate</phase>
-              <goals>
-                <goal>create-timestamp</goal>
-              </goals>
-            </execution>
-          </executions>
           <configuration>
             <timestampFormat>yyyy</timestampFormat>
             <timestampPropertyName>build.year</timestampPropertyName>
           </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>create-timestamp</goal>
+              </goals>
+              <phase>validate</phase>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <!-- Approach followed here is roughly the same as mentioned here:
@@ -456,6 +447,12 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>${maven.checkstyle.version}</version>
+          <configuration>
+            <configLocation>hbase/checkstyle.xml</configLocation>
+            <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <failOnViolation>false</failOnViolation>
+          </configuration>
           <dependencies>
             <dependency>
               <groupId>org.apache.hbase</groupId>
@@ -471,18 +468,12 @@
           <executions>
             <execution>
               <id>checkstyle</id>
-              <phase>validate</phase>
               <goals>
                 <goal>check</goal>
               </goals>
+              <phase>validate</phase>
             </execution>
           </executions>
-          <configuration>
-            <configLocation>hbase/checkstyle.xml</configLocation>
-            <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnViolation>false</failOnViolation>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -519,16 +510,14 @@
   HBase requires at least version ${maven.min.version} of Maven to properly build from source.
   You appear to be using an older version. You can use either "mvn -version" or
   "mvn enforcer:display-info" to verify what version is active.
-  See the reference guide on building for more information: http://hbase.apache.org/book.html#build
-                  </message>
+  See the reference guide on building for more information: http://hbase.apache.org/book.html#build</message>
                 </requireMavenVersion>
                 <!-- The earliest JVM version we verify builds for via ASF Jenkins -->
                 <requireJavaVersion>
                   <version>[${java.min.version},)</version>
                   <message>Java is out of date.
   HBase requires at least version ${java.min.version} of the JDK to properly build from source.
-  See the reference guide on building for more information: http://hbase.apache.org/book.html#build
-                  </message>
+  See the reference guide on building for more information: http://hbase.apache.org/book.html#build</message>
                 </requireJavaVersion>
                 <bannedDependencies>
                   <excludes>
@@ -573,10 +562,10 @@
           </execution>
           <execution>
             <id>banned-illegal-imports</id>
-            <phase>process-sources</phase>
             <goals>
               <goal>enforce</goal>
             </goals>
+            <phase>process-sources</phase>
             <configuration>
               <rules>
                 <restrictImports implementation="de.skuzzle.enforcer.restrictimports.rule.RestrictImports">
@@ -644,12 +633,10 @@
                 <restrictImports implementation="de.skuzzle.enforcer.restrictimports.rule.RestrictImports">
                   <includeTestCode>true</includeTestCode>
                   <commentLineBufferSize>512</commentLineBufferSize>
-                  <reason>
-                    You should never use this style of annotations(i.e, 'this is for test only')
+                  <reason>You should never use this style of annotations(i.e, 'this is for test only')
                     in IA.Public or IA.LimitedPrivate classes. Use IA.Private to tell users this is
                     not for public use.
-                    For IA.Private classes, use RestrictedApi annotation in error prone instead.
-                  </reason>
+                    For IA.Private classes, use RestrictedApi annotation in error prone instead.</reason>
                   <bannedImports>
                     <bannedImport>org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting</bannedImport>
                   </bannedImports>
@@ -671,17 +658,17 @@
         <executions>
           <execution>
             <id>flatten</id>
-            <phase>process-resources</phase>
             <goals>
               <goal>flatten</goal>
             </goals>
+            <phase>process-resources</phase>
           </execution>
           <execution>
             <id>flatten.clean</id>
-            <phase>clean</phase>
             <goals>
               <goal>clean</goal>
             </goals>
+            <phase>clean</phase>
           </execution>
         </executions>
       </plugin>
@@ -810,6 +797,13 @@
         </configuration>
       </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${os.maven.version}</version>
+      </extension>
+    </extensions>
   </build>
   <profiles>
     <!-- this profile should be activated for release builds -->
@@ -822,10 +816,10 @@
             <artifactId>apache-rat-plugin</artifactId>
             <executions>
               <execution>
-                <phase>package</phase>
                 <goals>
                   <goal>check</goal>
                 </goals>
+                <phase>package</phase>
               </execution>
             </executions>
           </plugin>
@@ -841,8 +835,7 @@
   of the JDK to properly build from source.  You appear to be using a newer dependency. You can use
   either "mvn -version" or "mvn enforcer:display-info" to verify what version is active.
   Non-release builds can temporarily build with a newer JDK version by setting the
-  'compileSource' property (eg. mvn -DcompileSource=1.8 clean package).
-                </message>
+  'compileSource' property (eg. mvn -DcompileSource=1.8 clean package).</message>
                 </enforceBytecodeVersion>
               </rules>
             </configuration>
@@ -887,13 +880,9 @@
         <sonar.coverage.exclusions>**/example/**/*,**/DumpToStringListener*,**/KafkaProxy*</sonar.coverage.exclusions>
         <sonar.java.binaries>**/target/classes</sonar.java.binaries>
         <sonar.surefire.reportsPath>${project.build.directory}/surefire-reports</sonar.surefire.reportsPath>
-        <sonar.coverage.jacoco.xmlReportPaths>
-          ${sonar.projectBaseDir}/test-reporting/target/code-coverage/jacoco-reports/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.scala.coverage.reportPaths>
-          ${sonar.projectBaseDir}/test-reporting/target/code-coverage/scoverage-reports/scoverage.xml
-        </sonar.scala.coverage.reportPaths>
-        <argLine />
+        <sonar.coverage.jacoco.xmlReportPaths>${sonar.projectBaseDir}/test-reporting/target/code-coverage/jacoco-reports/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.scala.coverage.reportPaths>${sonar.projectBaseDir}/test-reporting/target/code-coverage/scoverage-reports/scoverage.xml</sonar.scala.coverage.reportPaths>
+        <argLine/>
         <main.basedir>${project.basedir}</main.basedir>
         <codeCoverageReportRootDir>${main.basedir}/test-reporting/target/code-coverage</codeCoverageReportRootDir>
         <jacocoDestFile>${codeCoverageReportRootDir}/jacoco.exec</jacocoDestFile>
@@ -901,17 +890,6 @@
         <scoverageReportDir>${codeCoverageReportRootDir}/scoverage-reports</scoverageReportDir>
       </properties>
       <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <groupId>org.sonarsource.scanner.maven</groupId>
-            <artifactId>sonar-maven-plugin</artifactId>
-            <version>${sonar-maven-plugin.version}</version>
-          </plugin>
-        </plugins>
 
         <pluginManagement>
           <plugins>
@@ -942,6 +920,17 @@
             </plugin>
           </plugins>
         </pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar-maven-plugin.version}</version>
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>

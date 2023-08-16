@@ -20,7 +20,7 @@ limitations under the License.
 
 Welcome to the HBase kafka proxy. The purpose of this proxy is to act as a _fake peer_.
 It receives replication events from a peer cluster and applies a set of rules (stored in
-a _kafka-route-rules.xml_ file) to determine if the event should be forwarded to a 
+a _kafka-route-rules.xml_ file) to determine if the event should be forwarded to a
 kafka topic. If the mutation matches a rule, the mutation is converted to an avro object
 and the item is placed into the topic.
 

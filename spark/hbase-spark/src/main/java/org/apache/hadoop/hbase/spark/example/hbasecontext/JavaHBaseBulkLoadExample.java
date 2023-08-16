@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,19 +36,17 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
- * Run this example using command below:
- *
- *  SPARK_HOME/bin/spark-submit --master local[2]
- *  --class org.apache.hadoop.hbase.spark.example.hbasecontext.JavaHBaseBulkLoadExample
- *  path/to/hbase-spark.jar {path/to/output/HFiles}
- *
- * This example will output put hfiles in {path/to/output/HFiles}, and user can run
- * 'hbase org.apache.hadoop.hbase.tool.LoadIncrementalHFiles' to load the HFiles into table to
- * verify this example.
+ * Run this example using command below: SPARK_HOME/bin/spark-submit --master local[2] --class
+ * org.apache.hadoop.hbase.spark.example.hbasecontext.JavaHBaseBulkLoadExample
+ * path/to/hbase-spark.jar {path/to/output/HFiles} This example will output put hfiles in
+ * {path/to/output/HFiles}, and user can run 'hbase
+ * org.apache.hadoop.hbase.tool.LoadIncrementalHFiles' to load the HFiles into table to verify this
+ * example.
  */
 @InterfaceAudience.Private
 final public class JavaHBaseBulkLoadExample {
-  private JavaHBaseBulkLoadExample() {}
+  private JavaHBaseBulkLoadExample() {
+  }
 
   public static void main(String[] args) {
     if (args.length < 1) {
@@ -63,7 +62,7 @@ final public class JavaHBaseBulkLoadExample {
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
 
     try {
-      List<String> list= new ArrayList<String>();
+      List<String> list = new ArrayList<String>();
       // row1
       list.add("1," + columnFamily1 + ",b,1");
       // row3
@@ -79,17 +78,15 @@ final public class JavaHBaseBulkLoadExample {
       Configuration conf = HBaseConfiguration.create();
       JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, conf);
 
-
-
-      hbaseContext.bulkLoad(rdd, TableName.valueOf(tableName),new BulkLoadFunction(), args[0],
-          new HashMap<byte[], FamilyHFileWriteOptions>(), false, HConstants.DEFAULT_MAX_FILE_SIZE);
+      hbaseContext.bulkLoad(rdd, TableName.valueOf(tableName), new BulkLoadFunction(), args[0],
+        new HashMap<byte[], FamilyHFileWriteOptions>(), false, HConstants.DEFAULT_MAX_FILE_SIZE);
     } finally {
       jsc.stop();
     }
   }
 
   public static class BulkLoadFunction
-          implements Function<String, Pair<KeyFamilyQualifier, byte[]>> {
+    implements Function<String, Pair<KeyFamilyQualifier, byte[]>> {
     @Override
     public Pair<KeyFamilyQualifier, byte[]> call(String v1) throws Exception {
       if (v1 == null) {
@@ -97,12 +94,12 @@ final public class JavaHBaseBulkLoadExample {
       }
 
       String[] strs = v1.split(",");
-      if(strs.length != 4) {
+      if (strs.length != 4) {
         return null;
       }
 
       KeyFamilyQualifier kfq = new KeyFamilyQualifier(Bytes.toBytes(strs[0]),
-              Bytes.toBytes(strs[1]), Bytes.toBytes(strs[2]));
+        Bytes.toBytes(strs[1]), Bytes.toBytes(strs[2]));
       return new Pair(kfq, Bytes.toBytes(strs[3]));
     }
   }

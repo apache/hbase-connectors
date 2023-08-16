@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -63,12 +63,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-@Category({MiscTests.class, MediumTests.class})
+@Category({ MiscTests.class, MediumTests.class })
 public class TestJavaHBaseContext implements Serializable {
 
   @ClassRule
   public static final HBaseClassTestRule TIMEOUT =
-      HBaseClassTestRule.forClass(TestJavaHBaseContext.class);
+    HBaseClassTestRule.forClass(TestJavaHBaseContext.class);
 
   protected static transient JavaSparkContext JSC;
   private static HBaseTestingUtility TEST_UTIL;
@@ -131,7 +131,7 @@ public class TestJavaHBaseContext implements Serializable {
 
     LOG.info(" - creating table {}", Bytes.toString(tableName));
     TEST_UTIL.createTable(TableName.valueOf(tableName),
-        new byte[][]{columnFamily, columnFamily1});
+      new byte[][] { columnFamily, columnFamily1 });
     LOG.info(" - created table");
   }
 
@@ -167,9 +167,7 @@ public class TestJavaHBaseContext implements Serializable {
       table.close();
     }
 
-    HBASE_CONTEXT.bulkPut(rdd,
-            TableName.valueOf(tableName),
-            new PutFunction());
+    HBASE_CONTEXT.bulkPut(rdd, TableName.valueOf(tableName), new PutFunction());
 
     table = conn.getTable(TableName.valueOf(tableName));
 
@@ -203,8 +201,7 @@ public class TestJavaHBaseContext implements Serializable {
       String[] cells = v.split(",");
       Put put = new Put(Bytes.toBytes(cells[0]));
 
-      put.addColumn(Bytes.toBytes(cells[1]), Bytes.toBytes(cells[2]),
-              Bytes.toBytes(cells[3]));
+      put.addColumn(Bytes.toBytes(cells[1]), Bytes.toBytes(cells[2]), Bytes.toBytes(cells[3]));
       return put;
     }
   }
@@ -223,14 +220,10 @@ public class TestJavaHBaseContext implements Serializable {
     populateTableWithMockData(conf, TableName.valueOf(tableName));
 
     HBASE_CONTEXT.bulkDelete(rdd, TableName.valueOf(tableName),
-            new JavaHBaseBulkDeleteExample.DeleteFunction(), 2);
+      new JavaHBaseBulkDeleteExample.DeleteFunction(), 2);
 
-
-
-    try (
-            Connection conn = ConnectionFactory.createConnection(conf);
-            Table table = conn.getTable(TableName.valueOf(tableName))
-    ){
+    try (Connection conn = ConnectionFactory.createConnection(conf);
+      Table table = conn.getTable(TableName.valueOf(tableName))) {
       Result result1 = table.get(new Get(Bytes.toBytes("1")));
       Assert.assertNull("Row 1 should had been deleted", result1.getRow());
 
@@ -258,16 +251,15 @@ public class TestJavaHBaseContext implements Serializable {
     scan.setCaching(100);
 
     JavaRDD<String> javaRdd =
-            HBASE_CONTEXT.hbaseRDD(TableName.valueOf(tableName), scan)
-                    .map(new ScanConvertFunction());
+      HBASE_CONTEXT.hbaseRDD(TableName.valueOf(tableName), scan).map(new ScanConvertFunction());
 
     List<String> results = javaRdd.collect();
 
     Assert.assertEquals(results.size(), 5);
   }
 
-  private static class ScanConvertFunction implements
-          Function<Tuple2<ImmutableBytesWritable, Result>, String> {
+  private static class ScanConvertFunction
+    implements Function<Tuple2<ImmutableBytesWritable, Result>, String> {
     @Override
     public String call(Tuple2<ImmutableBytesWritable, Result> v1) throws Exception {
       return Bytes.toString(v1._1().copyBytes());
@@ -289,10 +281,8 @@ public class TestJavaHBaseContext implements Serializable {
 
     populateTableWithMockData(conf, TableName.valueOf(tableName));
 
-    final JavaRDD<String> stringJavaRDD =
-            HBASE_CONTEXT.bulkGet(TableName.valueOf(tableName), 2, rdd,
-              new GetFunction(),
-              new ResultFunction());
+    final JavaRDD<String> stringJavaRDD = HBASE_CONTEXT.bulkGet(TableName.valueOf(tableName), 2,
+      rdd, new GetFunction(), new ResultFunction());
 
     Assert.assertEquals(stringJavaRDD.count(), 5);
   }
@@ -302,14 +292,14 @@ public class TestJavaHBaseContext implements Serializable {
 
     Path output = TEST_UTIL.getDataTestDir("testBulkLoad");
     // Add cell as String: "row,falmily,qualifier,value"
-    List<String> list= new ArrayList<String>();
+    List<String> list = new ArrayList<String>();
     // row1
     list.add("1," + columnFamilyStr + ",b,1");
     // row3
     list.add("3," + columnFamilyStr + ",a,2");
     list.add("3," + columnFamilyStr + ",b,1");
     list.add("3," + columnFamilyStr1 + ",a,1");
-    //row2
+    // row2
     list.add("2," + columnFamilyStr + ",a,3");
     list.add("2," + columnFamilyStr + ",b,3");
 
@@ -318,17 +308,15 @@ public class TestJavaHBaseContext implements Serializable {
     Configuration conf = TEST_UTIL.getConfiguration();
 
     HBASE_CONTEXT.bulkLoad(rdd, TableName.valueOf(tableName), new BulkLoadFunction(),
-            output.toUri().getPath(), new HashMap<byte[], FamilyHFileWriteOptions>(), false,
-            HConstants.DEFAULT_MAX_FILE_SIZE);
+      output.toUri().getPath(), new HashMap<byte[], FamilyHFileWriteOptions>(), false,
+      HConstants.DEFAULT_MAX_FILE_SIZE);
 
     try (Connection conn = ConnectionFactory.createConnection(conf);
-         Admin admin = conn.getAdmin()) {
+      Admin admin = conn.getAdmin()) {
       Table table = conn.getTable(TableName.valueOf(tableName));
       // Do bulk load
       LoadIncrementalHFiles load = new LoadIncrementalHFiles(conf);
       load.doBulkLoad(output, admin, table, conn.getRegionLocator(TableName.valueOf(tableName)));
-
-
 
       // Check row1
       List<Cell> cell1 = table.get(new Get(Bytes.toBytes("1"))).listCells();
@@ -367,7 +355,7 @@ public class TestJavaHBaseContext implements Serializable {
     Path output = TEST_UTIL.getDataTestDir("testBulkLoadThinRows");
     // because of the limitation of scala bulkLoadThinRows API
     // we need to provide data as <row, all cells in that row>
-    List<List<String>> list= new ArrayList<List<String>>();
+    List<List<String>> list = new ArrayList<List<String>>();
     // row1
     List<String> list1 = new ArrayList<String>();
     list1.add("1," + columnFamilyStr + ",b,1");
@@ -378,7 +366,7 @@ public class TestJavaHBaseContext implements Serializable {
     list3.add("3," + columnFamilyStr + ",b,1");
     list3.add("3," + columnFamilyStr1 + ",a,1");
     list.add(list3);
-    //row2
+    // row2
     List<String> list2 = new ArrayList<String>();
     list2.add("2," + columnFamilyStr + ",a,3");
     list2.add("2," + columnFamilyStr + ",b,3");
@@ -389,12 +377,11 @@ public class TestJavaHBaseContext implements Serializable {
     Configuration conf = TEST_UTIL.getConfiguration();
 
     HBASE_CONTEXT.bulkLoadThinRows(rdd, TableName.valueOf(tableName),
-            new BulkLoadThinRowsFunction(), output.toString(), new HashMap<>(), false,
-            HConstants.DEFAULT_MAX_FILE_SIZE);
-
+      new BulkLoadThinRowsFunction(), output.toString(), new HashMap<>(), false,
+      HConstants.DEFAULT_MAX_FILE_SIZE);
 
     try (Connection conn = ConnectionFactory.createConnection(conf);
-         Admin admin = conn.getAdmin()) {
+      Admin admin = conn.getAdmin()) {
       Table table = conn.getTable(TableName.valueOf(tableName));
       // Do bulk load
       LoadIncrementalHFiles load = new LoadIncrementalHFiles(conf);
@@ -432,27 +419,30 @@ public class TestJavaHBaseContext implements Serializable {
     }
 
   }
+
   public static class BulkLoadFunction
-          implements Function<String, Pair<KeyFamilyQualifier, byte[]>> {
-    @Override public Pair<KeyFamilyQualifier, byte[]> call(String v1) throws Exception {
+    implements Function<String, Pair<KeyFamilyQualifier, byte[]>> {
+    @Override
+    public Pair<KeyFamilyQualifier, byte[]> call(String v1) throws Exception {
       if (v1 == null) {
         return null;
       }
 
       String[] strs = v1.split(",");
-      if(strs.length != 4) {
+      if (strs.length != 4) {
         return null;
       }
 
       KeyFamilyQualifier kfq = new KeyFamilyQualifier(Bytes.toBytes(strs[0]),
-              Bytes.toBytes(strs[1]), Bytes.toBytes(strs[2]));
+        Bytes.toBytes(strs[1]), Bytes.toBytes(strs[2]));
       return new Pair(kfq, Bytes.toBytes(strs[3]));
     }
   }
 
   public static class BulkLoadThinRowsFunction
-          implements Function<List<String>, Pair<ByteArrayWrapper, FamiliesQualifiersValues>> {
-    @Override public Pair<ByteArrayWrapper, FamiliesQualifiersValues> call(List<String> list) {
+    implements Function<List<String>, Pair<ByteArrayWrapper, FamiliesQualifiersValues>> {
+    @Override
+    public Pair<ByteArrayWrapper, FamiliesQualifiersValues> call(List<String> list) {
       if (list == null) {
         return null;
       }
@@ -495,17 +485,11 @@ public class TestJavaHBaseContext implements Serializable {
         Cell cell = it.next();
         String q = Bytes.toString(CellUtil.cloneQualifier(cell));
         if ("counter".equals(q)) {
-          b.append("(")
-                  .append(q)
-                  .append(",")
-                  .append(Bytes.toLong(CellUtil.cloneValue(cell)))
-                  .append(")");
+          b.append("(").append(q).append(",").append(Bytes.toLong(CellUtil.cloneValue(cell)))
+            .append(")");
         } else {
-          b.append("(")
-                  .append(q)
-                  .append(",")
-                  .append(Bytes.toString(CellUtil.cloneValue(cell)))
-                  .append(")");
+          b.append("(").append(q).append(",").append(Bytes.toString(CellUtil.cloneValue(cell)))
+            .append(")");
         }
       }
       return b.toString();
@@ -513,11 +497,9 @@ public class TestJavaHBaseContext implements Serializable {
   }
 
   protected void populateTableWithMockData(Configuration conf, TableName tableName)
-          throws IOException {
-    try (
-      Connection conn = ConnectionFactory.createConnection(conf);
-      Table table = conn.getTable(tableName);
-      Admin admin = conn.getAdmin()) {
+    throws IOException {
+    try (Connection conn = ConnectionFactory.createConnection(conf);
+      Table table = conn.getTable(tableName); Admin admin = conn.getAdmin()) {
 
       List<Put> puts = new ArrayList<>(5);
 

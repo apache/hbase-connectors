@@ -150,4 +150,3 @@ New features in hbase-spark:
 \* support for Dataframe writes,
 \* avro support,
 \* catalog can be defined in json.
-

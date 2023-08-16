@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
@@ -39,14 +38,13 @@ import org.junit.experimental.categories.Category;
 @Category(SmallTests.class)
 public class TestProcessMutations {
   private static final String ROUTE_RULE1 =
-      "<rules><rule action=\"route\" table=\"MyNamespace:MyTable\" "
-          + "topic=\"foo\"/></rules>";
+    "<rules><rule action=\"route\" table=\"MyNamespace:MyTable\" " + "topic=\"foo\"/></rules>";
 
   ProducerForTesting myTestingProducer;
 
   @Before
   public void setup() {
-    this.myTestingProducer=new ProducerForTesting();
+    this.myTestingProducer = new ProducerForTesting();
   }
 
   @Test
@@ -55,22 +53,22 @@ public class TestProcessMutations {
     try {
       rules.parseRules(new ByteArrayInputStream(ROUTE_RULE1.getBytes(StandardCharsets.UTF_8)));
       Configuration conf = new Configuration();
-      KafkaBridgeConnection connection = new KafkaBridgeConnection(conf,rules,myTestingProducer);
+      KafkaBridgeConnection connection = new KafkaBridgeConnection(conf, rules, myTestingProducer);
       long zeTimestamp = System.currentTimeMillis();
-      Put put = new Put("key1".getBytes(StandardCharsets.UTF_8),zeTimestamp);
+      Put put = new Put("key1".getBytes(StandardCharsets.UTF_8), zeTimestamp);
       put.addColumn("FAMILY".getBytes(StandardCharsets.UTF_8),
-              "not foo".getBytes(StandardCharsets.UTF_8),
-              "VALUE should NOT pass".getBytes(StandardCharsets.UTF_8));
+        "not foo".getBytes(StandardCharsets.UTF_8),
+        "VALUE should NOT pass".getBytes(StandardCharsets.UTF_8));
       put.addColumn("FAMILY".getBytes(StandardCharsets.UTF_8),
-              "foo".getBytes(StandardCharsets.UTF_8),
-              "VALUE should pass".getBytes(StandardCharsets.UTF_8));
+        "foo".getBytes(StandardCharsets.UTF_8),
+        "VALUE should pass".getBytes(StandardCharsets.UTF_8));
       Table myTable = connection.getTable(TableName.valueOf("MyNamespace:MyTable"));
       List<Row> rows = new ArrayList<>();
       rows.add(put);
-      myTable.batch(rows,new Object[0]);
+      myTable.batch(rows, new Object[0]);
 
       Assert.assertFalse(myTestingProducer.getMessages().isEmpty());
-    } catch (Exception e){
+    } catch (Exception e) {
       Assert.fail(e.getMessage());
     }
   }

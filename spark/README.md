@@ -39,4 +39,3 @@ Note: to build the connector with Spark 2.x, compile it with `-Dscala.binary.ver
 - The server-side configuration is needed for column filter pushdown
   - if you cannot perform the server-side configuration, consider using `.option("hbase.spark.pushdown.columnfilter", false)`
 - The Scala library version must match the Scala version (2.11 or 2.12) used for compiling the connector.
-

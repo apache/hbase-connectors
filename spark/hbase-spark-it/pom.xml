@@ -1,6 +1,6 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-<!--
+  <!--
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -38,135 +38,6 @@
     <failsafe.Xmx>4g</failsafe.Xmx>
     <!-- To run a single integration test, use -Dit.test=IntegrationTestXXX -->
   </properties>
-  <build>
-    <pluginManagement>
-      <plugins>
-        <!-- Make a jar and put the sources in the jar -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-        </plugin>
-        <plugin>
-          <!--Make it so assembly:single does nothing in here-->
-          <artifactId>maven-assembly-plugin</artifactId>
-          <configuration>
-            <skipAssembly>true</skipAssembly>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>${surefire.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-junit4</artifactId>
-              <version>${surefire.version}</version>
-            </dependency>
-          </dependencies>
-          <configuration>
-            <includes>
-              <include>${integrationtest.include}</include>
-            </includes>
-            <excludes>
-              <exclude>${unittest.include}</exclude>
-              <exclude>**/*$*</exclude>
-            </excludes>
-            <redirectTestOutputToFile>${test.output.tofile}</redirectTestOutputToFile>
-            <failIfNoTests>false</failIfNoTests>
-            <testFailureIgnore>false</testFailureIgnore>
-          </configuration>
-          <executions>
-            <execution>
-              <id>integration-test</id>
-              <phase>integration-test</phase>
-              <goals>
-                <goal>integration-test</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>verify</id>
-              <phase>verify</phase>
-              <goals>
-                <goal>verify</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
-    <plugins>
-      <!--  Run integration tests with mvn verify -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <skip>false</skip>
-          <forkCount>1</forkCount>
-          <reuseForks>true</reuseForks>
-          <!-- TODO: failsafe does timeout, but verify does not fail the build because of the timeout.
-               I believe it is a failsafe bug, we may consider using surefire -->
-          <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
-          <argLine>-enableassertions -Xmx${failsafe.Xmx}
-            -Djava.security.egd=file:/dev/./urandom -XX:+CMSClassUnloadingEnabled
-            -verbose:gc -XX:+PrintCommandLineFlags  -XX:+PrintFlagsFinal</argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <!-- hbase-spark is ok in this modules -->
-          <execution>
-            <id>banned-hbase-spark</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
-            <id>banned-scala</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-mrapp-generated-classpath</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>build-classpath</goal>
-            </goals>
-            <configuration>
-              <!-- needed to run the unit test for DS to generate
-              the required classpath that is required in the env
-              of the launch container in the mini cluster
-              -->
-              <outputFile>${project.build.directory}/test-classes/spark-generated-classpath</outputFile>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>net.revelc.code</groupId>
-        <artifactId>warbucks-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>
@@ -301,8 +172,8 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
-      <type>test-jar</type>
       <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -317,21 +188,135 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Make a jar and put the sources in the jar -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+        </plugin>
+        <plugin>
+          <!--Make it so assembly:single does nothing in here-->
+          <artifactId>maven-assembly-plugin</artifactId>
+          <configuration>
+            <skipAssembly>true</skipAssembly>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${surefire.version}</version>
+          <configuration>
+            <includes>
+              <include>${integrationtest.include}</include>
+            </includes>
+            <excludes>
+              <exclude>${unittest.include}</exclude>
+              <exclude>**/*$*</exclude>
+            </excludes>
+            <redirectTestOutputToFile>${test.output.tofile}</redirectTestOutputToFile>
+            <failIfNoTests>false</failIfNoTests>
+            <testFailureIgnore>false</testFailureIgnore>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.surefire</groupId>
+              <artifactId>surefire-junit4</artifactId>
+              <version>${surefire.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>integration-test</id>
+              <goals>
+                <goal>integration-test</goal>
+              </goals>
+              <phase>integration-test</phase>
+            </execution>
+            <execution>
+              <id>verify</id>
+              <goals>
+                <goal>verify</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
-  <profiles>
-    <!-- Skip the tests in this module -->
-    <profile>
-      <id>skipIntegrationTests</id>
-      <activation>
-        <property>
-          <name>skipIntegrationTests</name>
-        </property>
-      </activation>
-      <properties>
-        <skipTests>true</skipTests>
-      </properties>
-    </profile>
-  </profiles>
+    <plugins>
+      <!--  Run integration tests with mvn verify -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <skip>false</skip>
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- TODO: failsafe does timeout, but verify does not fail the build because of the timeout.
+               I believe it is a failsafe bug, we may consider using surefire -->
+          <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
+          <argLine>-enableassertions -Xmx${failsafe.Xmx}
+            -Djava.security.egd=file:/dev/./urandom -XX:+CMSClassUnloadingEnabled
+            -verbose:gc -XX:+PrintCommandLineFlags  -XX:+PrintFlagsFinal</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <!-- hbase-spark is ok in this modules -->
+          <execution>
+            <id>banned-hbase-spark</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+          <execution>
+            <id>banned-scala</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-mrapp-generated-classpath</id>
+            <goals>
+              <goal>build-classpath</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <!-- needed to run the unit test for DS to generate
+              the required classpath that is required in the env
+              of the launch container in the mini cluster
+              -->
+              <outputFile>${project.build.directory}/test-classes/spark-generated-classpath</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>net.revelc.code</groupId>
+        <artifactId>warbucks-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <reporting>
     <plugins>
@@ -356,5 +341,20 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <profiles>
+    <!-- Skip the tests in this module -->
+    <profile>
+      <id>skipIntegrationTests</id>
+      <activation>
+        <property>
+          <name>skipIntegrationTests</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

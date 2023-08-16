@@ -1,5 +1,4 @@
-/**
- *
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
@@ -75,16 +73,12 @@ import org.apache.hbase.thirdparty.com.google.common.collect.Sets;
 import org.apache.hbase.thirdparty.org.apache.commons.cli.CommandLine;
 
 /**
- * Test Bulk Load and Spark on a distributed cluster.
- * It starts an Spark job that creates linked chains.
- * This test mimic {@link IntegrationTestBulkLoad} in mapreduce.
- *
- * Usage on cluster:
- *   First add hbase related jars and hbase-spark.jar into spark classpath.
- *
- *   spark-submit --class org.apache.hadoop.hbase.spark.IntegrationTestSparkBulkLoad
- *                HBASE_HOME/lib/hbase-spark-it-XXX-tests.jar -m slowDeterministic
- *                -Dhbase.spark.bulkload.chainlength=300
+ * Test Bulk Load and Spark on a distributed cluster. It starts an Spark job that creates linked
+ * chains. This test mimic {@link IntegrationTestBulkLoad} in mapreduce. Usage on cluster: First add
+ * hbase related jars and hbase-spark.jar into spark classpath. spark-submit --class
+ * org.apache.hadoop.hbase.spark.IntegrationTestSparkBulkLoad
+ * HBASE_HOME/lib/hbase-spark-it-XXX-tests.jar -m slowDeterministic
+ * -Dhbase.spark.bulkload.chainlength=300
  */
 public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
 
@@ -98,7 +92,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
   private static int DEFAULT_BULKLOAD_CHAIN_LENGTH = 200000;
 
   private static String BULKLOAD_IMPORT_ROUNDS = "hbase.spark.bulkload.importround";
-  private static int DEFAULT_BULKLOAD_IMPORT_ROUNDS  = 1;
+  private static int DEFAULT_BULKLOAD_IMPORT_ROUNDS = 1;
 
   private static String CURRENT_ROUND_NUM = "hbase.spark.bulkload.current.roundnum";
 
@@ -116,7 +110,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
   private boolean load = false;
   private boolean check = false;
 
-  private static final byte[] CHAIN_FAM  = Bytes.toBytes("L");
+  private static final byte[] CHAIN_FAM = Bytes.toBytes("L");
   private static final byte[] SORT_FAM = Bytes.toBytes("S");
   private static final byte[] DATA_FAM = Bytes.toBytes("D");
 
@@ -138,8 +132,8 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
    * @throws Exception if an HBase operation or getting the test directory fails
    */
   public void runLinkedListSparkJob(int iteration) throws Exception {
-    String jobName =  IntegrationTestSparkBulkLoad.class.getSimpleName() + " _load " +
-        EnvironmentEdgeManager.currentTime();
+    String jobName = IntegrationTestSparkBulkLoad.class.getSimpleName() + " _load "
+      + EnvironmentEdgeManager.currentTime();
 
     LOG.info("Running iteration " + iteration + "in Spark Job");
 
@@ -155,31 +149,26 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     hbaseConf.setInt(CURRENT_ROUND_NUM, iteration);
     int partitionNum = hbaseConf.getInt(BULKLOAD_PARTITIONS_NUM, DEFAULT_BULKLOAD_PARTITIONS_NUM);
 
-
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
     JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, hbaseConf);
 
-
     LOG.info("Partition RDD into " + partitionNum + " parts");
     List<String> temp = new ArrayList<>();
-    JavaRDD<List<byte[]>> rdd = jsc.parallelize(temp, partitionNum).
-        mapPartitionsWithIndex(new LinkedListCreationMapper(new SerializableWritable<>(hbaseConf)),
-                false);
+    JavaRDD<List<byte[]>> rdd = jsc.parallelize(temp, partitionNum).mapPartitionsWithIndex(
+      new LinkedListCreationMapper(new SerializableWritable<>(hbaseConf)), false);
 
     hbaseContext.bulkLoad(rdd, getTablename(), new ListToKeyValueFunc(), output.toUri().getPath(),
-        new HashMap<>(), false, HConstants.DEFAULT_MAX_FILE_SIZE);
+      new HashMap<>(), false, HConstants.DEFAULT_MAX_FILE_SIZE);
 
-    try (Connection conn = ConnectionFactory.createConnection(conf);
-        Admin admin = conn.getAdmin();
-        Table table = conn.getTable(getTablename());
-        RegionLocator regionLocator = conn.getRegionLocator(getTablename())) {
+    try (Connection conn = ConnectionFactory.createConnection(conf); Admin admin = conn.getAdmin();
+      Table table = conn.getTable(getTablename());
+      RegionLocator regionLocator = conn.getRegionLocator(getTablename())) {
       // Create a new loader.
       LoadIncrementalHFiles loader = new LoadIncrementalHFiles(conf);
 
       // Load the HFiles into table.
       loader.doBulkLoad(output, admin, table, regionLocator);
     }
-
 
     // Delete the files.
     util.getTestFileSystem().delete(output, true);
@@ -188,8 +177,8 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
 
   // See mapreduce.IntegrationTestBulkLoad#LinkedListCreationMapper
   // Used to generate test data
-  public static class LinkedListCreationMapper implements
-      Function2<Integer, Iterator<String>, Iterator<List<byte[]>>> {
+  public static class LinkedListCreationMapper
+    implements Function2<Integer, Iterator<String>, Iterator<List<byte[]>>> {
 
     SerializableWritable swConfig = null;
     private Random rand = new Random();
@@ -210,7 +199,6 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
       int iterationsCur = config.getInt(CURRENT_ROUND_NUM, 0);
       List<List<byte[]>> res = new LinkedList<>();
 
-
       long tempId = partitionId + iterationsCur * partitionNum;
       long totalPartitionNum = partitionNum * iterationsNum;
       long chainId = Math.abs(rand.nextLong());
@@ -219,7 +207,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
       byte[] chainIdArray = Bytes.toBytes(chainId);
       long currentRow = 0;
       long nextRow = getNextRow(0, chainLength);
-      for(long i = 0; i < chainLength; i++) {
+      for (long i = 0; i < chainLength; i++) {
         byte[] rk = Bytes.toBytes(currentRow);
         // Insert record into a list
         List<byte[]> tmp1 = Arrays.asList(rk, CHAIN_FAM, chainIdArray, Bytes.toBytes(nextRow));
@@ -230,7 +218,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
         res.add(tmp3);
 
         currentRow = nextRow;
-        nextRow = getNextRow(i+1, chainLength);
+        nextRow = getNextRow(i + 1, chainLength);
       }
       return res.iterator();
     }
@@ -246,10 +234,8 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     }
   }
 
-
-
-  public static class ListToKeyValueFunc implements
-      Function<List<byte[]>, Pair<KeyFamilyQualifier, byte[]>> {
+  public static class ListToKeyValueFunc
+    implements Function<List<byte[]>, Pair<KeyFamilyQualifier, byte[]>> {
     @Override
     public Pair<KeyFamilyQualifier, byte[]> call(List<byte[]> v1) throws Exception {
       if (v1 == null || v1.size() != 4) {
@@ -266,8 +252,8 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
    */
   public void runCheck() throws Exception {
     LOG.info("Running check");
-    String jobName = IntegrationTestSparkBulkLoad.class.getSimpleName() + "_check" +
-            EnvironmentEdgeManager.currentTime();
+    String jobName = IntegrationTestSparkBulkLoad.class.getSimpleName() + "_check"
+      + EnvironmentEdgeManager.currentTime();
 
     SparkConf sparkConf = new SparkConf().setAppName(jobName).setMaster("local");
     Configuration hbaseConf = new Configuration(getConf());
@@ -291,10 +277,10 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     // 4. Group LinkKey if they have same chainId, and repartition RDD by NaturalKeyPartitioner
     // 5. Check LinkList in each Partition using LinkedListCheckingFlatMapFunc
     hbaseContext.hbaseRDD(getTablename(), scan).flatMapToPair(new LinkedListCheckingFlatMapFunc())
-        .sortByKey()
-        .combineByKey(new createCombinerFunc(), new mergeValueFunc(), new mergeCombinersFunc(),
-            new NaturalKeyPartitioner(new SerializableWritable<>(hbaseConf)))
-        .foreach(new LinkedListCheckingForeachFunc(new SerializableWritable<>(hbaseConf)));
+      .sortByKey()
+      .combineByKey(new createCombinerFunc(), new mergeValueFunc(), new mergeCombinersFunc(),
+        new NaturalKeyPartitioner(new SerializableWritable<>(hbaseConf)))
+      .foreach(new LinkedListCheckingForeachFunc(new SerializableWritable<>(hbaseConf)));
     jsc.close();
   }
 
@@ -315,11 +301,11 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
    * {@code Tuple<SparkLinkKey, SparkLinkChain>}.
    */
   public static class LinkedListCheckingFlatMapFunc implements
-      PairFlatMapFunction<Tuple2<ImmutableBytesWritable, Result>, SparkLinkKey, SparkLinkChain> {
+    PairFlatMapFunction<Tuple2<ImmutableBytesWritable, Result>, SparkLinkKey, SparkLinkChain> {
 
     @Override
-    public Iterator<Tuple2<SparkLinkKey, SparkLinkChain>> call(Tuple2<ImmutableBytesWritable,
-            Result> v) throws Exception {
+    public Iterator<Tuple2<SparkLinkKey, SparkLinkChain>>
+      call(Tuple2<ImmutableBytesWritable, Result> v) throws Exception {
       Result value = v._2();
       long longRk = Bytes.toLong(value.getRow());
       List<Tuple2<SparkLinkKey, SparkLinkChain>> list = new LinkedList<>();
@@ -330,15 +316,14 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
         Cell c = value.getColumnCells(SORT_FAM, entry.getKey()).get(0);
         long order = Bytes.toLong(CellUtil.cloneValue(c));
         Tuple2<SparkLinkKey, SparkLinkChain> tuple2 =
-            new Tuple2<>(new SparkLinkKey(chainId, order), new SparkLinkChain(longRk, next));
+          new Tuple2<>(new SparkLinkKey(chainId, order), new SparkLinkChain(longRk, next));
         list.add(tuple2);
       }
       return list.iterator();
     }
   }
 
-  public static class createCombinerFunc implements
-      Function<SparkLinkChain, List<SparkLinkChain>> {
+  public static class createCombinerFunc implements Function<SparkLinkChain, List<SparkLinkChain>> {
     @Override
     public List<SparkLinkChain> call(SparkLinkChain v1) throws Exception {
       List<SparkLinkChain> list = new LinkedList<>();
@@ -347,8 +332,8 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     }
   }
 
-  public static class mergeValueFunc implements
-      Function2<List<SparkLinkChain>, SparkLinkChain, List<SparkLinkChain>> {
+  public static class mergeValueFunc
+    implements Function2<List<SparkLinkChain>, SparkLinkChain, List<SparkLinkChain>> {
     @Override
     public List<SparkLinkChain> call(List<SparkLinkChain> v1, SparkLinkChain v2) throws Exception {
       if (v1 == null) {
@@ -360,23 +345,24 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     }
   }
 
-  public static class mergeCombinersFunc implements
-      Function2<List<SparkLinkChain>, List<SparkLinkChain>, List<SparkLinkChain>> {
+  public static class mergeCombinersFunc
+    implements Function2<List<SparkLinkChain>, List<SparkLinkChain>, List<SparkLinkChain>> {
     @Override
     public List<SparkLinkChain> call(List<SparkLinkChain> v1, List<SparkLinkChain> v2)
-            throws Exception {
+      throws Exception {
       v1.addAll(v2);
       return v1;
     }
   }
 
   /**
-   * Class to figure out what partition to send a link in the chain to.  This is based upon
-   * the linkKey's ChainId.
+   * Class to figure out what partition to send a link in the chain to. This is based upon the
+   * linkKey's ChainId.
    */
   public static class NaturalKeyPartitioner extends Partitioner {
 
     private int numPartions = 0;
+
     public NaturalKeyPartitioner(SerializableWritable swConf) {
       Configuration hbaseConf = (Configuration) swConf.value();
       numPartions = hbaseConf.getInt(BULKLOAD_PARTITIONS_NUM, DEFAULT_BULKLOAD_PARTITIONS_NUM);
@@ -404,9 +390,9 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
    * Sort all LinkChain for one LinkKey, and test {@code List<LinkChain>}.
    */
   public static class LinkedListCheckingForeachFunc
-      implements VoidFunction<Tuple2<SparkLinkKey, List<SparkLinkChain>>> {
+    implements VoidFunction<Tuple2<SparkLinkKey, List<SparkLinkChain>>> {
 
-    private  SerializableWritable swConf = null;
+    private SerializableWritable swConf = null;
 
     public LinkedListCheckingForeachFunc(SerializableWritable conf) {
       swConf = conf;
@@ -425,16 +411,16 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
 
         if (next == -1) {
           if (lc.getRk() != 0L) {
-            String msg = "Chains should all start at rk 0, but read rk " + lc.getRk()
-                + ". Chain:" + key.getChainId() + ", order:" + key.getOrder();
+            String msg = "Chains should all start at rk 0, but read rk " + lc.getRk() + ". Chain:"
+              + key.getChainId() + ", order:" + key.getOrder();
             throw new RuntimeException(msg);
           }
           next = lc.getNext();
         } else {
           if (next != lc.getRk()) {
-            String msg = "Missing a link in the chain. Prev rk " + prev + " was, expecting "
-                + next + " but got " + lc.getRk() + ". Chain:" + key.getChainId()
-                + ", order:" + key.getOrder();
+            String msg = "Missing a link in the chain. Prev rk " + prev + " was, expecting " + next
+              + " but got " + lc.getRk() + ". Chain:" + key.getChainId() + ", order:"
+              + key.getOrder();
             throw new RuntimeException(msg);
           }
           prev = lc.getRk();
@@ -446,16 +432,15 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
       int expectedChainLen = hbaseConf.getInt(BULKLOAD_CHAIN_LENGTH, DEFAULT_BULKLOAD_CHAIN_LENGTH);
       if (count != expectedChainLen) {
         String msg = "Chain wasn't the correct length.  Expected " + expectedChainLen + " got "
-            + count + ". Chain:" + key.getChainId() + ", order:" + key.getOrder();
+          + count + ". Chain:" + key.getChainId() + ", order:" + key.getOrder();
         throw new RuntimeException(msg);
       }
     }
   }
 
   /**
-   * Writable class used as the key to group links in the linked list.
-   *
-   * Used as the key emited from a pass over the table.
+   * Writable class used as the key to group links in the linked list. Used as the key emited from a
+   * pass over the table.
    */
   public static class SparkLinkKey implements java.io.Serializable, Comparable<SparkLinkKey> {
 
@@ -505,7 +490,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
   /**
    * Writable used as the value emitted from a pass over the hbase table.
    */
-  public static class SparkLinkChain implements java.io.Serializable, Comparable<SparkLinkChain>{
+  public static class SparkLinkChain implements java.io.Serializable, Comparable<SparkLinkChain> {
 
     public Long getNext() {
       return next;
@@ -514,7 +499,6 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     public Long getRk() {
       return rk;
     }
-
 
     public SparkLinkChain(Long rk, Long next) {
       this.rk = rk;
@@ -549,11 +533,10 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     }
   }
 
-
   /**
-   * Allow the scan to go to replica, this would not affect the runCheck()
-   * Since data are BulkLoaded from HFile into table
-   * @throws IOException if an HBase operation fails
+   * Allow the scan to go to replica, this would not affect the runCheck() Since data are BulkLoaded
+   * from HFile into table
+   * @throws IOException          if an HBase operation fails
    * @throws InterruptedException if modifying the table fails
    */
   private void installSlowingCoproc() throws IOException, InterruptedException {
@@ -577,7 +560,6 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     runCheckWithRetry();
   }
 
-
   private byte[][] getSplits(int numRegions) {
     RegionSplitter.UniformSplit split = new RegionSplitter.UniformSplit();
     split.setFirstRow(Bytes.toBytes(0L));
@@ -590,11 +572,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
       util.deleteTable(getTablename());
     }
 
-    util.createTable(
-        getTablename(),
-        new byte[][]{CHAIN_FAM, SORT_FAM, DATA_FAM},
-        getSplits(16)
-    );
+    util.createTable(getTablename(), new byte[][] { CHAIN_FAM, SORT_FAM, DATA_FAM }, getSplits(16));
 
     int replicaCount = conf.getInt(NUM_REPLICA_COUNT_KEY, DEFAULT_NUM_REPLICA_COUNT);
 
@@ -618,7 +596,7 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
     // Scale this up on a real cluster
     if (util.isDistributedCluster()) {
       util.getConfiguration().setIfUnset(BULKLOAD_PARTITIONS_NUM,
-              String.valueOf(DEFAULT_BULKLOAD_PARTITIONS_NUM));
+        String.valueOf(DEFAULT_BULKLOAD_PARTITIONS_NUM));
       util.getConfiguration().setIfUnset(BULKLOAD_IMPORT_ROUNDS, "1");
     } else {
       util.startMiniMapReduceCluster();
@@ -663,14 +641,14 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
 
   @Override
   protected Set<String> getColumnFamilies() {
-    return Sets.newHashSet(Bytes.toString(CHAIN_FAM) , Bytes.toString(DATA_FAM),
-        Bytes.toString(SORT_FAM));
+    return Sets.newHashSet(Bytes.toString(CHAIN_FAM), Bytes.toString(DATA_FAM),
+      Bytes.toString(SORT_FAM));
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = HBaseConfiguration.create();
     IntegrationTestingUtility.setUseDistributedCluster(conf);
-    int status =  ToolRunner.run(conf, new IntegrationTestSparkBulkLoad(), args);
+    int status = ToolRunner.run(conf, new IntegrationTestSparkBulkLoad(), args);
     System.exit(status);
   }
 }

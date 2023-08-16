@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,17 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark.example.datasources
 
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.spark.AvroSerdes
 import org.apache.hadoop.hbase.spark.datasources.HBaseTableCatalog
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SQLContext
 import org.apache.yetus.audience.InterfaceAudience
 
 /**
@@ -32,8 +32,7 @@ import org.apache.yetus.audience.InterfaceAudience
  * @param col1 Column #1, Type is Array[Byte]
  */
 @InterfaceAudience.Private
-case class AvroHBaseRecord(col0: String,
-                           col1: Array[Byte])
+case class AvroHBaseRecord(col0: String, col1: Array[Byte])
 @InterfaceAudience.Private
 object AvroHBaseRecord {
   val schemaString =
@@ -58,12 +57,13 @@ object AvroHBaseRecord {
     user.put("name", s"name${"%03d".format(i)}")
     user.put("favorite_number", i)
     user.put("favorite_color", s"color${"%03d".format(i)}")
-    val favoriteArray = new GenericData.Array[String](2, avroSchema.getField("favorite_array").schema())
+    val favoriteArray =
+      new GenericData.Array[String](2, avroSchema.getField("favorite_array").schema())
     favoriteArray.add(s"number${i}")
-    favoriteArray.add(s"number${i+1}")
+    favoriteArray.add(s"number${i + 1}")
     user.put("favorite_array", favoriteArray)
     import scala.collection.JavaConverters._
-    val favoriteMap = Map[String, Int](("key1" -> i), ("key2" -> (i+1))).asJava
+    val favoriteMap = Map[String, Int](("key1" -> i), ("key2" -> (i + 1))).asJava
     user.put("favorite_map", favoriteMap)
     val avroByte = AvroSerdes.serialize(user, avroSchema)
     AvroHBaseRecord(s"name${"%03d".format(i)}", avroByte)
@@ -107,19 +107,21 @@ object AvroSource {
     import sqlContext.implicits._
 
     def withCatalog(cat: String): DataFrame = {
-      sqlContext
-        .read
-        .options(Map("avroSchema" -> AvroHBaseRecord.schemaString, HBaseTableCatalog.tableCatalog -> avroCatalog))
+      sqlContext.read
+        .options(
+          Map(
+            "avroSchema" -> AvroHBaseRecord.schemaString,
+            HBaseTableCatalog.tableCatalog -> avroCatalog))
         .format("org.apache.hadoop.hbase.spark")
         .load()
     }
 
-    val data = (0 to 255).map { i =>
-      AvroHBaseRecord(i)
-    }
+    val data = (0 to 255).map { i => AvroHBaseRecord(i) }
 
-    sc.parallelize(data).toDF.write.options(
-      Map(HBaseTableCatalog.tableCatalog -> catalog, HBaseTableCatalog.newTable -> "5"))
+    sc.parallelize(data)
+      .toDF
+      .write
+      .options(Map(HBaseTableCatalog.tableCatalog -> catalog, HBaseTableCatalog.newTable -> "5"))
       .format("org.apache.hadoop.hbase.spark")
       .save()
 
@@ -140,15 +142,18 @@ object AvroSource {
       throw new UserCustomizedSampleException("value invalid")
     }
 
-    df.write.options(
-      Map("avroSchema"->AvroHBaseRecord.schemaString, HBaseTableCatalog.tableCatalog->avroCatalogInsert,
-        HBaseTableCatalog.newTable -> "5"))
+    df.write
+      .options(
+        Map(
+          "avroSchema" -> AvroHBaseRecord.schemaString,
+          HBaseTableCatalog.tableCatalog -> avroCatalogInsert,
+          HBaseTableCatalog.newTable -> "5"))
       .format("org.apache.hadoop.hbase.spark")
       .save()
     val newDF = withCatalog(avroCatalogInsert)
     newDF.show()
     newDF.printSchema()
-    if(newDF.count() != 256) {
+    if (newDF.count() != 256) {
       throw new UserCustomizedSampleException("value invalid")
     }
 

@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,17 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import java.util
-
 import org.apache.hadoop.hbase.{HConstants, TableName}
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.spark.rdd.RDD
-
+import org.apache.yetus.audience.InterfaceAudience
 import scala.reflect.ClassTag
 
 /**
@@ -32,8 +30,7 @@ import scala.reflect.ClassTag
  * applied to a Spark RDD so that we can easily interact with HBase
  */
 @InterfaceAudience.Public
-object HBaseRDDFunctions
-{
+object HBaseRDDFunctions {
 
   /**
    * These are implicit methods for a RDD that contains any type of
@@ -54,9 +51,7 @@ object HBaseRDDFunctions
      * @param f          The function that will turn the RDD values
      *                   into HBase Put objects.
      */
-    def hbaseBulkPut(hc: HBaseContext,
-                     tableName: TableName,
-                     f: (T) => Put): Unit = {
+    def hbaseBulkPut(hc: HBaseContext, tableName: TableName, f: (T) => Put): Unit = {
       hc.bulkPut(rdd, tableName, f)
     }
 
@@ -79,9 +74,12 @@ object HBaseRDDFunctions
      *                       out of the resulting RDD
      * @return               A resulting RDD with type R objects
      */
-    def hbaseBulkGet[R: ClassTag](hc: HBaseContext,
-                            tableName: TableName, batchSize:Int,
-                            f: (T) => Get, convertResult: (Result) => R): RDD[R] = {
+    def hbaseBulkGet[R: ClassTag](
+        hc: HBaseContext,
+        tableName: TableName,
+        batchSize: Int,
+        f: (T) => Get,
+        convertResult: (Result) => R): RDD[R] = {
       hc.bulkGet[T, R](tableName, batchSize, rdd, f, convertResult)
     }
 
@@ -99,16 +97,22 @@ object HBaseRDDFunctions
      *                       in HBase Get objects
      * @return               A resulting RDD with type R objects
      */
-    def hbaseBulkGet(hc: HBaseContext,
-                                  tableName: TableName, batchSize:Int,
-                                  f: (T) => Get): RDD[(ImmutableBytesWritable, Result)] = {
-      hc.bulkGet[T, (ImmutableBytesWritable, Result)](tableName,
-        batchSize, rdd, f,
-        result => if (result != null && result.getRow != null) {
-          (new ImmutableBytesWritable(result.getRow), result)
-        } else {
-          null
-        })
+    def hbaseBulkGet(
+        hc: HBaseContext,
+        tableName: TableName,
+        batchSize: Int,
+        f: (T) => Get): RDD[(ImmutableBytesWritable, Result)] = {
+      hc.bulkGet[T, (ImmutableBytesWritable, Result)](
+        tableName,
+        batchSize,
+        rdd,
+        f,
+        result =>
+          if (result != null && result.getRow != null) {
+            (new ImmutableBytesWritable(result.getRow), result)
+          } else {
+            null
+          })
     }
 
     /**
@@ -122,8 +126,11 @@ object HBaseRDDFunctions
      *                   a HBase Delete Object
      * @param batchSize  The number of Deletes to be sent in a single batch
      */
-    def hbaseBulkDelete(hc: HBaseContext,
-                        tableName: TableName, f:(T) => Delete, batchSize:Int): Unit = {
+    def hbaseBulkDelete(
+        hc: HBaseContext,
+        tableName: TableName,
+        f: (T) => Delete,
+        batchSize: Int): Unit = {
       hc.bulkDelete(rdd, tableName, f, batchSize)
     }
 
@@ -138,8 +145,7 @@ object HBaseRDDFunctions
      * @param f   This function will get an iterator for a Partition of an
      *            RDD along with a connection object to HBase
      */
-    def hbaseForeachPartition(hc: HBaseContext,
-                              f: (Iterator[T], Connection) => Unit): Unit = {
+    def hbaseForeachPartition(hc: HBaseContext, f: (Iterator[T], Connection) => Unit): Unit = {
       hc.foreachPartition(rdd, f)
     }
 
@@ -157,10 +163,10 @@ object HBaseRDDFunctions
      *            RDD
      * @return    A resulting RDD of type R
      */
-    def hbaseMapPartitions[R: ClassTag](hc: HBaseContext,
-                                        f: (Iterator[T], Connection) => Iterator[R]):
-    RDD[R] = {
-      hc.mapPartitions[T,R](rdd, f)
+    def hbaseMapPartitions[R: ClassTag](
+        hc: HBaseContext,
+        f: (Iterator[T], Connection) => Iterator[R]): RDD[R] = {
+      hc.mapPartitions[T, R](rdd, f)
     }
 
     /**
@@ -190,18 +196,23 @@ object HBaseRDDFunctions
      * @param compactionExclude              Compaction excluded for the HFiles
      * @param maxSize                        Max size for the HFiles before they roll
      */
-    def hbaseBulkLoad(hc: HBaseContext,
-                         tableName: TableName,
-                         flatMap: (T) => Iterator[(KeyFamilyQualifier, Array[Byte])],
-                         stagingDir:String,
-                         familyHFileWriteOptionsMap:
-                         util.Map[Array[Byte], FamilyHFileWriteOptions] =
-                         new util.HashMap[Array[Byte], FamilyHFileWriteOptions](),
-                         compactionExclude: Boolean = false,
-                         maxSize:Long = HConstants.DEFAULT_MAX_FILE_SIZE):Unit = {
-      hc.bulkLoad(rdd, tableName,
-        flatMap, stagingDir, familyHFileWriteOptionsMap,
-        compactionExclude, maxSize)
+    def hbaseBulkLoad(
+        hc: HBaseContext,
+        tableName: TableName,
+        flatMap: (T) => Iterator[(KeyFamilyQualifier, Array[Byte])],
+        stagingDir: String,
+        familyHFileWriteOptionsMap: util.Map[Array[Byte], FamilyHFileWriteOptions] =
+          new util.HashMap[Array[Byte], FamilyHFileWriteOptions](),
+        compactionExclude: Boolean = false,
+        maxSize: Long = HConstants.DEFAULT_MAX_FILE_SIZE): Unit = {
+      hc.bulkLoad(
+        rdd,
+        tableName,
+        flatMap,
+        stagingDir,
+        familyHFileWriteOptionsMap,
+        compactionExclude,
+        maxSize)
     }
 
     /**
@@ -235,19 +246,23 @@ object HBaseRDDFunctions
      * @param compactionExclude              Compaction excluded for the HFiles
      * @param maxSize                        Max size for the HFiles before they roll
      */
-    def hbaseBulkLoadThinRows(hc: HBaseContext,
-                      tableName: TableName,
-                      mapFunction: (T) =>
-                        (ByteArrayWrapper, FamiliesQualifiersValues),
-                      stagingDir:String,
-                      familyHFileWriteOptionsMap:
-                      util.Map[Array[Byte], FamilyHFileWriteOptions] =
-                      new util.HashMap[Array[Byte], FamilyHFileWriteOptions](),
-                      compactionExclude: Boolean = false,
-                      maxSize:Long = HConstants.DEFAULT_MAX_FILE_SIZE):Unit = {
-      hc.bulkLoadThinRows(rdd, tableName,
-        mapFunction, stagingDir, familyHFileWriteOptionsMap,
-        compactionExclude, maxSize)
+    def hbaseBulkLoadThinRows(
+        hc: HBaseContext,
+        tableName: TableName,
+        mapFunction: (T) => (ByteArrayWrapper, FamiliesQualifiersValues),
+        stagingDir: String,
+        familyHFileWriteOptionsMap: util.Map[Array[Byte], FamilyHFileWriteOptions] =
+          new util.HashMap[Array[Byte], FamilyHFileWriteOptions](),
+        compactionExclude: Boolean = false,
+        maxSize: Long = HConstants.DEFAULT_MAX_FILE_SIZE): Unit = {
+      hc.bulkLoadThinRows(
+        rdd,
+        tableName,
+        mapFunction,
+        stagingDir,
+        familyHFileWriteOptionsMap,
+        compactionExclude,
+        maxSize)
     }
   }
 }

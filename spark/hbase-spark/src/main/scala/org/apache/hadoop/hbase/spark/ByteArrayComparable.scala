@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
-import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.yetus.audience.InterfaceAudience
 
 @InterfaceAudience.Public
-class ByteArrayComparable(val bytes:Array[Byte], val offset:Int = 0, var length:Int = -1)
-  extends Comparable[ByteArrayComparable] {
+class ByteArrayComparable(val bytes: Array[Byte], val offset: Int = 0, var length: Int = -1)
+    extends Comparable[ByteArrayComparable] {
 
   if (length == -1) {
     length = bytes.length
@@ -38,7 +36,7 @@ class ByteArrayComparable(val bytes:Array[Byte], val offset:Int = 0, var length:
     Bytes.hashCode(bytes, offset, length)
   }
 
-  override def equals (obj: Any): Boolean = {
+  override def equals(obj: Any): Boolean = {
     obj match {
       case b: ByteArrayComparable =>
         Bytes.equals(bytes, offset, length, b.bytes, b.offset, b.length)
