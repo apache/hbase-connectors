@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,25 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import java.util.concurrent.ExecutorService
-import scala.util.Random
-
-import org.apache.hadoop.hbase.client.{BufferedMutator, Table, RegionLocator,
-  Connection, BufferedMutatorParams, Admin, TableBuilder}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.client.{Admin, BufferedMutator, BufferedMutatorParams, Connection, RegionLocator, Table, TableBuilder}
 import org.scalatest.FunSuite
+import scala.util.Random
 
-case class HBaseConnectionKeyMocker (confId: Int) extends HBaseConnectionKey (null) {
+case class HBaseConnectionKeyMocker(confId: Int) extends HBaseConnectionKey(null) {
   override def hashCode: Int = {
     confId
   }
 
   override def equals(obj: Any): Boolean = {
-    if(!obj.isInstanceOf[HBaseConnectionKeyMocker])
+    if (!obj.isInstanceOf[HBaseConnectionKeyMocker])
       false
     else
       confId == obj.asInstanceOf[HBaseConnectionKeyMocker].confId
@@ -42,12 +40,12 @@ case class HBaseConnectionKeyMocker (confId: Int) extends HBaseConnectionKey (nu
 class ConnectionMocker extends Connection {
   var isClosed: Boolean = false
 
-  def getRegionLocator (tableName: TableName): RegionLocator = null
+  def getRegionLocator(tableName: TableName): RegionLocator = null
   def getConfiguration: Configuration = null
-  override def getTable (tableName: TableName): Table = null
+  override def getTable(tableName: TableName): Table = null
   override def getTable(tableName: TableName, pool: ExecutorService): Table = null
-  def getBufferedMutator (params: BufferedMutatorParams): BufferedMutator = null
-  def getBufferedMutator (tableName: TableName): BufferedMutator = null
+  def getBufferedMutator(params: BufferedMutatorParams): BufferedMutator = null
+  def getBufferedMutator(tableName: TableName): BufferedMutator = null
   def getAdmin: Admin = null
   def getTableBuilder(tableName: TableName, pool: ExecutorService): TableBuilder = null
 
@@ -61,7 +59,8 @@ class ConnectionMocker extends Connection {
   def abort(why: String, e: Throwable) = {}
 
   /* Without override, we can also compile it against HBase 2.1. */
-  /* override */ def clearRegionLocationCache(): Unit = {}
+  /* override */
+  def clearRegionLocationCache(): Unit = {}
 }
 
 class HBaseConnectionCacheSuite extends FunSuite with Logging {
@@ -139,8 +138,12 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
     Thread.sleep(3 * 1000) // Leave housekeeping thread enough time
     HBaseConnectionCache.connectionMap.synchronized {
       assert(HBaseConnectionCache.connectionMap.size === 1)
-      assert(HBaseConnectionCache.connectionMap.iterator.next()._1
-        .asInstanceOf[HBaseConnectionKeyMocker].confId === 2)
+      assert(
+        HBaseConnectionCache.connectionMap.iterator
+          .next()
+          ._1
+          .asInstanceOf[HBaseConnectionKeyMocker]
+          .confId === 2)
       assert(HBaseConnectionCache.getStat.numActiveConnections === 1)
     }
 
@@ -154,7 +157,8 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       override def run() {
         for (i <- 0 to 999) {
           val c = HBaseConnectionCache.getConnection(
-            new HBaseConnectionKeyMocker(Random.nextInt(10)), new ConnectionMocker)
+            new HBaseConnectionKeyMocker(Random.nextInt(10)),
+            new ConnectionMocker)
         }
       }
     }
@@ -178,16 +182,15 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       assert(HBaseConnectionCache.getStat.numActualConnectionsCreated === 10)
       assert(HBaseConnectionCache.getStat.numActiveConnections === 10)
 
-      var totalRc : Int = 0
-      HBaseConnectionCache.connectionMap.foreach {
-        x => totalRc += x._2.refCount
-      }
+      var totalRc: Int = 0
+      HBaseConnectionCache.connectionMap.foreach { x => totalRc += x._2.refCount }
       assert(totalRc === 100 * 1000)
       HBaseConnectionCache.connectionMap.foreach {
-        x => {
-          x._2.refCount = 0
-          x._2.timestamp = System.currentTimeMillis() - 1000
-        }
+        x =>
+          {
+            x._2.refCount = 0
+            x._2.timestamp = System.currentTimeMillis() - 1000
+          }
       }
     }
     Thread.sleep(1000)
@@ -203,7 +206,8 @@ class HBaseConnectionCacheSuite extends FunSuite with Logging {
       override def run() {
         for (i <- 0 to 999) {
           val c = HBaseConnectionCache.getConnection(
-            new HBaseConnectionKeyMocker(Random.nextInt(10)), new ConnectionMocker)
+            new HBaseConnectionKeyMocker(Random.nextInt(10)),
+            new ConnectionMocker)
           Thread.`yield`()
           c.close()
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,29 +22,28 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.yetus.audience.InterfaceAudience;
 
-
 /**
  * Implements the matching logic for a rule
  */
 @InterfaceAudience.Private
 public abstract class Rule {
   TableName tableName;
-  private byte [] columnFamily;
-  private byte [] qualifier;
+  private byte[] columnFamily;
+  private byte[] qualifier;
 
   boolean qualifierStartsWith = false;
   boolean qualifierEndsWith = false;
 
-  byte []ast = Bytes.toBytes("*");
+  byte[] ast = Bytes.toBytes("*");
 
   /**
    * Indicates if the table,column family, and qualifier match the rule
-   * @param tryTable table name to test
+   * @param tryTable       table name to test
    * @param tryColumFamily column family to test
-   * @param tryQualifier qualifier to test
+   * @param tryQualifier   qualifier to test
    * @return true if values match the rule
    */
-  public boolean match(TableName tryTable, byte [] tryColumFamily, byte [] tryQualifier) {
+  public boolean match(TableName tryTable, byte[] tryColumFamily, byte[] tryQualifier) {
     boolean tableMatch = tableMatch(tryTable);
     boolean columnFamilyMatch = columnFamilyMatch(tryColumFamily);
     boolean qualfierMatch = qualifierMatch(tryQualifier);
@@ -57,7 +56,7 @@ public abstract class Rule {
    * @param tryQualifier qualifier to test
    * @return true if the qualifier matches
    */
-  public boolean qualifierMatch(byte [] tryQualifier) {
+  public boolean qualifierMatch(byte[] tryQualifier) {
 
     if (qualifier != null) {
       if (qualifierStartsWith && qualifierEndsWith) {
@@ -78,7 +77,7 @@ public abstract class Rule {
    * @param tryColumFamily column family to test
    * @return true if the column family matches the rule
    */
-  public boolean columnFamilyMatch(byte [] tryColumFamily) {
+  public boolean columnFamilyMatch(byte[] tryColumFamily) {
     if (columnFamily != null) {
       return Bytes.equals(this.columnFamily, tryColumFamily);
     }
@@ -101,7 +100,7 @@ public abstract class Rule {
    * set the column family for the rule
    * @param columnFamily column family to set
    */
-  public void setColumnFamily(byte [] columnFamily) {
+  public void setColumnFamily(byte[] columnFamily) {
     this.columnFamily = columnFamily;
   }
 
@@ -109,7 +108,7 @@ public abstract class Rule {
    * set the qualifier value for the rule
    * @param qualifier qualifier to set
    */
-  public void setQualifier(byte []qualifier) {
+  public void setQualifier(byte[] qualifier) {
     this.qualifier = qualifier;
     if (startsWith(qualifier, ast)) {
       qualifierEndsWith = true;
@@ -129,11 +128,11 @@ public abstract class Rule {
 
   /**
    * Tests if data starts with startsWith
-   * @param data byte array to test
+   * @param data       byte array to test
    * @param startsWith array that we want to see if data starts with
    * @return true if data starts with startsWith
    */
-  public static boolean startsWith(byte [] data, byte [] startsWith) {
+  public static boolean startsWith(byte[] data, byte[] startsWith) {
     if (startsWith.length > data.length) {
       return false;
     }
@@ -152,11 +151,11 @@ public abstract class Rule {
 
   /**
    * Tests if data ends with endsWith
-   * @param data byte array to test
+   * @param data     byte array to test
    * @param endsWith array that we want to see if data ends with
    * @return true if data ends with endsWith
    */
-  public static boolean endsWith(byte [] data, byte [] endsWith) {
+  public static boolean endsWith(byte[] data, byte[] endsWith) {
     if (endsWith.length > data.length) {
       return false;
     }
@@ -168,7 +167,7 @@ public abstract class Rule {
     int endStart = data.length - endsWith.length;
 
     for (int i = 0; i < endsWith.length; i++) {
-      //if (endsWith[i]!=data[(data.length-1)-(endsWith.length+i)]){
+      // if (endsWith[i]!=data[(data.length-1)-(endsWith.length+i)]){
       if (endsWith[i] != data[endStart + i]) {
         return false;
       }
@@ -202,12 +201,10 @@ public abstract class Rule {
 
   /**
    * get the qualifier for the rule
-   * @return qualfier
    */
   public byte[] getQualifier() {
     return qualifier;
   }
-
 
   /**
    * indicates if the qualfier is a wildcard like *foo

@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,13 +35,13 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
- * This is a simple example of getting records in HBase
- * with the bulkGet function.
+ * This is a simple example of getting records in HBase with the bulkGet function.
  */
 @InterfaceAudience.Private
 final public class JavaHBaseBulkGetExample {
 
-  private JavaHBaseBulkGetExample() {}
+  private JavaHBaseBulkGetExample() {
+  }
 
   public static void main(String[] args) {
     if (args.length < 1) {
@@ -68,7 +69,7 @@ final public class JavaHBaseBulkGetExample {
       JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, conf);
 
       hbaseContext.bulkGet(TableName.valueOf(tableName), 2, rdd, new GetFunction(),
-              new ResultFunction());
+        new ResultFunction());
     } finally {
       jsc.stop();
     }
@@ -97,17 +98,11 @@ final public class JavaHBaseBulkGetExample {
         Cell cell = it.next();
         String q = Bytes.toString(cell.getQualifierArray());
         if (q.equals("counter")) {
-          b.append("(")
-                  .append(Bytes.toString(cell.getQualifierArray()))
-                  .append(",")
-                  .append(Bytes.toLong(cell.getValueArray()))
-                  .append(")");
+          b.append("(").append(Bytes.toString(cell.getQualifierArray())).append(",")
+            .append(Bytes.toLong(cell.getValueArray())).append(")");
         } else {
-          b.append("(")
-                  .append(Bytes.toString(cell.getQualifierArray()))
-                  .append(",")
-                  .append(Bytes.toString(cell.getValueArray()))
-                  .append(")");
+          b.append("(").append(Bytes.toString(cell.getQualifierArray())).append(",")
+            .append(Bytes.toString(cell.getValueArray())).append(")");
         }
       }
       return b.toString();

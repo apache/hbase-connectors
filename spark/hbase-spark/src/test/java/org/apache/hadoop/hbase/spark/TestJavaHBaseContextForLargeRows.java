@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseClassTestRule;
 import org.apache.hadoop.hbase.TableName;
@@ -41,20 +40,21 @@ import org.junit.experimental.categories.Category;
 @Category({ MiscTests.class, MediumTests.class })
 public class TestJavaHBaseContextForLargeRows extends TestJavaHBaseContext {
 
-  @ClassRule public static final HBaseClassTestRule TIMEOUT =
-      HBaseClassTestRule.forClass(TestJavaHBaseContextForLargeRows.class);
+  @ClassRule
+  public static final HBaseClassTestRule TIMEOUT =
+    HBaseClassTestRule.forClass(TestJavaHBaseContextForLargeRows.class);
 
-  @BeforeClass public static void setUpBeforeClass() throws Exception {
+  @BeforeClass
+  public static void setUpBeforeClass() throws Exception {
     JSC = new JavaSparkContext("local", "JavaHBaseContextSuite");
 
     init();
   }
 
   protected void populateTableWithMockData(Configuration conf, TableName tableName)
-      throws IOException {
+    throws IOException {
     try (Connection conn = ConnectionFactory.createConnection(conf);
-        Table table = conn.getTable(tableName);
-        Admin admin = conn.getAdmin()) {
+      Table table = conn.getTable(tableName); Admin admin = conn.getAdmin()) {
 
       List<Put> puts = new ArrayList<>(5);
 

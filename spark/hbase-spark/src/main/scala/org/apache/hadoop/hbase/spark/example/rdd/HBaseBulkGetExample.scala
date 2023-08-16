@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +17,14 @@
  */
 package org.apache.hadoop.hbase.spark.example.rdd
 
+import org.apache.hadoop.hbase.CellUtil
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.spark.HBaseContext
 import org.apache.hadoop.hbase.spark.HBaseRDDFunctions._
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.CellUtil
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.TableName
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.yetus.audience.InterfaceAudience
@@ -47,21 +48,25 @@ object HBaseBulkGetExample {
 
     try {
 
-      //[(Array[Byte])]
-      val rdd = sc.parallelize(Array(
-        Bytes.toBytes("1"),
-        Bytes.toBytes("2"),
-        Bytes.toBytes("3"),
-        Bytes.toBytes("4"),
-        Bytes.toBytes("5"),
-        Bytes.toBytes("6"),
-        Bytes.toBytes("7")))
+      // [(Array[Byte])]
+      val rdd = sc.parallelize(
+        Array(
+          Bytes.toBytes("1"),
+          Bytes.toBytes("2"),
+          Bytes.toBytes("3"),
+          Bytes.toBytes("4"),
+          Bytes.toBytes("5"),
+          Bytes.toBytes("6"),
+          Bytes.toBytes("7")))
 
       val conf = HBaseConfiguration.create()
 
       val hbaseContext = new HBaseContext(sc, conf)
 
-      val getRdd = rdd.hbaseBulkGet[String](hbaseContext, TableName.valueOf(tableName), 2,
+      val getRdd = rdd.hbaseBulkGet[String](
+        hbaseContext,
+        TableName.valueOf(tableName),
+        2,
         record => {
           System.out.println("making Get")
           new Get(record)
@@ -85,7 +90,9 @@ object HBaseBulkGetExample {
           b.toString()
         })
 
-      getRdd.collect().foreach(v => println(v))
+      getRdd
+        .collect()
+        .foreach(v => println(v))
 
     } finally {
       sc.stop()

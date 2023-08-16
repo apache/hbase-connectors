@@ -121,5 +121,3 @@ limitations under the License.
 | [HBASE-22210](https://issues.apache.org/jira/browse/HBASE-22210) | Fix hbase-connectors-assembly to include every jar |  Major | hbase-connectors |
 | [HBASE-22266](https://issues.apache.org/jira/browse/HBASE-22266) | Add yetus personality to connectors to avoid scaladoc issues |  Major | hbase-connectors |
 | [HBASE-22257](https://issues.apache.org/jira/browse/HBASE-22257) | Remove json4s and jackson dependency from hbase spark connector |  Major | hbase-connectors |
-
-
