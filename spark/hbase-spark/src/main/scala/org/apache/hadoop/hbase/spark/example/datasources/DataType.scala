@@ -30,8 +30,10 @@ class UserCustomizedSampleException(message: String = null, cause: Throwable = n
 
 @InterfaceAudience.Private
 object UserCustomizedSampleException {
-  def message(message: String, cause: Throwable) =
-    if (message != null) message
+  def
+  message(message: String, cause: Throwable) =
+    if
+    (message != null) message
     else if (cause != null) cause.toString()
     else null
 }

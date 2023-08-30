@@ -132,7 +132,9 @@ public class IntegrationTestSparkBulkLoad extends IntegrationTestBase {
    * @throws Exception if an HBase operation or getting the test directory fails
    */
   public void runLinkedListSparkJob(int iteration) throws Exception {
-    String jobName = IntegrationTestSparkBulkLoad.class.getSimpleName() + " _load "
+    String
+            jobName =
+            IntegrationTestSparkBulkLoad.class.getSimpleName() + " _load "
       + EnvironmentEdgeManager.currentTime();
 
     LOG.info("Running iteration " + iteration + "in Spark Job");
