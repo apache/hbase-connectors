@@ -253,7 +253,7 @@ object HBaseTableCatalog {
     val tableMeta = map \ table
     val nSpace = (tableMeta \ nameSpace).extractOrElse("default")
     val tName = (tableMeta \ tableName).extract[String]
-    val cIter = (map \ columns).extract[Map[String, Map[String,String]]]
+    val cIter = (map \ columns).extract[Map[String, Map[String, String]]]
     val schemaMap = mutable.HashMap.empty[String, Field]
     cIter.foreach {
       case (name, column) =>
