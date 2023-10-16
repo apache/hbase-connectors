@@ -22,8 +22,10 @@ import org.apache.hadoop.hbase.spark.{Logging, SchemaConverters}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
+import org.json4s.DefaultFormats
+import org.json4s.Formats
+import org.json4s.jackson.JsonMethods
 import scala.collection.mutable
-import scala.util.parsing.json.JSON
 
 // The definition of each column cell, which may be composite type
 // TODO: add avro support
@@ -246,11 +248,12 @@ object HBaseTableCatalog {
     val parameters = convert(params)
     //  println(jString)
     val jString = parameters(tableCatalog)
-    val map = JSON.parseFull(jString).get.asInstanceOf[Map[String, _]]
-    val tableMeta = map.get(table).get.asInstanceOf[Map[String, _]]
-    val nSpace = tableMeta.get(nameSpace).getOrElse("default").asInstanceOf[String]
-    val tName = tableMeta.get(tableName).get.asInstanceOf[String]
-    val cIter = map.get(columns).get.asInstanceOf[Map[String, Map[String, String]]].toIterator
+    implicit val formats: Formats = DefaultFormats
+    val map = JsonMethods.parse(jString)
+    val tableMeta = map \ table
+    val nSpace = (tableMeta \ nameSpace).extractOrElse("default")
+    val tName = (tableMeta \ tableName).extract[String]
+    val cIter = (map \ columns).extract[Map[String, Map[String, String]]]
     val schemaMap = mutable.HashMap.empty[String, Field]
     cIter.foreach {
       case (name, column) =>
@@ -272,7 +275,7 @@ object HBaseTableCatalog {
           len)
         schemaMap.+=((name, f))
     }
-    val rKey = RowKey(map.get(rowKey).get.asInstanceOf[String])
+    val rKey = RowKey((map \ rowKey).extract[String])
     HBaseTableCatalog(nSpace, tName, rKey, SchemaMap(schemaMap), parameters)
   }
 
