@@ -81,6 +81,7 @@
 | [HBASE-22711](https://issues.apache.org/jira/browse/HBASE-22711) | Spark connector doesn't use the given mapping when inserting data |  Major | hbase-connectors |
 | [HBASE-22674](https://issues.apache.org/jira/browse/HBASE-22674) | precommit docker image installs JRE over JDK (multiple repos) |  Critical | build, hbase-connectors |
 | [HBASE-22336](https://issues.apache.org/jira/browse/HBASE-22336) | Add CHANGELOG, README and RELEASENOTES to binary tarball |  Critical | hbase-connectors |
+| [HBASE-22329](https://issues.apache.org/jira/browse/HBASE-22329) | Fix for warning The parameter forkMode is deprecated since version in hbase-spark-it |  Minor | hbase-connectors |
 | [HBASE-22320](https://issues.apache.org/jira/browse/HBASE-22320) | hbase-connectors personality skips non-scaladoc tests |  Critical | . |
 | [HBASE-22319](https://issues.apache.org/jira/browse/HBASE-22319) | Fix for warning The assembly descriptor contains a filesystem-root relative reference |  Minor | hbase-connectors |
 
@@ -113,6 +114,7 @@
 | [HBASE-25479](https://issues.apache.org/jira/browse/HBASE-25479) | [connectors] Purge use of VisibleForTesting |  Major | hbase-connectors |
 | [HBASE-25388](https://issues.apache.org/jira/browse/HBASE-25388) | Replacing Producer implementation with an extension of MockProducer on testing side in hbase-connectors |  Major | hbase-connectors |
 | [HBASE-24883](https://issues.apache.org/jira/browse/HBASE-24883) | Migrate hbase-connectors testing to ci-hadoop |  Major | build, hbase-connectors |
+| [HBASE-24261](https://issues.apache.org/jira/browse/HBASE-24261) | Redo all of our github notification integrations on new ASF infra feature |  Major | community, hbase-connectors |
 | [HBASE-23565](https://issues.apache.org/jira/browse/HBASE-23565) | Execute tests in hbase-connectors precommit |  Critical | hbase-connectors |
 | [HBASE-23032](https://issues.apache.org/jira/browse/HBASE-23032) | Upgrade to Curator 4.2.0 |  Major | . |
 | [HBASE-22599](https://issues.apache.org/jira/browse/HBASE-22599) | Let hbase-connectors compile against HBase 2.2.0 |  Major | hbase-connectors |
