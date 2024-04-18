@@ -34,7 +34,6 @@ class NewHBaseRDD[K, V](
     extends NewHadoopRDD(sc, inputFormatClass, keyClass, valueClass, __conf) {
 
   override def compute(theSplit: Partition, context: TaskContext): InterruptibleIterator[(K, V)] = {
-    hBaseContext.applyCreds()
     super.compute(theSplit, context)
   }
 }
