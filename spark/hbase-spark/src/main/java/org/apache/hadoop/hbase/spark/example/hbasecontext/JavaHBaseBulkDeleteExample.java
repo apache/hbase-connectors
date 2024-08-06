@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,13 +32,13 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
- * This is a simple example of deleting records in HBase
- * with the bulkDelete function.
+ * This is a simple example of deleting records in HBase with the bulkDelete function.
  */
 @InterfaceAudience.Private
 final public class JavaHBaseBulkDeleteExample {
 
-  private JavaHBaseBulkDeleteExample() {}
+  private JavaHBaseBulkDeleteExample() {
+  }
 
   public static void main(String[] args) {
     if (args.length < 1) {
@@ -64,8 +65,7 @@ final public class JavaHBaseBulkDeleteExample {
 
       JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, conf);
 
-      hbaseContext.bulkDelete(rdd,
-              TableName.valueOf(tableName), new DeleteFunction(), 4);
+      hbaseContext.bulkDelete(rdd, TableName.valueOf(tableName), new DeleteFunction(), 4);
     } finally {
       jsc.stop();
     }
@@ -74,6 +74,7 @@ final public class JavaHBaseBulkDeleteExample {
 
   public static class DeleteFunction implements Function<byte[], Delete> {
     private static final long serialVersionUID = 1L;
+
     public Delete call(byte[] v) throws Exception {
       return new Delete(v);
     }

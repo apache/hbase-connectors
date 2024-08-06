@@ -44,11 +44,9 @@
   <artifactId>hbase-connectors</artifactId>
   <!-- See https://maven.apache.org/maven-ci-friendly.html -->
   <version>${revision}</version>
-  <name>Apache HBase Connectors</name>
   <packaging>pom</packaging>
-  <description>
-    Connectors to Apache HBase.
-  </description>
+  <name>Apache HBase Connectors</name>
+  <description>Connectors to Apache HBase.</description>
   <url>http://hbase.apache.org</url>
   <inceptionYear>2018</inceptionYear>
   <licenses>
@@ -58,35 +56,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <modules>
-    <module>kafka</module>
-    <module>spark</module>
-    <module>hbase-connectors-assembly</module>
-  </modules>
-  <scm>
-    <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
-    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
-    <url>https://gitbox.apache.org/repos/asf?p=hbase-connectors.git;a=summary</url>
-  </scm>
-
-  <distributionManagement>
-    <repository>
-      <id>releases</id>
-      <name>Internal releases</name>
-      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>snapshots</id>
-      <name>Internal snapshots</name>
-      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
-  <issueManagement>
-    <!--File issues for this project against Apache HBase JIRA-->
-    <system>JIRA</system>
-    <url>http://issues.apache.org/jira/browse/HBASE</url>
-  </issueManagement>
+  <developers/>
   <!--Currently mail sent by this gitbox project goes to issues@hbase.
        git comments are reflected in referenced JIRA issue.
        https://issues.apache.org/jira/browse/INFRA-16887
@@ -133,38 +103,77 @@
       <archive>https://lists.apache.org/list.html?builds@hbase.apache.org</archive>
     </mailingList>
   </mailingLists>
-  <developers/>
+  <modules>
+    <module>kafka</module>
+    <module>spark</module>
+    <module>hbase-connectors-assembly</module>
+  </modules>
+  <scm>
+    <connection>scm:git:git://gitbox.apache.org/repos/asf/hbase-connectors.git</connection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/hbase-connectors.git</developerConnection>
+    <url>https://gitbox.apache.org/repos/asf?p=hbase-connectors.git;a=summary</url>
+  </scm>
+  <issueManagement>
+    <!--File issues for this project against Apache HBase JIRA-->
+    <system>JIRA</system>
+    <url>http://issues.apache.org/jira/browse/HBASE</url>
+  </issueManagement>
+  <distributionManagement>
+    <repository>
+      <id>releases</id>
+      <name>Internal releases</name>
+      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <name>Internal snapshots</name>
+      <url>https://nexus.int.sproutsocial.com/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
   <properties>
     <!-- See https://maven.apache.org/maven-ci-friendly.html -->
-    <revision>1.0.1-SNAPSHOT</revision>
+    <revision>1.1.0-SNAPSHOT</revision>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm</maven.build.timestamp.format>
     <buildDate>${maven.build.timestamp}</buildDate>
     <compileSource>1.8</compileSource>
     <java.min.version>${compileSource}</java.min.version>
+    <!-- override on command line to have generated LICENSE files include
+         diagnostic info for verifying notice requirements -->
+    <license.debug.print.included>false</license.debug.print.included>
+    <license.bundles.dependencies>false</license.bundles.dependencies>
+    <license.bundles.logo>false</license.bundles.logo>
+    <license.bundles.bootstrap>false</license.bundles.bootstrap>
+    <license.bundles.jquery>false</license.bundles.jquery>
+    <buildnumber.maven.version>1.4</buildnumber.maven.version>
+
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.4.9</hbase.version>
+    <hbase.version>2.5.4</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
-    <junit.version>4.12</junit.version>
-    <hbase-thirdparty.version>4.0.1</hbase-thirdparty.version>
-    <hadoop-two.version>2.8.5</hadoop-two.version>
-    <hadoop-three.version>3.2.0</hadoop-three.version>
+    <junit.version>4.13.2</junit.version>
+    <mockito-all.version>1.8.5</mockito-all.version>
+    <hbase-thirdparty.version>4.1.4</hbase-thirdparty.version>
+    <hadoop-two.version>2.10.0</hadoop-two.version>
+    <hadoop-three.version>3.2.4</hadoop-three.version>
     <hadoop.version>${hadoop-three.version}</hadoop.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <log4j.version>1.2.17</log4j.version>
-    <checkstyle.version>8.28</checkstyle.version>
-    <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
-    <surefire.version>3.0.0-M5</surefire.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <log4j2.version>2.17.2</log4j2.version>
+    <reload4j.version>1.2.25</reload4j.version>
+    <checkstyle.version>8.45.1</checkstyle.version>
+    <spotless.version>2.27.2</spotless.version>
+    <maven.checkstyle.version>3.2.1</maven.checkstyle.version>
+    <hbase.checkstyle.version>2.5.0</hbase.checkstyle.version>
+    <surefire.version>3.0.0</surefire.version>
     <enforcer.version>3.0.0</enforcer.version>
-    <extra.enforcer.version>1.2</extra.enforcer.version>
+    <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
     <external.protobuf.version>2.5.0</external.protobuf.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.11.0</commons-io.version>
     <avro.version>1.7.7</avro.version>
-    <commons-lang3.version>3.6</commons-lang3.version>
+    <commons-lang3.version>3.12.0</commons-lang3.version>
     <!--This property is for hadoops netty. HBase netty
          comes in via hbase-thirdparty hbase-shaded-netty-->
     <netty.hadoop.version>3.10.6.Final</netty.hadoop.version>
@@ -172,6 +181,10 @@
     <glassfish.el.version>3.0.1-b08</glassfish.el.version>
     <compat.module>hbase-hadoop2-compat</compat.module>
     <dependency.locations.enabled>false</dependency.locations.enabled>
+    <sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
+    <scoverage.version>1.4.11</scoverage.version>
+    <sbt-compiler.version>1.0.0</sbt-compiler.version>
+    <jacoco.version>0.8.8</jacoco.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -195,11 +208,12 @@
         <groupId>org.apache.avro</groupId>
         <artifactId>avro</artifactId>
         <version>${avro.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>${slf4j.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.thoughtworks.paranamer</groupId>
+            <artifactId>paranamer</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -207,9 +221,29 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>${log4j.version}</version>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.reload4j</groupId>
+        <artifactId>reload4j</artifactId>
+        <version>${reload4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish</groupId>
@@ -232,6 +266,12 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${mockito-all.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase.thirdparty</groupId>
@@ -314,8 +354,8 @@
         <version>${hbase.version}</version>
       </dependency>
       <dependency>
-        <artifactId>hbase-it</artifactId>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-it</artifactId>
         <version>${hbase.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
@@ -329,13 +369,6 @@
     </dependencies>
   </dependencyManagement>
   <build>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>${os.maven.version}</version>
-      </extension>
-    </extensions>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -405,19 +438,19 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.4</version>
-          <executions>
-            <execution>
-              <phase>validate</phase>
-              <goals>
-                <goal>create-timestamp</goal>
-              </goals>
-            </execution>
-          </executions>
+          <version>${buildnumber.maven.version}</version>
           <configuration>
             <timestampFormat>yyyy</timestampFormat>
             <timestampPropertyName>build.year</timestampPropertyName>
           </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>create-timestamp</goal>
+              </goals>
+              <phase>validate</phase>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <!-- Approach followed here is roughly the same as mentioned here:
@@ -426,11 +459,17 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>${maven.checkstyle.version}</version>
+          <configuration>
+            <configLocation>hbase/checkstyle.xml</configLocation>
+            <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <failOnViolation>false</failOnViolation>
+          </configuration>
           <dependencies>
             <dependency>
               <groupId>org.apache.hbase</groupId>
               <artifactId>hbase-checkstyle</artifactId>
-              <version>${hbase.version}</version>
+              <version>${hbase.checkstyle.version}</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
@@ -441,18 +480,12 @@
           <executions>
             <execution>
               <id>checkstyle</id>
-              <phase>validate</phase>
               <goals>
                 <goal>check</goal>
               </goals>
+              <phase>validate</phase>
             </execution>
           </executions>
-          <configuration>
-            <configLocation>hbase/checkstyle.xml</configLocation>
-            <suppressionsLocation>hbase/checkstyle-suppressions.xml</suppressionsLocation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnViolation>true</failOnViolation>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -489,16 +522,14 @@
   HBase requires at least version ${maven.min.version} of Maven to properly build from source.
   You appear to be using an older version. You can use either "mvn -version" or
   "mvn enforcer:display-info" to verify what version is active.
-  See the reference guide on building for more information: http://hbase.apache.org/book.html#build
-                  </message>
+  See the reference guide on building for more information: http://hbase.apache.org/book.html#build</message>
                 </requireMavenVersion>
                 <!-- The earliest JVM version we verify builds for via ASF Jenkins -->
                 <requireJavaVersion>
                   <version>[${java.min.version},)</version>
                   <message>Java is out of date.
   HBase requires at least version ${java.min.version} of the JDK to properly build from source.
-  See the reference guide on building for more information: http://hbase.apache.org/book.html#build
-                  </message>
+  See the reference guide on building for more information: http://hbase.apache.org/book.html#build</message>
                 </requireJavaVersion>
                 <bannedDependencies>
                   <excludes>
@@ -543,10 +574,10 @@
           </execution>
           <execution>
             <id>banned-illegal-imports</id>
-            <phase>process-sources</phase>
             <goals>
               <goal>enforce</goal>
             </goals>
+            <phase>process-sources</phase>
             <configuration>
               <rules>
                 <restrictImports implementation="de.skuzzle.enforcer.restrictimports.rule.RestrictImports">
@@ -614,12 +645,10 @@
                 <restrictImports implementation="de.skuzzle.enforcer.restrictimports.rule.RestrictImports">
                   <includeTestCode>true</includeTestCode>
                   <commentLineBufferSize>512</commentLineBufferSize>
-                  <reason>
-                    You should never use this style of annotations(i.e, 'this is for test only')
+                  <reason>You should never use this style of annotations(i.e, 'this is for test only')
                     in IA.Public or IA.LimitedPrivate classes. Use IA.Private to tell users this is
                     not for public use.
-                    For IA.Private classes, use RestrictedApi annotation in error prone instead.
-                  </reason>
+                    For IA.Private classes, use RestrictedApi annotation in error prone instead.</reason>
                   <bannedImports>
                     <bannedImport>org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting</bannedImport>
                   </bannedImports>
@@ -641,21 +670,152 @@
         <executions>
           <execution>
             <id>flatten</id>
-            <phase>process-resources</phase>
             <goals>
               <goal>flatten</goal>
             </goals>
+            <phase>process-resources</phase>
           </execution>
           <execution>
             <id>flatten.clean</id>
-            <phase>clean</phase>
             <goals>
               <goal>clean</goal>
             </goals>
+            <phase>clean</phase>
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <!-- define a language-specific format -->
+          <java>
+            <excludes>
+              <exclude>**/generated/*</exclude>
+              <exclude>**/package-info.java</exclude>
+            </excludes>
+            <!--
+              e.g., remove the following lines:
+              "* @param paramName"
+              "* @throws ExceptionType"
+              "* @return returnType"'
+              Multiline to allow anchors on newlines
+              See https://errorprone.info/bugpattern/EmptyBlockTag
+            -->
+            <replaceRegex>
+              <name>Remove unhelpful javadoc stubs</name>
+              <searchRegex>(?m)^ *\* *@(?:param|throws|return) *\w* *\n</searchRegex>
+              <replacement/>
+            </replaceRegex>
+            <!--
+              e.g., rewrite
+              /** @return blabla */
+              or
+              /**
+               * @return blabla
+               */
+              to
+              /** Returns blabla */
+              See https://errorprone.info/bugpattern/MissingSummary
+              https://google.github.io/styleguide/javaguide.html#s7.2-summary-fragment
+            -->
+            <replaceRegex>
+              <name>Purge single returns tag multi line</name>
+              <searchRegex>(?m)^ */\*\*\n *\* *@return *(.*) *\n *\*/$</searchRegex>
+              <replacement>/** Returns $1 */</replacement>
+            </replaceRegex>
+            <replaceRegex>
+              <name>Purge single returns tag single line</name>
+              <searchRegex>^ */\*\* *@return *(.*) *\*/$</searchRegex>
+              <replacement>/** Returns $1 */</replacement>
+            </replaceRegex>
+            <!-- apply a specific flavor -->
+            <eclipse>
+              <file>${session.executionRootDirectory}/dev-support/hbase_eclipse_formatter.xml</file>
+            </eclipse>
+            <importOrder>
+              <file>${session.executionRootDirectory}/dev-support/eclipse.importorder</file>
+            </importOrder>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
+            <removeUnusedImports/>
+          </java>
+          <scala>
+            <!-- These are the defaults, you can override if you want -->
+            <includes>
+              <include>src/main/scala/**/*.scala</include>
+              <include>src/test/scala/**/*.scala</include>
+              <include>src/main/scala/**/*.sc</include>
+              <include>src/test/scala/**/*.sc</include>
+            </includes>
+
+            <scalafmt>
+              <version>3.7.12</version>
+              <file>${session.executionRootDirectory}/dev-support/.scalafmt.conf</file>
+            </scalafmt>
+          </scala>
+          <pom>
+            <sortPom>
+              <expandEmptyElements>false</expandEmptyElements>
+            </sortPom>
+          </pom>
+          <formats>
+            <!-- you can define as many formats as you want, each is independent -->
+            <format>
+              <!-- define the files to apply to -->
+              <includes>
+                <include>**/*.xml</include>
+                <include>**/*.sh</include>
+                <include>**/*.py</include>
+                <include>**/Jenkinsfile*</include>
+                <include>**/*.md</include>
+                <include>*.md</include>
+                <include>**/*.txt</include>
+                <include>*.txt</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**</exclude>
+                <exclude>**/dependency-reduced-pom.xml</exclude>
+              </excludes>
+              <!-- define the steps to apply to those files -->
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+            </format>
+            <format>
+              <!--
+                We have some files which have special license header which must be kept, so
+                here we add a special format section to apply license header, and leave the
+                java/scala section above only used for formatting code style
+              -->
+              <includes>
+                <include>src/main/java/**/*.java</include>
+                <include>src/test/java/**/*.java</include>
+                <include>src/main/scala/**/*.scala</include>
+                <include>src/test/scala/**/*.scala</include>
+                <include>src/main/scala/**/*.sc</include>
+                <include>src/test/scala/**/*.sc</include>
+              </includes>
+              <excludes>
+                <exclude>**/generated/*</exclude>
+                <exclude>**/package-info.java</exclude>
+              </excludes>
+              <licenseHeader>
+                <file>${session.executionRootDirectory}/dev-support/license-header</file>
+                <delimiter>package</delimiter>
+              </licenseHeader>
+            </format>
+          </formats>
+        </configuration>
+      </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${os.maven.version}</version>
+      </extension>
+    </extensions>
   </build>
   <profiles>
     <!-- this profile should be activated for release builds -->
@@ -668,10 +828,10 @@
             <artifactId>apache-rat-plugin</artifactId>
             <executions>
               <execution>
-                <phase>package</phase>
                 <goals>
                   <goal>check</goal>
                 </goals>
+                <phase>package</phase>
               </execution>
             </executions>
           </plugin>
@@ -687,8 +847,7 @@
   of the JDK to properly build from source.  You appear to be using a newer dependency. You can use
   either "mvn -version" or "mvn enforcer:display-info" to verify what version is active.
   Non-release builds can temporarily build with a newer JDK version by setting the
-  'compileSource' property (eg. mvn -DcompileSource=1.8 clean package).
-                </message>
+  'compileSource' property (eg. mvn -DcompileSource=1.8 clean package).</message>
                 </enforceBytecodeVersion>
               </rules>
             </configuration>
@@ -714,6 +873,74 @@
               <nexusUrl>https://repository.apache.org/</nexusUrl>
               <serverId>apache.releases.https</serverId>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- this profile runs unit test code coverage analysis -->
+    <profile>
+      <id>coverage</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>test-reporting</module>
+      </modules>
+      <properties>
+        <sonar.projectBaseDir>.</sonar.projectBaseDir>
+        <sonar.exclusions>test-reporting/**/*</sonar.exclusions>
+        <sonar.coverage.exclusions>**/example/**/*,**/DumpToStringListener*,**/KafkaProxy*</sonar.coverage.exclusions>
+        <sonar.java.binaries>**/target/classes</sonar.java.binaries>
+        <sonar.surefire.reportsPath>${project.build.directory}/surefire-reports</sonar.surefire.reportsPath>
+        <sonar.coverage.jacoco.xmlReportPaths>${sonar.projectBaseDir}/test-reporting/target/code-coverage/jacoco-reports/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.scala.coverage.reportPaths>${sonar.projectBaseDir}/test-reporting/target/code-coverage/scoverage-reports/scoverage.xml</sonar.scala.coverage.reportPaths>
+        <argLine/>
+        <main.basedir>${project.basedir}</main.basedir>
+        <codeCoverageReportRootDir>${main.basedir}/test-reporting/target/code-coverage</codeCoverageReportRootDir>
+        <jacocoDestFile>${codeCoverageReportRootDir}/jacoco.exec</jacocoDestFile>
+        <jacocoReportDir>${codeCoverageReportRootDir}/jacoco-reports</jacocoReportDir>
+        <scoverageReportDir>${codeCoverageReportRootDir}/scoverage-reports</scoverageReportDir>
+      </properties>
+      <build>
+
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.scoverage</groupId>
+              <artifactId>scoverage-maven-plugin</artifactId>
+              <version>${scoverage.version}</version>
+              <configuration>
+                <excludedPackages>src/test/java</excludedPackages>
+                <excludedFiles>IntegrationTest*</excludedFiles>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>${jacoco.version}</version>
+              <configuration>
+                <excludes>**/example/**/*</excludes>
+              </configuration>
+              <executions>
+                <execution>
+                  <id>prepare-agent</id>
+                  <goals>
+                    <goal>prepare-agent</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar-maven-plugin.version}</version>
           </plugin>
         </plugins>
       </build>

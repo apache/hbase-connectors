@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +18,6 @@
 package org.apache.hadoop.hbase.spark
 
 import java.util
-
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
@@ -26,14 +26,13 @@ import org.apache.yetus.audience.InterfaceAudience;
  */
 @InterfaceAudience.Public
 class FamiliesQualifiersValues extends Serializable {
-  //Tree maps are used because we need the results to
+  // Tree maps are used because we need the results to
   // be sorted when we read them
-  val familyMap = new util.TreeMap[ByteArrayWrapper,
-    util.TreeMap[ByteArrayWrapper, Array[Byte]]]()
+  val familyMap = new util.TreeMap[ByteArrayWrapper, util.TreeMap[ByteArrayWrapper, Array[Byte]]]()
 
-  //normally in a row there are more columns then
-  //column families this wrapper is reused for column
-  //family look ups
+  // normally in a row there are more columns then
+  // column families this wrapper is reused for column
+  // family look ups
   val reusableWrapper = new ByteArrayWrapper(null)
 
   /**
@@ -42,7 +41,7 @@ class FamiliesQualifiersValues extends Serializable {
    * @param qualifier HBase column qualifier
    * @param value     HBase cell value
    */
-  def += (family: Array[Byte], qualifier: Array[Byte], value: Array[Byte]): Unit = {
+  def +=(family: Array[Byte], qualifier: Array[Byte], value: Array[Byte]): Unit = {
 
     reusableWrapper.value = family
 
@@ -57,11 +56,11 @@ class FamiliesQualifiersValues extends Serializable {
   }
 
   /**
-    * A wrapper for "+=" method above, can be used by Java
-    * @param family    HBase column family
-    * @param qualifier HBase column qualifier
-    * @param value     HBase cell value
-    */
+   * A wrapper for "+=" method above, can be used by Java
+   * @param family    HBase column family
+   * @param qualifier HBase column qualifier
+   * @param value     HBase cell value
+   */
   def add(family: Array[Byte], qualifier: Array[Byte], value: Array[Byte]): Unit = {
     this += (family, qualifier, value)
   }

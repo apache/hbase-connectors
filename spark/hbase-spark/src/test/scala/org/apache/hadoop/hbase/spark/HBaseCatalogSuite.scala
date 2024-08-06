@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
 import org.apache.hadoop.hbase.spark.datasources.{DataTypeParserWrapper, DoubleSerDes, HBaseTableCatalog}
@@ -22,7 +22,11 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
-class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndAfterAll  with Logging {
+class HBaseCatalogSuite
+    extends FunSuite
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Logging {
 
   val map = s"""MAP<int, struct<varchar:string>>"""
   val array = s"""array<struct<tinYint:tinyint>>"""
@@ -35,7 +39,8 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
                     |"col2":{"cf":"rowkey", "col":"key2", "type":"double"},
                     |"col3":{"cf":"cf1", "col":"col2", "type":"binary"},
                     |"col4":{"cf":"cf1", "col":"col3", "type":"timestamp"},
-                    |"col5":{"cf":"cf1", "col":"col4", "type":"double", "serdes":"${classOf[DoubleSerDes].getName}"},
+                    |"col5":{"cf":"cf1", "col":"col4", "type":"double", "serdes":"${classOf[
+                    DoubleSerDes].getName}"},
                     |"col6":{"cf":"cf1", "col":"col5", "type":"$map"},
                     |"col7":{"cf":"cf1", "col":"col6", "type":"$array"},
                     |"col8":{"cf":"cf1", "col":"col7", "type":"$arrayMap"},
@@ -43,7 +48,7 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
                     |"col10":{"cf":"cf1", "col":"col9", "type":"timestamp"}
                     |}
                     |}""".stripMargin
-  val parameters = Map(HBaseTableCatalog.tableCatalog->catalog)
+  val parameters = Map(HBaseTableCatalog.tableCatalog -> catalog)
   val t = HBaseTableCatalog(parameters)
 
   def checkDataType(dataTypeString: String, expectedDataType: DataType): Unit = {
@@ -69,29 +74,23 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
     assert(t.getField("col10").dt == TimestampType)
   }
 
-  checkDataType(
-    map,
-    t.getField("col6").dt
-  )
+  checkDataType(map, t.getField("col6").dt)
 
-  checkDataType(
-    array,
-    t.getField("col7").dt
-  )
+  checkDataType(array, t.getField("col7").dt)
 
-  checkDataType(
-    arrayMap,
-    t.getField("col8").dt
-  )
+  checkDataType(arrayMap, t.getField("col8").dt)
 
   test("convert") {
-    val m = Map("hbase.columns.mapping" ->
-      "KEY_FIELD STRING :key, A_FIELD STRING c:a, B_FIELD DOUBLE c:b, C_FIELD BINARY c:c,",
-      "hbase.table" -> "t1")
+    val m = Map(
+      "hbase.columns.mapping" ->
+        "KEY_FIELD STRING :key, A_FIELD STRING c:a, B_FIELD DOUBLE c:b, C_FIELD BINARY c:c,",
+      "hbase.table" -> "NAMESPACE:TABLE")
     val map = HBaseTableCatalog.convert(m)
     val json = map.get(HBaseTableCatalog.tableCatalog).get
-    val parameters = Map(HBaseTableCatalog.tableCatalog->json)
+    val parameters = Map(HBaseTableCatalog.tableCatalog -> json)
     val t = HBaseTableCatalog(parameters)
+    assert(t.namespace === "NAMESPACE")
+    assert(t.name == "TABLE")
     assert(t.getField("KEY_FIELD").isRowKey)
     assert(DataTypeParserWrapper.parse("STRING") === t.getField("A_FIELD").dt)
     assert(!t.getField("A_FIELD").isRowKey)
@@ -100,10 +99,13 @@ class HBaseCatalogSuite extends FunSuite with BeforeAndAfterEach with BeforeAndA
   }
 
   test("compatibility") {
-    val m = Map("hbase.columns.mapping" ->
-      "KEY_FIELD STRING :key, A_FIELD STRING c:a, B_FIELD DOUBLE c:b, C_FIELD BINARY c:c,",
+    val m = Map(
+      "hbase.columns.mapping" ->
+        "KEY_FIELD STRING :key, A_FIELD STRING c:a, B_FIELD DOUBLE c:b, C_FIELD BINARY c:c,",
       "hbase.table" -> "t1")
     val t = HBaseTableCatalog(m)
+    assert(t.namespace === "default")
+    assert(t.name == "t1")
     assert(t.getField("KEY_FIELD").isRowKey)
     assert(DataTypeParserWrapper.parse("STRING") === t.getField("A_FIELD").dt)
     assert(!t.getField("A_FIELD").isRowKey)

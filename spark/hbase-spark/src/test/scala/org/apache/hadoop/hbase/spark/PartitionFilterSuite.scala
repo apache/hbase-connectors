@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,29 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
-import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 
 case class FilterRangeRecord(
-                              intCol0: Int,
-                              boolCol1: Boolean,
-                              doubleCol2: Double,
-                              floatCol3: Float,
-                              intCol4: Int,
-                              longCol5: Long,
-                              shortCol6: Short,
-                              stringCol7: String,
-                              byteCol8: Byte)
+    intCol0: Int,
+    boolCol1: Boolean,
+    doubleCol2: Double,
+    floatCol3: Float,
+    intCol4: Int,
+    longCol5: Long,
+    shortCol6: Short,
+    stringCol7: String,
+    byteCol8: Byte)
 
 object FilterRangeRecord {
   def apply(i: Int): FilterRangeRecord = {
-    FilterRangeRecord(if (i % 2 == 0) i else -i,
+    FilterRangeRecord(
+      if (i % 2 == 0) i else -i,
       i % 2 == 0,
       if (i % 2 == 0) i.toDouble else -i.toDouble,
       i.toFloat,
@@ -48,8 +49,11 @@ object FilterRangeRecord {
   }
 }
 
-class PartitionFilterSuite extends FunSuite with
-  BeforeAndAfterEach with BeforeAndAfterAll with Logging {
+class PartitionFilterSuite
+    extends FunSuite
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Logging {
   @transient var sc: SparkContext = null
   var TEST_UTIL: HBaseTestingUtility = new HBaseTestingUtility
 
@@ -57,8 +61,7 @@ class PartitionFilterSuite extends FunSuite with
   var df: DataFrame = null
 
   def withCatalog(cat: String): DataFrame = {
-    sqlContext
-      .read
+    sqlContext.read
       .options(Map(HBaseTableCatalog.tableCatalog -> cat))
       .format("org.apache.hadoop.hbase.spark")
       .load()
@@ -90,9 +93,7 @@ class PartitionFilterSuite extends FunSuite with
 
   // The original raw data used for construct result set without going through
   // data frame logic. It is used to verify the result set retrieved from data frame logic.
-  val rawResult = (0 until 32).map { i =>
-    FilterRangeRecord(i)
-  }
+  val rawResult = (0 until 32).map { i => FilterRangeRecord(i) }
 
   def collectToSet[T](df: DataFrame): Set[T] = {
     df.collect().map(_.getAs[T](0)).toSet
@@ -117,8 +118,10 @@ class PartitionFilterSuite extends FunSuite with
     val sql = sqlContext
     import sql.implicits._
 
-    sc.parallelize(rawResult).toDF.write.options(
-      Map(HBaseTableCatalog.tableCatalog -> catalog, HBaseTableCatalog.newTable -> "5"))
+    sc.parallelize(rawResult)
+      .toDF
+      .write
+      .options(Map(HBaseTableCatalog.tableCatalog -> catalog, HBaseTableCatalog.newTable -> "5"))
       .format("org.apache.hadoop.hbase.spark")
       .save()
   }
@@ -129,28 +132,28 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *| -23   |
-    *| -21   |
-    *| -19   |
-    *| -17   |
-    *| -15   |
-    *| -13   |
-    *| -11   |
-    *|  -9   |
-    *|  -7   |
-    *|  -5   |
-    *|  -3   |
-    *|  -1   |
-    *+----   +
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * | -23   |
+   * | -21   |
+   * | -19   |
+   * | -17   |
+   * | -15   |
+   * | -13   |
+   * | -11   |
+   * |  -9   |
+   * |  -7   |
+   * |  -5   |
+   * |  -3   |
+   * |  -1   |
+   * +----   +
+   */
   test("rangeTable rowkey less than 0") {
     val sql = sqlContext
     import sql.implicits._
@@ -165,28 +168,28 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol4|
-    *+-------+
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *| -23   |
-    *| -21   |
-    *| -19   |
-    *| -17   |
-    *| -15   |
-    *| -13   |
-    *| -11   |
-    *|  -9   |
-    *|  -7   |
-    *|  -5   |
-    *|  -3   |
-    *|  -1   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol4|
+   * +-------+
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * | -23   |
+   * | -21   |
+   * | -19   |
+   * | -17   |
+   * | -15   |
+   * | -13   |
+   * | -11   |
+   * |  -9   |
+   * |  -7   |
+   * |  -5   |
+   * |  -3   |
+   * |  -1   |
+   * +-------+
+   */
   test("rangeTable int col less than 0") {
     val sql = sqlContext
     import sql.implicits._
@@ -201,30 +204,30 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-----------+
-    *| doubleCol2|
-    *+-----------+
-    *|  0.0      |
-    *|  2.0      |
-    *|-31.0      |
-    *|-29.0      |
-    *|-27.0      |
-    *|-25.0      |
-    *|-23.0      |
-    *|-21.0      |
-    *|-19.0      |
-    *|-17.0      |
-    *|-15.0      |
-    *|-13.0      |
-    *|-11.0      |
-    *| -9.0      |
-    *| -7.0      |
-    *| -5.0      |
-    *| -3.0      |
-    *| -1.0      |
-    *+-----------+
-    */
+   * expected result: only showing top 20 rows
+   * +-----------+
+   * | doubleCol2|
+   * +-----------+
+   * |  0.0      |
+   * |  2.0      |
+   * |-31.0      |
+   * |-29.0      |
+   * |-27.0      |
+   * |-25.0      |
+   * |-23.0      |
+   * |-21.0      |
+   * |-19.0      |
+   * |-17.0      |
+   * |-15.0      |
+   * |-13.0      |
+   * |-11.0      |
+   * | -9.0      |
+   * | -7.0      |
+   * | -5.0      |
+   * | -3.0      |
+   * | -1.0      |
+   * +-----------+
+   */
   test("rangeTable double col less than 0") {
     val sql = sqlContext
     import sql.implicits._
@@ -239,24 +242,23 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    * expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *| -23   |
-    *| -21   |
-    *| -19   |
-    *| -17   |
-    *| -15   |
-    *| -13   |
-    *| -11   |
-    *+-------+
-    *
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * | -23   |
+   * | -21   |
+   * | -19   |
+   * | -17   |
+   * | -15   |
+   * | -13   |
+   * | -11   |
+   * +-------+
+   */
   test("rangeTable lessequal than -10") {
     val sql = sqlContext
     import sql.implicits._
@@ -271,24 +273,24 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+----+
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *| -23   |
-    *| -21   |
-    *| -19   |
-    *| -17   |
-    *| -15   |
-    *| -13   |
-    *| -11   |
-    *|  -9   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +----+
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * | -23   |
+   * | -21   |
+   * | -19   |
+   * | -17   |
+   * | -15   |
+   * | -13   |
+   * | -11   |
+   * |  -9   |
+   * +-------+
+   */
   test("rangeTable lessequal than -9") {
     val sql = sqlContext
     import sql.implicits._
@@ -303,32 +305,32 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|   0   |
-    *|   2   |
-    *|   4   |
-    *|   6   |
-    *|   8   |
-    *|  10   |
-    *|  12   |
-    *|  14   |
-    *|  16   |
-    *|  18   |
-    *|  20   |
-    *|  22   |
-    *|  24   |
-    *|  26   |
-    *|  28   |
-    *|  30   |
-    *|  -9   |
-    *|  -7   |
-    *|  -5   |
-    *|  -3   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |   0   |
+   * |   2   |
+   * |   4   |
+   * |   6   |
+   * |   8   |
+   * |  10   |
+   * |  12   |
+   * |  14   |
+   * |  16   |
+   * |  18   |
+   * |  20   |
+   * |  22   |
+   * |  24   |
+   * |  26   |
+   * |  28   |
+   * |  30   |
+   * |  -9   |
+   * |  -7   |
+   * |  -5   |
+   * |  -3   |
+   * +-------+
+   */
   test("rangeTable greaterequal than -9") {
     val sql = sqlContext
     import sql.implicits._
@@ -343,28 +345,28 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|   0   |
-    *|   2   |
-    *|   4   |
-    *|   6   |
-    *|   8   |
-    *|  10   |
-    *|  12   |
-    *|  14   |
-    *|  16   |
-    *|  18   |
-    *|  20   |
-    *|  22   |
-    *|  24   |
-    *|  26   |
-    *|  28   |
-    *|  30   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |   0   |
+   * |   2   |
+   * |   4   |
+   * |   6   |
+   * |   8   |
+   * |  10   |
+   * |  12   |
+   * |  14   |
+   * |  16   |
+   * |  18   |
+   * |  20   |
+   * |  22   |
+   * |  24   |
+   * |  26   |
+   * |  28   |
+   * |  30   |
+   * +-------+
+   */
   test("rangeTable greaterequal  than 0") {
     val sql = sqlContext
     import sql.implicits._
@@ -379,22 +381,22 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|  12   |
-    *|  14   |
-    *|  16   |
-    *|  18   |
-    *|  20   |
-    *|  22   |
-    *|  24   |
-    *|  26   |
-    *|  28   |
-    *|  30   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |  12   |
+   * |  14   |
+   * |  16   |
+   * |  18   |
+   * |  20   |
+   * |  22   |
+   * |  24   |
+   * |  26   |
+   * |  28   |
+   * |  30   |
+   * +-------+
+   */
   test("rangeTable greater than 10") {
     val sql = sqlContext
     import sql.implicits._
@@ -409,23 +411,23 @@ class PartitionFilterSuite extends FunSuite with
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|   0   |
-    *|   2   |
-    *|   4   |
-    *|   6   |
-    *|   8   |
-    *|  10   |
-    *|  -9   |
-    *|  -7   |
-    *|  -5   |
-    *|  -3   |
-    *|  -1   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |   0   |
+   * |   2   |
+   * |   4   |
+   * |   6   |
+   * |   8   |
+   * |  10   |
+   * |  -9   |
+   * |  -7   |
+   * |  -5   |
+   * |  -3   |
+   * |  -1   |
+   * +-------+
+   */
   test("rangeTable and") {
     val sql = sqlContext
     import sql.implicits._
@@ -433,39 +435,42 @@ class PartitionFilterSuite extends FunSuite with
     val s = df.filter($"intCol0" > -10 && $"intCol0" <= 10).select($"intCol0")
     s.show
     // filter results without going through dataframe
-    val expected = rawResult.filter(x => x.intCol0 > -10 && x.intCol0 <= 10 ).map(_.intCol0).toSet
+    val expected = rawResult
+      .filter(x => x.intCol0 > -10 && x.intCol0 <= 10)
+      .map(_.intCol0)
+      .toSet
     // filter results going through dataframe
     val result = collectToSet[Int](s)
     assert(expected === result)
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|  12   |
-    *|  14   |
-    *|  16   |
-    *|  18   |
-    *|  20   |
-    *|  22   |
-    *|  24   |
-    *|  26   |
-    *|  28   |
-    *|  30   |
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *| -23   |
-    *| -21   |
-    *| -19   |
-    *| -17   |
-    *| -15   |
-    *| -13   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |  12   |
+   * |  14   |
+   * |  16   |
+   * |  18   |
+   * |  20   |
+   * |  22   |
+   * |  24   |
+   * |  26   |
+   * |  28   |
+   * |  30   |
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * | -23   |
+   * | -21   |
+   * | -19   |
+   * | -17   |
+   * | -15   |
+   * | -13   |
+   * +-------+
+   */
 
   test("or") {
     val sql = sqlContext
@@ -474,39 +479,42 @@ class PartitionFilterSuite extends FunSuite with
     val s = df.filter($"intCol0" <= -10 || $"intCol0" > 10).select($"intCol0")
     s.show
     // filter results without going through dataframe
-    val expected = rawResult.filter(x => x.intCol0 <= -10 || x.intCol0 > 10).map(_.intCol0).toSet
+    val expected = rawResult
+      .filter(x => x.intCol0 <= -10 || x.intCol0 > 10)
+      .map(_.intCol0)
+      .toSet
     // filter results going through dataframe
     val result = collectToSet[Int](s)
     assert(expected === result)
   }
 
   /**
-    *expected result: only showing top 20 rows
-    *+-------+
-    *|intCol0|
-    *+-------+
-    *|   0   |
-    *|   2   |
-    *|   4   |
-    *|   6   |
-    *|   8   |
-    *|  10   |
-    *|  12   |
-    *|  14   |
-    *|  16   |
-    *|  18   |
-    *|  20   |
-    *|  22   |
-    *|  24   |
-    *|  26   |
-    *|  28   |
-    *|  30   |
-    *| -31   |
-    *| -29   |
-    *| -27   |
-    *| -25   |
-    *+-------+
-    */
+   * expected result: only showing top 20 rows
+   * +-------+
+   * |intCol0|
+   * +-------+
+   * |   0   |
+   * |   2   |
+   * |   4   |
+   * |   6   |
+   * |   8   |
+   * |  10   |
+   * |  12   |
+   * |  14   |
+   * |  16   |
+   * |  18   |
+   * |  20   |
+   * |  22   |
+   * |  24   |
+   * |  26   |
+   * |  28   |
+   * |  30   |
+   * | -31   |
+   * | -29   |
+   * | -27   |
+   * | -25   |
+   * +-------+
+   */
   test("rangeTable all") {
     val sql = sqlContext
     import sql.implicits._

@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <!--
+  /**
+   * Licensed to the Apache Software Foundation (ASF) under one
+   * or more contributor license agreements.  See the NOTICE file
+   * distributed with this work for additional information
+   * regarding copyright ownership.  The ASF licenses this file
+   * to you under the Apache License, Version 2.0 (the
+   * "License"); you may not use this file except in compliance
+   * with the License.  You may obtain a copy of the License at
+   *
+   *     http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   */
+  -->
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>hbase-connectors</artifactId>
+    <groupId>org.apache.hbase.connectors</groupId>
+    <version>${revision}</version>
+  </parent>
+
+  <artifactId>test-reporting</artifactId>
+  <packaging>pom</packaging>
+  <version>${revision}</version>
+  <name>Test Reporting</name>
+  <description>Test Reporting for Apache HBase Connectors</description>
+
+  <properties>
+    <argLine/>
+    <main.basedir>${project.parent.basedir}</main.basedir>
+  </properties>
+
+  <dependencies>
+    <!-- module dependencies where coverage is needed -->
+    <dependency>
+      <groupId>org.apache.hbase.connectors.kafka</groupId>
+      <artifactId>hbase-kafka-proxy</artifactId>
+      <version>${revision}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase.connectors.spark</groupId>
+      <artifactId>hbase-spark</artifactId>
+      <version>${revision}</version>
+      <exclusions>
+        <exclusion>
+          <!-- make sure wrong scala version is not pulled in -->
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- make sure wrong scala version is not pulled in -->
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scalap</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.version}</version>
+        <configuration>
+          <argLine>${argLine} -Xms256m -Xmx2048m</argLine>
+          <forkCount>1</forkCount>
+          <runOrder>random</runOrder>
+        </configuration>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>report</id>
+              <goals>
+                <goal>report-aggregate</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <outputDirectory>${jacocoReportDir}</outputDirectory>
+                <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
+                <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -38,10 +38,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hbase.thirdparty</groupId>
       <artifactId>hbase-shaded-miscellaneous</artifactId>
     </dependency>
@@ -76,8 +72,8 @@
           <artifactId>scalap</artifactId>
         </exclusion>
         <exclusion>
-           <groupId>com.google.code.findbugs</groupId>
-           <artifactId>jsr305</artifactId>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
           <!-- exclude the wrong snappy-java version in spark-1.6 -->
@@ -87,6 +83,14 @@
         <exclusion>
           <groupId>xerces</groupId>
           <artifactId>xercesImpl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-client-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-client-runtime</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -106,8 +110,8 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
-      <type>test-jar</type>
       <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -116,15 +120,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
       <version>3.0.5</version>
       <scope>test</scope>
       <exclusions>
-       <exclusion>
-         <groupId>org.scala-lang</groupId>
-         <artifactId>scala-library</artifactId>
-       </exclusion>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -163,7 +172,7 @@
       <artifactId>scala-reflect</artifactId>
       <version>${scala.version}</version>
     </dependency>
-     <dependency>
+    <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-unsafe_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
@@ -191,10 +200,10 @@
         <executions>
           <execution>
             <id>add-source</id>
-            <phase>validate</phase>
             <goals>
               <goal>add-source</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <sources>
                 <source>src/main/scala</source>
@@ -203,10 +212,10 @@
           </execution>
           <execution>
             <id>add-test-source</id>
-            <phase>validate</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>validate</phase>
             <configuration>
               <sources>
                 <source>src/test/scala</source>
@@ -398,6 +407,14 @@
               <groupId>com.google.code.findbugs</groupId>
               <artifactId>jsr305</artifactId>
             </exclusion>
+            <exclusion>
+              <groupId>log4j</groupId>
+              <artifactId>log4j</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
           </exclusions>
         </dependency>
         <dependency>
@@ -447,15 +464,13 @@
             <version>1.5</version>
             <executions>
               <execution>
-                <phase>validate</phase>
                 <goals>
                   <goal>execute</goal>
                 </goals>
+                <phase>validate</phase>
                 <configuration>
-                  <source><![CDATA[
-                    pom.properties['target.jvm'] =
-                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';
-                    ]]></source>
+                  <source><![CDATA[pom.properties['target.jvm'] =
+                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';]]></source>
                 </configuration>
               </execution>
             </executions>
@@ -479,25 +494,25 @@
             <executions>
               <execution>
                 <id>scala-compile-first</id>
-                <phase>process-resources</phase>
                 <goals>
                   <goal>add-source</goal>
                   <goal>compile</goal>
                 </goals>
+                <phase>process-resources</phase>
               </execution>
               <execution>
                 <id>scala-test-compile</id>
-                <phase>process-test-resources</phase>
                 <goals>
                   <goal>testCompile</goal>
                 </goals>
+                <phase>process-test-resources</phase>
               </execution>
             </executions>
           </plugin>
           <plugin>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest-maven-plugin</artifactId>
-            <version>2.0.0</version>
+            <version>2.0.2</version>
             <configuration>
               <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
               <junitxml>.</junitxml>
@@ -507,10 +522,10 @@
             <executions>
               <execution>
                 <id>test</id>
-                <phase>test</phase>
                 <goals>
                   <goal>test</goal>
                 </goals>
+                <phase>test</phase>
                 <configuration>
                   <argLine>-Xmx1536m -XX:ReservedCodeCacheSize=512m</argLine>
                   <parallel>false</parallel>
@@ -520,6 +535,98 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>coverage</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <sonar.sources>src/main/</sonar.sources>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>net.alchim31.maven</groupId>
+            <artifactId>scala-maven-plugin</artifactId>
+            <configuration>
+              <testSourceDir>src/test/scala</testSourceDir>
+              <sourceDir>src/main/scala</sourceDir>
+            </configuration>
+            <executions>
+              <execution>
+                <id>default-sbt-compile</id>
+                <goals>
+                  <goal>compile</goal>
+                  <goal>testCompile</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <skipMain>true</skipMain>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.scoverage</groupId>
+            <artifactId>scoverage-maven-plugin</artifactId>
+            <configuration>
+              <scalacPluginVersion>1.4.11</scalacPluginVersion>
+              <highlighting>true</highlighting>
+              <aggregate>true</aggregate>
+              <failOnError>false</failOnError>
+              <encoding>${project.build.sourceEncoding}</encoding>
+              <outputDirectory>${scoverageReportDir}</outputDirectory>
+              <xmlOutputDirectory>${scoverageReportDir}</xmlOutputDirectory>
+            </configuration>
+            <executions>
+              <execution>
+                <id>instrument</id>
+                <goals>
+                  <goal>pre-compile</goal>
+                  <goal>post-compile</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>package</id>
+                <goals>
+                  <goal>package</goal>
+                  <goal>report</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>scoverage-report</id>
+                <goals>
+                  <!-- Needed for Sonar -->
+                  <goal>report-only</goal>
+                </goals>
+                <phase>prepare-package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.scoverage</groupId>
+            <artifactId>scoverage-maven-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <reports>
+                  <report>report-only</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+        </plugins>
+      </reporting>
     </profile>
   </profiles>
 

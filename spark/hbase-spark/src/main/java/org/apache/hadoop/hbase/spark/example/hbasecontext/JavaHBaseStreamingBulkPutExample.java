@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,12 +37,12 @@ import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Private
 final public class JavaHBaseStreamingBulkPutExample {
 
-  private JavaHBaseStreamingBulkPutExample() {}
+  private JavaHBaseStreamingBulkPutExample() {
+  }
 
   public static void main(String[] args) {
     if (args.length < 4) {
-      System.out.println("JavaHBaseBulkPutExample  " +
-              "{host} {port} {tableName}");
+      System.out.println("JavaHBaseBulkPutExample  " + "{host} {port} {tableName}");
       return;
     }
 
@@ -49,26 +50,22 @@ final public class JavaHBaseStreamingBulkPutExample {
     String port = args[1];
     String tableName = args[2];
 
-    SparkConf sparkConf =
-            new SparkConf().setAppName("JavaHBaseStreamingBulkPutExample " +
-                    tableName + ":" + port + ":" + tableName);
+    SparkConf sparkConf = new SparkConf()
+      .setAppName("JavaHBaseStreamingBulkPutExample " + tableName + ":" + port + ":" + tableName);
 
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
 
     try {
-      JavaStreamingContext jssc =
-              new JavaStreamingContext(jsc, new Duration(1000));
+      JavaStreamingContext jssc = new JavaStreamingContext(jsc, new Duration(1000));
 
       JavaReceiverInputDStream<String> javaDstream =
-              jssc.socketTextStream(host, Integer.parseInt(port));
+        jssc.socketTextStream(host, Integer.parseInt(port));
 
       Configuration conf = HBaseConfiguration.create();
 
       JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, conf);
 
-      hbaseContext.streamBulkPut(javaDstream,
-              TableName.valueOf(tableName),
-              new PutFunction());
+      hbaseContext.streamBulkPut(javaDstream, TableName.valueOf(tableName), new PutFunction());
     } finally {
       jsc.stop();
     }
@@ -82,9 +79,7 @@ final public class JavaHBaseStreamingBulkPutExample {
       String[] part = v.split(",");
       Put put = new Put(Bytes.toBytes(part[0]));
 
-      put.addColumn(Bytes.toBytes(part[1]),
-              Bytes.toBytes(part[2]),
-              Bytes.toBytes(part[3]));
+      put.addColumn(Bytes.toBytes(part[1]), Bytes.toBytes(part[2]), Bytes.toBytes(part[3]));
       return put;
     }
 

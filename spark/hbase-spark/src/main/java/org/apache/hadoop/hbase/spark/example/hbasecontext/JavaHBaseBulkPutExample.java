@@ -1,12 +1,13 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,18 +32,17 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.yetus.audience.InterfaceAudience;
 
 /**
- * This is a simple example of putting records in HBase
- * with the bulkPut function.
+ * This is a simple example of putting records in HBase with the bulkPut function.
  */
 @InterfaceAudience.Private
 final public class JavaHBaseBulkPutExample {
 
-  private JavaHBaseBulkPutExample() {}
+  private JavaHBaseBulkPutExample() {
+  }
 
   public static void main(String[] args) {
     if (args.length < 2) {
-      System.out.println("JavaHBaseBulkPutExample  " +
-              "{tableName} {columnFamily}");
+      System.out.println("JavaHBaseBulkPutExample  " + "{tableName} {columnFamily}");
       return;
     }
 
@@ -66,9 +66,7 @@ final public class JavaHBaseBulkPutExample {
 
       JavaHBaseContext hbaseContext = new JavaHBaseContext(jsc, conf);
 
-      hbaseContext.bulkPut(rdd,
-              TableName.valueOf(tableName),
-              new PutFunction());
+      hbaseContext.bulkPut(rdd, TableName.valueOf(tableName), new PutFunction());
     } finally {
       jsc.stop();
     }
@@ -82,8 +80,7 @@ final public class JavaHBaseBulkPutExample {
       String[] cells = v.split(",");
       Put put = new Put(Bytes.toBytes(cells[0]));
 
-      put.addColumn(Bytes.toBytes(cells[1]), Bytes.toBytes(cells[2]),
-              Bytes.toBytes(cells[3]));
+      put.addColumn(Bytes.toBytes(cells[1]), Bytes.toBytes(cells[2]), Bytes.toBytes(cells[3]));
       return put;
     }
 

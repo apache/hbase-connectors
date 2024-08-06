@@ -1,6 +1,5 @@
-<?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <!--
   /**
    * Licensed to the Apache Software Foundation (ASF) under one
@@ -30,8 +29,8 @@
   </parent>
 
   <artifactId>spark</artifactId>
-  <packaging>pom</packaging>
   <version>${revision}</version>
+  <packaging>pom</packaging>
   <name>Apache HBase - Spark</name>
   <description>Spark Connectors for Apache HBase</description>
 
@@ -45,10 +44,10 @@
   <properties>
     <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     <jackson.version>2.12.5</jackson.version>
-    <spark.version>3.1.2</spark.version>
+    <spark.version>3.3.2</spark.version>
     <!-- The following version is in sync with Spark's choice
          Please take caution when this version is modified -->
-    <scala.version>2.12.10</scala.version>
+    <scala.version>2.12.15</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
   </properties>
 

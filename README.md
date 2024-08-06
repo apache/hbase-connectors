@@ -18,7 +18,7 @@ limitations under the License.
 
 # hbase-connectors
 
-Connectors for [Apache HBase&trade;](https://hbase.apache.org) 
+Connectors for [Apache HBase&trade;](https://hbase.apache.org)
 
   * [Kafka Proxy](https://github.com/apache/hbase-connectors/tree/master/kafka)
   * [Spark](https://github.com/apache/hbase-connectors/tree/master/spark)
