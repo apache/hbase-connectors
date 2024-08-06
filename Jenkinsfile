@@ -4,5 +4,5 @@ sproutMultiModuleBuild {
   squads = ['listening']
   slackChannel = '#eng-listening-platform'
   runECRLogin = 'true'
-  mavenProperties = '-Drevision=1.0.1.1-sprout-emr -DskipTests'
+  mavenProperties = '-Drevision=1.0.2-sprout-emr -DskipTests'
 }
