@@ -933,5 +933,18 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <!-- Use Mac x64 version of protoc for Apple Silicon (aarch64) Macs -->
+      <id>osx-aarch64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.detected.classifier>osx-x86_64</os.detected.classifier>
+      </properties>
+    </profile>
   </profiles>
 </project>
