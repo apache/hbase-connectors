@@ -1359,4 +1359,16 @@ class DefaultSourceSuite
         }
     }
   }
+
+  test("NPE should not be thrown even when HBaseContext was never initialized") {
+    LatestHBaseContextCache.latest = null
+    val catalog = s"""{"table":{"namespace":"default", "name":"table"},
+                     | "rowkey":"key",
+                     | "columns":{"c1":{"cf":"d", "col":"c1", "type":"string"}}}""".stripMargin
+    try {
+      HBaseRelation(Map(HBaseTableCatalog.tableCatalog -> catalog), None)(sqlContext)
+    } catch {
+      case _: NullPointerException => fail("Unexpected NPE thrown")
+    }
+  }
 }

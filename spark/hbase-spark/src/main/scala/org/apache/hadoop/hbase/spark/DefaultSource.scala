@@ -137,7 +137,7 @@ case class HBaseRelation(
       .getInt(HBaseSparkConf.BULKGET_SIZE, HBaseSparkConf.DEFAULT_BULKGET_SIZE))
 
   // create or get latest HBaseContext
-  val hbaseContext: HBaseContext = if (useHBaseContext) {
+  val hbaseContext: HBaseContext = if (useHBaseContext && LatestHBaseContextCache.latest != null) {
     LatestHBaseContextCache.latest
   } else {
     val hadoopConfig = sqlContext.sparkContext.hadoopConfiguration
