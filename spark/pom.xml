@@ -49,6 +49,7 @@
          Please take caution when this version is modified -->
     <scala.version>2.12.15</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
+    <target.jvm>-target:jvm-1.8</target.jvm>
   </properties>
 
   <dependencyManagement>

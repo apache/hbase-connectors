@@ -125,6 +125,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm</maven.build.timestamp.format>
     <buildDate>${maven.build.timestamp}</buildDate>
     <compileSource>1.8</compileSource>
+    <releaseTarget>8</releaseTarget>
     <java.min.version>${compileSource}</java.min.version>
     <!-- override on command line to have generated LICENSE files include
          diagnostic info for verifying notice requirements -->
@@ -173,6 +174,44 @@
     <!-- Default to redirecting test logs
     This only applies to the java tests, it's not obvious how get scalatest to do this. -->
     <test.output.tofile>true</test.output.tofile>
+    <jacocoArgLine/>
+    <argLine/>
+    <spark-ut.args>-Xmx1536m -XX:ReservedCodeCacheSize=512m</spark-ut.args>
+    <spark-ut.argLine>${argLine} ${spark-ut.args}</spark-ut.argLine>
+    <!-- To Run IT Tests with a particular Xmx Value use -Dfailsafe.Xmx=XXXg -->
+    <failsafe.Xmx>4g</failsafe.Xmx>
+    <spark-it.args>-enableassertions -Xmx${failsafe.Xmx}
+      -Djava.security.egd=file:/dev/./urandom -XX:+CMSClassUnloadingEnabled
+      -verbose:gc -XX:+PrintCommandLineFlags  -XX:+PrintFlagsFinal -XX:+IgnoreUnrecognizedVMOptions</spark-it.args>
+    <spark-it.argLine>${argLine} ${spark-it.args}</spark-it.argLine>
+    <hbase-surefire.argLine>-Djava.security.manager=allow</hbase-surefire.argLine>
+    <!-- Keep in sync with jvm flags in bin/hbase in main repo; Copied from there! -->
+    <hbase-surefire.jdk11.flags>-Dorg.apache.hbase.thirdparty.io.netty.tryReflectionSetAccessible=true
+      --add-modules jdk.unsupported
+      --add-opens java.base/java.io=ALL-UNNAMED
+      --add-opens java.base/java.nio=ALL-UNNAMED
+      --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+      --add-opens java.base/java.lang=ALL-UNNAMED
+      --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+      --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+      --add-opens java.base/java.util=ALL-UNNAMED
+      --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+      --add-exports java.base/jdk.internal.misc=ALL-UNNAMED
+      --add-exports java.security.jgss/sun.security.krb5=ALL-UNNAMED
+      --add-exports java.base/sun.net.dns=ALL-UNNAMED
+      --add-exports java.base/sun.net.util=ALL-UNNAMED</hbase-surefire.jdk11.flags>
+    <hbase-surefire.jdk17.flags/>
+    <!-- Keep in sync with JavaModuleOptions.java from spark codebase;
+    Copied from there and next removed all duplicate hbase jvm flags and retained remaining ones -->
+    <spark-surefire.jdk11.flags>--add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+      --add-opens=java.base/java.net=ALL-UNNAMED
+      --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+      --add-opens=java.base/sun.nio.cs=ALL-UNNAMED
+      --add-opens=java.base/sun.security.action=ALL-UNNAMED
+      --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+      -Djdk.reflect.useDirectMethodHandle=false
+      -Dio.netty.tryReflectionSetAccessible=true</spark-surefire.jdk11.flags>
+    <spark-surefire.jdk17.flags/>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -934,6 +973,40 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>build-with-jdk8</id>
+      <activation>
+        <jdk>1.8</jdk>
+      </activation>
+      <properties>
+        <maven.compiler.source>${compileSource}</maven.compiler.source>
+        <maven.compiler.target>${compileSource}</maven.compiler.target>
+      </properties>
+    </profile>
+    <profile>
+      <id>build-with-jdk11</id>
+      <activation>
+        <jdk>[11,)</jdk>
+      </activation>
+      <properties>
+        <maven.compiler.release>${releaseTarget}</maven.compiler.release>
+        <argLine>${hbase-surefire.jdk11.flags} ${spark-surefire.jdk11.flags}
+          ${hbase-surefire.argLine}
+          ${jacocoArgLine}</argLine>
+      </properties>
+    </profile>
+    <profile>
+      <id>build-with-jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <argLine>${hbase-surefire.jdk11.flags} ${spark-surefire.jdk11.flags}
+          ${hbase-surefire.jdk17.flags} ${spark-surefire.jdk17.flags}
+          ${hbase-surefire.argLine}
+          ${jacocoArgLine}</argLine>
+      </properties>
     </profile>
     <profile>
       <!-- Use Mac x64 version of protoc for Apple Silicon (aarch64) Macs -->
