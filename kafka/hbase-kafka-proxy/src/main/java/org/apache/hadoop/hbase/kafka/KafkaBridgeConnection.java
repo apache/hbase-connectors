@@ -187,6 +187,14 @@ public class KafkaBridgeConnection implements Connection {
         return null;
       }
 
+      /**
+       * This method was added in HBASE-27657. We donot add @Override to allow code to compile with
+       * versions of hbase both having and not having HBASE-27657
+       **/
+      public TableBuilder setRequestAttribute(String key, byte[] value) {
+        return null;
+      }
+
       @Override
       public Table build() {
         return new KafkaTableForBridge(tn, passedInConfiguration, routingRules, producer,
