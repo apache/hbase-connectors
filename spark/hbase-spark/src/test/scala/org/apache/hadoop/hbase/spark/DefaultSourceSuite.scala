@@ -992,7 +992,7 @@ class DefaultSourceSuite
                      |"DOUBLE_FIELD":{"cf":"c", "col":"double", "type":"double"},
                      |"DATE_FIELD":{"cf":"c", "col":"date", "type":"date"},
                      |"TIMESTAMP_FIELD":{"cf":"c", "col":"timestamp", "type":"timestamp"},
-                     "STRING_FIELD":{"cf":"c", "col":"string", "type":"string"},
+                     |"STRING_FIELD":{"cf":"c", "col":"string", "type":"string"},
                      |"DECIMAL_FIELD":{"cf":"c", "col":"decimal", "type":"decimal(10,2)"}
                      |}
                      |}""".stripMargin
