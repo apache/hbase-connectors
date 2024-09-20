@@ -96,6 +96,7 @@ class DefaultSourceSuite
   val columnFamily = "c"
 
   val timestamp = 1234567890000L
+  val decimal = new java.math.BigDecimal("1234.56")
 
   var sqlContext: SQLContext = null
   var df: DataFrame = null
@@ -235,6 +236,7 @@ class DefaultSourceSuite
           Bytes.toBytes("timestamp"),
           Bytes.toBytes(timestamp))
         put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("string"), Bytes.toBytes("string"))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("decimal"), Bytes.toBytes(decimal))
         t3Table.put(put)
       } finally {
         t3Table.close()
@@ -990,7 +992,8 @@ class DefaultSourceSuite
                      |"DOUBLE_FIELD":{"cf":"c", "col":"double", "type":"double"},
                      |"DATE_FIELD":{"cf":"c", "col":"date", "type":"date"},
                      |"TIMESTAMP_FIELD":{"cf":"c", "col":"timestamp", "type":"timestamp"},
-                     |"STRING_FIELD":{"cf":"c", "col":"string", "type":"string"}
+                     "STRING_FIELD":{"cf":"c", "col":"string", "type":"string"},
+                     |"DECIMAL_FIELD":{"cf":"c", "col":"decimal", "type":"decimal(10,2)"}
                      |}
                      |}""".stripMargin
     df = sqlContext.load(
@@ -1004,7 +1007,7 @@ class DefaultSourceSuite
         "SELECT binary_field, boolean_field, " +
           "byte_field, short_field, int_field, long_field, " +
           "float_field, double_field, date_field, timestamp_field, " +
-          "string_field FROM hbaseTestMapping")
+          "string_field, decimal_field FROM hbaseTestMapping")
       .collect()
 
     assert(results.length == 1)
@@ -1030,6 +1033,7 @@ class DefaultSourceSuite
     assert(Math.abs(result.get(8).asInstanceOf[Date].getTime - timestamp) <= 86400000)
     assert(result.get(9).asInstanceOf[Timestamp].getTime == timestamp)
     assert(result.get(10) == "string")
+    assert(result.get(11) == decimal)
   }
 
   def writeCatalog = s"""{
