@@ -55,6 +55,7 @@ object Utils {
           val newArray = new Array[Byte](length)
           System.arraycopy(src, offset, newArray, 0, length)
           newArray
+        case _: DecimalType => Bytes.toBigDecimal(src, offset, length)
         // TODO: SparkSqlSerializer.deserialize[Any](src)
         case _ => throw new Exception(s"unsupported data type ${f.dt}")
       }
@@ -79,6 +80,7 @@ object Utils {
         case DateType | TimestampType => Bytes.toBytes(input.asInstanceOf[java.util.Date].getTime)
         case StringType => Bytes.toBytes(input.toString)
         case BinaryType => input.asInstanceOf[Array[Byte]]
+        case _: DecimalType => Bytes.toBytes(input.asInstanceOf[java.math.BigDecimal])
         case _ => throw new Exception(s"unsupported data type ${field.dt}")
       }
     }
