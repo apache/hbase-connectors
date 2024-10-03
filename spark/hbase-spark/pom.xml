@@ -182,6 +182,21 @@
       <artifactId>spark-catalyst_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>spark-extension-interfaces</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>spark-extension-entrypoint</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>openlineage-spark_2.12</artifactId>
+      <version>${openlineage.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -264,6 +279,26 @@
             </rule>
           </rules>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>io.openlineage.spark.shade</pattern>
+                  <shadedPattern>org.apache.hbase.thirdparty.io.openlineage.spark.shade</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

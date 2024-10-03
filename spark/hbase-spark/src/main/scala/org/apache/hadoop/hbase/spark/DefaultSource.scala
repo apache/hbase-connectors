@@ -17,6 +17,9 @@
  */
 package org.apache.hadoop.hbase.spark
 
+import io.openlineage.spark.shade.client.OpenLineage
+import io.openlineage.spark.shade.client.utils.DatasetIdentifier
+import io.openlineage.spark.shade.extension.v1.{LineageRelation, LineageRelationProvider}
 import java.util
 import java.util.concurrent.ConcurrentLinkedQueue
 import org.apache.hadoop.hbase.CellUtil
@@ -53,7 +56,11 @@ import scala.collection.mutable
  *   Through the HBase Bytes object commands.
  */
 @InterfaceAudience.Private
-class DefaultSource extends RelationProvider with CreatableRelationProvider with Logging {
+class DefaultSource
+    extends RelationProvider
+    with CreatableRelationProvider
+    with Logging
+    with LineageRelationProvider {
 
   /**
    * Is given input from SparkSQL to construct a BaseRelation
@@ -78,6 +85,19 @@ class DefaultSource extends RelationProvider with CreatableRelationProvider with
     relation.insert(data, false)
     relation
   }
+
+  def getLineageDatasetIdentifier(
+      sparkListenerEventName: String,
+      openLineage: OpenLineage,
+      sqlContext: Any,
+      parameters: Any): DatasetIdentifier = {
+    val params = parameters.asInstanceOf[Map[String, String]]
+    val hbaseContext = LatestHBaseContextCache.latest
+    val catalog = HBaseTableCatalog(params)
+    val name = s"${catalog.namespace}.${catalog.name}"
+    val namespace = s"hbase://${hbaseContext.config.get("hbase.zookeeper.quorum")}"
+    new DatasetIdentifier(name, namespace)
+  }
 }
 
 /**
@@ -93,7 +113,8 @@ case class HBaseRelation(
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
-    with Logging {
+    with Logging
+    with LineageRelation {
   val timestamp = parameters.get(HBaseSparkConf.TIMESTAMP).map(_.toLong)
   val minTimestamp = parameters.get(HBaseSparkConf.TIMERANGE_START).map(_.toLong)
   val maxTimestamp = parameters.get(HBaseSparkConf.TIMERANGE_END).map(_.toLong)
@@ -610,6 +631,14 @@ case class HBaseRelation(
       case _ =>
         new PassThroughLogicExpression
     }
+  }
+
+  def getLineageDatasetIdentifier(
+      sparkListenerEventName: String,
+      openLineage: OpenLineage): DatasetIdentifier = {
+    val name = s"${this.catalog.namespace}.${this.catalog.name}"
+    val namespace = s"hbase://${this.hbaseConf.get("hbase.zookeeper.quorum")}"
+    new DatasetIdentifier(name, namespace)
   }
 }
 
