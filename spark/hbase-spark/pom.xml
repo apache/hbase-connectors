@@ -121,7 +121,7 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -442,27 +442,6 @@
       </activation>
       <build>
         <plugins>
-          <!--This is ugly but saves having to mess with profiles.
-               This plugin uses groovy (yuck) just to set a single
-               variable, target.jvm, dependent on what the value of
-               scala version is.-->
-          <plugin>
-            <groupId>org.codehaus.gmaven</groupId>
-            <artifactId>gmaven-plugin</artifactId>
-            <version>1.5</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>execute</goal>
-                </goals>
-                <phase>validate</phase>
-                <configuration>
-                  <source><![CDATA[pom.properties['target.jvm'] =
-                    pom.properties['scala.version'].startsWith('2.10')? '': '-target:jvm-1.8';]]></source>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
@@ -472,8 +451,6 @@
               <scalaVersion>${scala.version}</scalaVersion>
               <args>
                 <arg>-feature</arg>
-                <!--The target.jvm variable gets set above by the groovy
-                     snippet in the gmaven-plugin.-->
                 <arg>${target.jvm}</arg>
               </args>
               <source>${compileSource}</source>
@@ -515,7 +492,7 @@
                 </goals>
                 <phase>test</phase>
                 <configuration>
-                  <argLine>-Xmx1536m -XX:ReservedCodeCacheSize=512m</argLine>
+                  <argLine>${spark-ut.argLine}</argLine>
                   <parallel>false</parallel>
                 </configuration>
               </execution>
