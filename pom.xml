@@ -173,6 +173,9 @@
     <scoverage.version>1.4.11</scoverage.version>
     <sbt-compiler.version>1.0.0</sbt-compiler.version>
     <jacoco.version>0.8.8</jacoco.version>
+    <!-- Default to redirecting test logs
+    This only applies to the java tests, it's not obvious how get scalatest to do this. -->
+    <test.output.tofile>true</test.output.tofile>
   </properties>
   <dependencyManagement>
     <dependencies>
