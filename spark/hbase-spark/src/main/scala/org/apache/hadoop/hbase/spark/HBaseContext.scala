@@ -65,7 +65,6 @@ class HBaseContext(
     with Logging {
 
   @transient var tmpHdfsConfiguration: Configuration = config
-  @transient var appliedCredentials = false
   @transient val job = Job.getInstance(config)
   TableMapReduceUtil.initCredentials(job)
   val broadcastedConf = sc.broadcast(new SerializableWritable(config))
@@ -221,16 +220,6 @@ class HBaseContext(
             m.flush()
             m.close()
           }))
-  }
-
-  def applyCreds[T]() {
-    if (!appliedCredentials) {
-      appliedCredentials = true
-
-      @transient val ugi = UserGroupInformation.getCurrentUser
-      // specify that this is a proxy user
-      ugi.setAuthenticationMethod(AuthenticationMethod.PROXY)
-    }
   }
 
   /**
@@ -470,9 +459,6 @@ class HBaseContext(
       f: (Iterator[T], Connection) => Unit) = {
 
     val config = getConf(configBroadcast)
-
-    applyCreds
-    // specify that this is a proxy user
     val smartConn = HBaseConnectionCache.getConnection(config)
     try {
       f(it, smartConn.connection)
@@ -511,8 +497,6 @@ class HBaseContext(
       mp: (Iterator[K], Connection) => Iterator[U]): Iterator[U] = {
 
     val config = getConf(configBroadcast)
-    applyCreds
-
     val smartConn = HBaseConnectionCache.getConnection(config)
     try {
       mp(it, smartConn.connection)
