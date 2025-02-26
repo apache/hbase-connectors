@@ -106,6 +106,7 @@
   <modules>
     <module>kafka</module>
     <module>spark</module>
+    <module>spark4</module>
     <module>hbase-connectors-assembly</module>
   </modules>
   <scm>
