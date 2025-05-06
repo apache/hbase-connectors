@@ -142,7 +142,7 @@
     <junit.version>4.13.2</junit.version>
     <mockito-all.version>1.8.5</mockito-all.version>
     <hbase-thirdparty.version>4.1.4</hbase-thirdparty.version>
-    <!-- Must match the version hbase-thirdparty above ! -->
+    <!-- Must match the version in hbase-thirdparty above ! -->
     <thirdparty.protobuf.version>3.21.12</thirdparty.protobuf.version>
     <hadoop-two.version>2.10.0</hadoop-two.version>
     <hadoop-three.version>3.2.4</hadoop-three.version>
