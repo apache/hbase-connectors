@@ -142,6 +142,8 @@
     <junit.version>4.13.2</junit.version>
     <mockito-all.version>1.8.5</mockito-all.version>
     <hbase-thirdparty.version>4.1.4</hbase-thirdparty.version>
+    <!-- Must match the version hbase-thirdparty above ! -->
+    <thirdparty.protobuf.version>3.21.12</thirdparty.protobuf.version>
     <hadoop-two.version>2.10.0</hadoop-two.version>
     <hadoop-three.version>3.2.4</hadoop-three.version>
     <hadoop.version>${hadoop-three.version}</hadoop.version>
@@ -156,8 +158,6 @@
     <enforcer.version>3.0.0</enforcer.version>
     <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
-    <!--Internally we use a different version of protobuf. See hbase-protocol-shaded-->
-    <external.protobuf.version>2.5.0</external.protobuf.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.18.0</commons-io.version>
     <avro.version>1.11.4</avro.version>
@@ -179,11 +179,6 @@
   </properties>
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java</artifactId>
-        <version>${external.protobuf.version}</version>
-      </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
