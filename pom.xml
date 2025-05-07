@@ -136,16 +136,16 @@
     <buildnumber.maven.version>1.4</buildnumber.maven.version>
 
     <maven.min.version>3.5.0</maven.min.version>
-    <hbase.version>2.5.4</hbase.version>
+    <hbase.version>2.6.2-hadoop3</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
     <junit.version>4.13.2</junit.version>
-    <mockito-all.version>1.8.5</mockito-all.version>
-    <hbase-thirdparty.version>4.1.4</hbase-thirdparty.version>
+    <mockito.version>4.11.0</mockito.version>
+    <hbase-thirdparty.version>4.1.10</hbase-thirdparty.version>
     <!-- Must match the version in hbase-thirdparty above ! -->
-    <thirdparty.protobuf.version>3.21.12</thirdparty.protobuf.version>
+    <thirdparty.protobuf.version>4.29.2</thirdparty.protobuf.version>
     <hadoop-two.version>2.10.0</hadoop-two.version>
-    <hadoop-three.version>3.2.4</hadoop-three.version>
+    <hadoop-three.version>3.4.1</hadoop-three.version>
     <hadoop.version>${hadoop-three.version}</hadoop.version>
     <slf4j.version>1.7.36</slf4j.version>
     <log4j2.version>2.17.2</log4j2.version>
@@ -154,17 +154,14 @@
     <spotless.version>2.27.2</spotless.version>
     <maven.checkstyle.version>3.2.1</maven.checkstyle.version>
     <hbase.checkstyle.version>2.5.0</hbase.checkstyle.version>
-    <surefire.version>3.0.0</surefire.version>
+    <surefire.version>3.5.2</surefire.version>
     <enforcer.version>3.0.0</enforcer.version>
     <extra.enforcer.version>1.5.1</extra.enforcer.version>
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.18.0</commons-io.version>
     <avro.version>1.11.4</avro.version>
-    <commons-lang3.version>3.12.0</commons-lang3.version>
-    <!--This property is for hadoops netty. HBase netty
-         comes in via hbase-thirdparty hbase-shaded-netty-->
-    <netty.hadoop.version>3.10.6.Final</netty.hadoop.version>
+    <commons-lang3.version>3.17.0</commons-lang3.version>
     <os.maven.version>1.6.1</os.maven.version>
     <glassfish.el.version>3.0.1-b08</glassfish.el.version>
     <compat.module>hbase-hadoop2-compat</compat.module>
@@ -255,9 +252,10 @@
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>${mockito-all.version}</version>
-        <scope>test</scope>
+        <artifactId>mockito-bom</artifactId>
+        <version>${mockito.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase.thirdparty</groupId>
@@ -331,11 +329,6 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
-        <artifactId>hbase-shaded-client</artifactId>
-        <version>${hbase.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-mapreduce</artifactId>
         <version>${hbase.version}</version>
       </dependency>
@@ -348,7 +341,18 @@
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-it</artifactId>
+        <version>${hbase.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-shaded-testing-util</artifactId>
+        <version>${hbase.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-testing-util</artifactId>
         <version>${hbase.version}</version>
         <scope>test</scope>
       </dependency>
