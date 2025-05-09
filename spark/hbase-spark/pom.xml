@@ -121,7 +121,7 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -135,10 +135,6 @@
           <artifactId>scala-library</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-shaded-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase.connectors.spark</groupId>

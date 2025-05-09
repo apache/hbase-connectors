@@ -47,7 +47,11 @@
 
     <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-shaded-testing-util</artifactId>
+      <artifactId>hbase-testing-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-it</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -70,7 +74,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <version>${hadoop-two.version}</version>
+      <version>${hadoop-three.version}</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
@@ -88,8 +92,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-      <version>${hadoop-two.version}</version>
+      <artifactId>hadoop-hdfs</artifactId>
+      <version>${hadoop-three.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
       <exclusions>
@@ -98,12 +102,24 @@
           <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
+          <groupId>xerces</groupId>
+          <artifactId>xercesImpl</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+      <version>${hadoop-three.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
+          <groupId>xerces</groupId>
+          <artifactId>xercesImpl</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -141,6 +157,10 @@
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-client-runtime</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -184,7 +204,7 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
