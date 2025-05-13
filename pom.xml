@@ -137,6 +137,7 @@
     <buildnumber.maven.version>1.4</buildnumber.maven.version>
 
     <maven.min.version>3.5.0</maven.min.version>
+    <hbase-hadoop2.version>2.6.2</hbase-hadoop2.version>
     <hbase.version>2.6.2-hadoop3</hbase.version>
     <exec.maven.version>1.6.0</exec.maven.version>
     <audience-annotations.version>0.5.0</audience-annotations.version>
