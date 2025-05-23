@@ -144,7 +144,6 @@ class HBaseTableScanRDD(
               rowkeySet.add(y.mkString("Array(", ", ", ")"))
             }
         }
-        hbaseContext.applyCreds()
         val tmp = tbr.get(gets)
         rddResources.addResource(tmp)
         toResultIterator(tmp)
@@ -250,7 +249,6 @@ class HBaseTableScanRDD(
     val rIts = scans.par
       .map {
         scan =>
-          hbaseContext.applyCreds()
           val scanner = tableResource.getScanner(scan)
           rddResources.addResource(scanner)
           scanner
