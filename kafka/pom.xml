@@ -34,6 +34,9 @@
     <module>hbase-kafka-model</module>
     <module>hbase-kafka-proxy</module>
   </modules>
+  <properties>
+    <hbase.version>${hbase-hadoop2.version}</hbase.version>
+  </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
