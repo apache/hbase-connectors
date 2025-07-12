@@ -32,7 +32,7 @@
   <description>Proxy that forwards HBase replication events to a Kakfa broker</description>
   <properties>
     <collections.version>4.1</collections.version>
-    <commons-lang3.version>3.6</commons-lang3.version>
+    <commons-lang3.version>3.18.0</commons-lang3.version>
     <kafka-clients.version>2.0.0</kafka-clients.version>
     <curator.version>4.2.0</curator.version>
   </properties>
