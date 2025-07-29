@@ -29,10 +29,9 @@
   <groupId>org.apache.hbase.connectors.kafka</groupId>
   <artifactId>hbase-kafka-proxy</artifactId>
   <name>Apache HBase - Kafka Proxy</name>
-  <description>Proxy that forwards HBase replication events to a Kakfa broker</description>
+  <description>Proxy that forwards HBase replication events to a Kafka broker</description>
   <properties>
     <collections.version>4.1</collections.version>
-    <commons-lang3.version>3.6</commons-lang3.version>
     <kafka-clients.version>2.0.0</kafka-clients.version>
     <curator.version>4.2.0</curator.version>
   </properties>
@@ -157,7 +156,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>${commons-lang3.version}</version>
     </dependency>
   </dependencies>
   <build>
