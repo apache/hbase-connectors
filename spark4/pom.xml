@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.hbase.connectors</groupId>
+    <artifactId>hbase-connectors</artifactId>
+    <version>${revision}</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>spark4</artifactId>
+  <packaging>pom</packaging>
+  <version>${revision}</version>
+  <name>Apache HBase - Spark 4</name>
+  <description>
+    Maven reactor for the Apache Spark 4.x HBase connector (parallel to spark/).
+    Activated with profile -Pspark4 on the repository root pom. Requires JDK 17+ (Spark 4.x).
+  </description>
+
+  <modules>
+    <module>hbase-spark-pushdown</module>
+    <module>hbase-spark4</module>
+  </modules>
+
+  <properties>
+    <compileSource>17</compileSource>
+    <releaseTarget>17</releaseTarget>
+    <java.min.version>17</java.min.version>
+
+    <!-- Apache Spark 4.x is Scala 2.13 only -->
+    <spark4.version>4.0.0</spark4.version>
+    <!-- Keep aligned with the Scala version expected by Spark 4.0.0 -->
+    <scala.version>2.13.14</scala.version>
+    <scala.binary.version>2.13</scala.binary.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>spark4-requires-jdk17</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                  <message>
+                    The Spark 4 connector reactor requires JDK 17 or newer (Apache Spark 4.x).
+                    Omit -Pspark4 to build only the Kafka and Spark 3 modules on JDK 8+.
+                  </message>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

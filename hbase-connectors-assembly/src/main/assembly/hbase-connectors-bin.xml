@@ -34,6 +34,10 @@
       <useAllReactorProjects>true</useAllReactorProjects>
       <excludes>
         <exclude>org.apache.hbase.connectors.spark:hbase-spark-it</exclude>
+        <!-- Not yet packaged when assembly runs (reactor lists spark4 after this module).
+             Exclude until dist layout includes Spark 4; see SPARK4-ROADMAP.md -->
+        <exclude>org.apache.hbase.connectors.spark:hbase-spark4</exclude>
+        <exclude>org.apache.hbase.connectors.spark:hbase-spark-pushdown_2.13</exclude>
       </excludes>
       <binaries>
         <unpack>false</unpack>

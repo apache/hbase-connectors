@@ -141,6 +141,10 @@
       <artifactId>hbase-spark-protocol-shaded</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.hbase.connectors.spark</groupId>
+      <artifactId>hbase-spark-pushdown_${scala.binary.version}</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.yetus</groupId>
       <artifactId>audience-annotations</artifactId>
     </dependency>

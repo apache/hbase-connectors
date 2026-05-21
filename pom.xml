@@ -1010,6 +1010,19 @@
       </properties>
     </profile>
     <profile>
+      <!-- Apache Spark 4.x connector line (JDK 17+). Not included in default CI; activates spark4 reactor. -->
+      <id>spark4</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules combine.children="override">
+        <module>kafka</module>
+        <module>spark</module>
+        <module>spark4</module>
+        <module>hbase-connectors-assembly</module>
+      </modules>
+    </profile>
+    <profile>
       <!-- Use Mac x64 version of protoc for Apple Silicon (aarch64) Macs -->
       <id>osx-aarch64</id>
       <activation>
