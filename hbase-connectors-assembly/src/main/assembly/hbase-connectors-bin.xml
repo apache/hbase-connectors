@@ -35,8 +35,10 @@
       <excludes>
         <exclude>org.apache.hbase.connectors.spark:hbase-spark-it</exclude>
         <!-- Not yet packaged when assembly runs (reactor lists spark4 after this module).
-             Exclude until dist layout includes Spark 4; see SPARK4-ROADMAP.md -->
+             Exclude until dist layout includes Spark 4; -->
         <exclude>org.apache.hbase.connectors.spark:hbase-spark4</exclude>
+        <!-- Keep the Scala binary suffix in sync with scala.binary.version in spark4/pom.xml;
+              hbase-spark-pushdown artifactId is version-suffixed. -->
         <exclude>org.apache.hbase.connectors.spark:hbase-spark-pushdown_2.13</exclude>
       </excludes>
       <binaries>

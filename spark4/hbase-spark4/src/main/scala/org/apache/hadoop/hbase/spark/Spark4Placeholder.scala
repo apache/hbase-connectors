@@ -22,7 +22,7 @@ import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * Phase-0 build marker for the Spark 4 connector line (`hbase-spark4`).
- * Replaced incrementally during feature porting; see ../../SPARK4-ROADMAP.md at repo root.
+ * Replaced incrementally during feature porting; see umbrella jira HBASE-30178.
  */
 @InterfaceAudience.Private
 private[hbase] object Spark4Placeholder
