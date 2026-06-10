@@ -31,7 +31,7 @@
   <groupId>org.apache.hbase.connectors.spark</groupId>
   <artifactId>hbase-spark4</artifactId>
   <name>Apache HBase - Spark 4 Connector</name>
-  <description>Apache Spark 4.x integration for HBase (scaffolding; see SPARK4-ROADMAP.md).</description>
+  <description>Apache Spark 4.x integration for HBase.</description>
 
   <dependencies>
     <dependency>
