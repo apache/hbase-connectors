@@ -28,14 +28,12 @@ import org.apache.hadoop.hbase.exceptions.DeserializationException;
 import org.apache.hadoop.hbase.filter.Filter.ReturnCode;
 import org.apache.hadoop.hbase.filter.FilterBase;
 import org.apache.hadoop.hbase.spark.datasources.BytesEncoder;
-import org.apache.hadoop.hbase.spark.datasources.Field;
 import org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder;
 import org.apache.hadoop.hbase.spark.protobuf.generated.SparkFilterProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.mutable.MutableList;
 
 import org.apache.hbase.thirdparty.com.google.protobuf.ByteString;
 import org.apache.hbase.thirdparty.com.google.protobuf.InvalidProtocolBufferException;
@@ -61,6 +59,7 @@ public class SparkSQLPushDownFilter extends FilterBase {
 
   String encoderClassName;
 
+
   public SparkSQLPushDownFilter(DynamicLogicExpression dynamicLogicExpression,
     byte[][] valueFromQueryArray,
     HashMap<ByteArrayComparable, HashMap<ByteArrayComparable, String>> currentCellToColumnIndexMap,
@@ -71,8 +70,12 @@ public class SparkSQLPushDownFilter extends FilterBase {
     this.encoderClassName = encoderClassName;
   }
 
-  public SparkSQLPushDownFilter(DynamicLogicExpression dynamicLogicExpression,
-    byte[][] valueFromQueryArray, MutableList<Field> fields, String encoderClassName) {
+  /**
+   * @param columns Mapped columns projected for this scan/get (typically from the catalog parser's
+   *                {@code Field} values in either connector line).
+   */
+  public SparkSQLPushDownFilter(DynamicLogicExpression dynamicLogicExpression, byte[][] valueFromQueryArray,
+                                List<PushdownMappedField> columns, String encoderClassName) {
     this.dynamicLogicExpression = dynamicLogicExpression;
     this.valueFromQueryArray = valueFromQueryArray;
     this.encoderClassName = encoderClassName;
@@ -80,15 +83,15 @@ public class SparkSQLPushDownFilter extends FilterBase {
     // generate family qualifier to index mapping
     this.currentCellToColumnIndexMap = new HashMap<>();
 
-    for (int i = 0; i < fields.size(); i++) {
-      Field field = fields.apply(i);
+    for (int i = 0; i < columns.size(); i++) {
+      PushdownMappedField field = columns.get(i);
 
       byte[] cfBytes = field.cfBytes();
       ByteArrayComparable familyByteComparable =
-        new ByteArrayComparable(cfBytes, 0, cfBytes.length);
+              new ByteArrayComparable(cfBytes, 0, cfBytes.length);
 
       HashMap<ByteArrayComparable, String> qualifierIndexMap =
-        currentCellToColumnIndexMap.get(familyByteComparable);
+              currentCellToColumnIndexMap.get(familyByteComparable);
 
       if (qualifierIndexMap == null) {
         qualifierIndexMap = new HashMap<>();
@@ -96,7 +99,7 @@ public class SparkSQLPushDownFilter extends FilterBase {
       }
       byte[] qBytes = field.colBytes();
       ByteArrayComparable qualifierByteComparable =
-        new ByteArrayComparable(qBytes, 0, qBytes.length);
+              new ByteArrayComparable(qBytes, 0, qBytes.length);
 
       qualifierIndexMap.put(qualifierByteComparable, field.colName());
     }

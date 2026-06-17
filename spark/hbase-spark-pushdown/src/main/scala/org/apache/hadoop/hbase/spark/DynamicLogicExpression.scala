@@ -17,11 +17,12 @@
  */
 package org.apache.hadoop.hbase.spark
 
-import java.util
 import org.apache.hadoop.hbase.spark.datasources.{BytesEncoder, JavaBytesEncoder}
 import org.apache.hadoop.hbase.spark.datasources.JavaBytesEncoder.JavaBytesEncoder
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.yetus.audience.InterfaceAudience
+
+import java.util
 
 /**
  * Dynamic logic for SQL push down logic there is an instance for most

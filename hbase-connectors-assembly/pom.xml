@@ -234,4 +234,20 @@
       <!-- /end building aggregation of NOTICE files -->
     </plugins>
   </build>
+
+  <profiles>
+    <!-- With -Pspark4, force the reactor to build spark4 before this module (Maven otherwise
+         schedules assembly ahead of the spark4 aggregator; see hbase-connectors-bin.xml). -->
+    <profile>
+      <id>spark4</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.hbase.connectors.spark</groupId>
+          <artifactId>hbase-spark4</artifactId>
+          <version>${revision}</version>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>
