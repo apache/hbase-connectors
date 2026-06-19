@@ -393,12 +393,13 @@ case class HBaseRelation(
     val pushDownFilterJava =
       if (usePushDownColumnFilter && pushDownDynamicLogicExpression != null) {
         val columnMappings =
-          requiredQualifierDefinitionList.map { field =>
-            new PushdownMappedField {
-              override def colName(): String = field.colName
-              override def cfBytes(): Array[Byte] = field.cfBytes
-              override def colBytes(): Array[Byte] = field.colBytes
-            }
+          requiredQualifierDefinitionList.map {
+            field =>
+              new PushdownMappedField {
+                override def colName(): String = field.colName
+                override def cfBytes(): Array[Byte] = field.cfBytes
+                override def colBytes(): Array[Byte] = field.colBytes
+              }
           }
         Some(
           new SparkSQLPushDownFilter(
