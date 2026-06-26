@@ -36,6 +36,7 @@ import org.apache.spark.sql.{DataFrame, Row, SaveMode, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 /**
@@ -391,11 +392,20 @@ case class HBaseRelation(
 
     val pushDownFilterJava =
       if (usePushDownColumnFilter && pushDownDynamicLogicExpression != null) {
+        val columnMappings =
+          requiredQualifierDefinitionList.map {
+            field =>
+              new PushdownMappedField {
+                override def colName(): String = field.colName
+                override def cfBytes(): Array[Byte] = field.cfBytes
+                override def colBytes(): Array[Byte] = field.colBytes
+              }
+          }
         Some(
           new SparkSQLPushDownFilter(
             pushDownDynamicLogicExpression,
             valueArray,
-            requiredQualifierDefinitionList,
+            columnMappings.asJava,
             encoderClsName))
       } else {
         None

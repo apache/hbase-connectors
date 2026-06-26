@@ -213,6 +213,8 @@
       -Djdk.reflect.useDirectMethodHandle=false
       -Dio.netty.tryReflectionSetAccessible=true</spark-surefire.jdk11.flags>
     <spark-surefire.jdk17.flags/>
+    <!-- spark4/hbase-spark-pushdown artifactId suffix; exclude is a no-op unless -Pspark4 -->
+    <spark4.scala.binary.version>2.13</spark4.scala.binary.version>
   </properties>
   <dependencyManagement>
     <dependencies>
