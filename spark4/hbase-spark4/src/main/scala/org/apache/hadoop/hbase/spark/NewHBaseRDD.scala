@@ -15,14 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.hbase.spark
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.mapreduce.InputFormat
+import org.apache.spark.{InterruptibleIterator, Partition, SparkContext, TaskContext}
+import org.apache.spark.rdd.NewHadoopRDD
 import org.apache.yetus.audience.InterfaceAudience
 
-/**
- * Phase-0 build marker for the Spark 4 connector line (`hbase-spark4`).
- * Replaced incrementally during feature porting; see umbrella jira HBASE-30178.
- */
-@InterfaceAudience.Private
-private[hbase] object Spark4Placeholder
+@InterfaceAudience.Public
+class NewHBaseRDD[K, V](
+                         @transient val sc: SparkContext,
+                         @transient val inputFormatClass: Class[_ <: InputFormat[K, V]],
+                         @transient val keyClass: Class[K],
+                         @transient val valueClass: Class[V],
+                         @transient private val __conf: Configuration,
+                         val hBaseContext: HBaseContext)
+  extends NewHadoopRDD(sc, inputFormatClass, keyClass, valueClass, __conf) {
+
+  override def compute(theSplit: Partition, context: TaskContext): InterruptibleIterator[(K, V)] = {
+    super.compute(theSplit, context)
+  }
+}

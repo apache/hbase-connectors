@@ -30,6 +30,12 @@ function personality_modules
   local extra=""
   local MODULES=("${CHANGED_MODULES[@]}")
 
+  # When spark4 modules are in the changed set, activate the spark4 profile
+  # so the full reactor (including hbase-spark-pushdown_2.13) is built.
+  if [[ "${MODULES[*]}" =~ spark4 ]]; then
+    extra="${extra} -Pspark4"
+  fi
+
   clear_personality_queue
 
   # Always to install at root.
