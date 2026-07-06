@@ -41,7 +41,6 @@ github:
       branches:
         includes:
           - "~DEFAULT_BRANCH"
-          - "release/*"
           - "rel/*"
         excludes: []
       bypass_teams:
