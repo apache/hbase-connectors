@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.client.Table
 import org.apache.hadoop.hbase.ipc.RpcControllerFactory
 import org.apache.hadoop.hbase.security.User
 import org.apache.hadoop.hbase.security.UserProvider
+import org.apache.hadoop.hbase.spark.datasources.HBaseSparkConf
 import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 
@@ -39,9 +40,7 @@ private[spark] object HBaseConnectionCache extends Logging {
 
   val cacheStat = HBaseConnectionCacheStat(0, 0, 0)
 
-  // in milliseconds
-  private final val DEFAULT_TIME_OUT: Long = 10 * 60 * 1000
-  private var timeout = DEFAULT_TIME_OUT
+  private var timeout: Long = HBaseSparkConf.DEFAULT_CONNECTION_CLOSE_DELAY
   private var closed: Boolean = false
 
   var housekeepingThread = new Thread(new Runnable {
