@@ -19,6 +19,12 @@ package org.apache.hadoop.hbase.spark.datasources
 
 import org.apache.yetus.audience.InterfaceAudience
 
+/**
+ * The Bound represent the boudary for the scan
+ *
+ * @param b The byte array of the bound
+ * @param inc inclusive or not.
+ */
 @InterfaceAudience.Private
 case class Bound(b: Array[Byte], inc: Boolean)
 

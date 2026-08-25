@@ -24,6 +24,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.yetus.audience.InterfaceAudience
 
+/**
+ * This is the naive non-order preserving encoder/decoder.
+ * Due to the inconsistency of the order between java primitive types
+ * and their bytearray. The data type has to be passed in so that the filter
+ * can work correctly, which is done by wrapping the type into the first byte
+ * of the serialized array.
+ */
 @InterfaceAudience.Private
 class NaiveEncoder extends BytesEncoder with Logging {
   var code = 0
@@ -42,10 +49,24 @@ class NaiveEncoder extends BytesEncoder with Logging {
   val TimestampEnc: Byte = nextCode
   val UnknownEnc: Byte = nextCode
 
+  /**
+   * Evaluate the java primitive type and return the BoundRanges. For one value, it may have
+   * multiple output ranges because of the inconsistency of order between java primitive type
+   * and its byte array order.
+   *
+   * For short, integer, and long, the order of number is consistent with byte array order
+   * if two number has the same sign bit. But the negative number is larger than positive
+   * number in byte array.
+   *
+   * For double and float, the order of positive number is consistent with its byte array order.
+   * But the order of negative number is the reverse order of byte array. Please refer to IEEE-754
+   * and https://en.wikipedia.org/wiki/Single-precision_floating-point_format
+   */
   override def ranges(in: Any): Option[BoundRanges] = in match {
     case a: Integer =>
       val b = Bytes.toBytes(a)
       if (a >= 0) {
+        logDebug(s"range is 0 to $a and ${Integer.MIN_VALUE} to -1")
         Some(
           BoundRanges(
             Array(
@@ -161,6 +182,14 @@ class NaiveEncoder extends BytesEncoder with Logging {
     }
   }
 
+  /**
+   * encode the data type into byte array. Note that it is a naive implementation with the
+   * data type byte appending to the head of the serialized byte array.
+   *
+   * @param dt    : The data type of the input
+   * @param value : the value of the input
+   * @return the byte array with the first byte indicating the data type.
+   */
   override def encode(dt: DataType, value: Any): Array[Byte] = {
     dt match {
       case BooleanType =>
