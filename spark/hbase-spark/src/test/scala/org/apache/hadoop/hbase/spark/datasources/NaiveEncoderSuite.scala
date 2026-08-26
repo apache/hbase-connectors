@@ -94,19 +94,13 @@ class NaiveEncoderSuite extends FunSuite {
     val encoded = encoder.encode(IntegerType, 10: Int)
     val input = Bytes.toBytes(20: Int)
     assert(
-      encoder.filter(
-        input, 0, input.length,
-        encoded, 0, encoded.length,
-        JavaBytesEncoder.Greater))
+      encoder.filter(input, 0, input.length, encoded, 0, encoded.length, JavaBytesEncoder.Greater))
   }
 
   test("filter with IntegerType LessThan") {
     val encoded = encoder.encode(IntegerType, 10: Int)
     val input = Bytes.toBytes(5: Int)
     assert(
-      encoder.filter(
-        input, 0, input.length,
-        encoded, 0, encoded.length,
-        JavaBytesEncoder.Less))
+      encoder.filter(input, 0, input.length, encoded, 0, encoded.length, JavaBytesEncoder.Less))
   }
 }
