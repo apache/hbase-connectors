@@ -401,12 +401,14 @@ class HBaseContextSuite extends AnyFunSuite with BeforeAndAfterAll with Logging 
         val tbl = conn.getTable(TableName.valueOf(tName))
         try {
           val res = new ListBuffer[String]()
-          it.foreach { rowKey =>
-            val result = tbl.get(new Get(rowKey))
-            val cell = result.getColumnLatestCell(Bytes.toBytes(cf), Bytes.toBytes("a"))
-            if (cell != null) {
-              res += Bytes.toString(result.getRow) + "=" + Bytes.toString(CellUtil.cloneValue(cell))
-            }
+          it.foreach {
+            rowKey =>
+              val result = tbl.get(new Get(rowKey))
+              val cell = result.getColumnLatestCell(Bytes.toBytes(cf), Bytes.toBytes("a"))
+              if (cell != null) {
+                res += Bytes.toString(result.getRow) + "=" + Bytes.toString(
+                  CellUtil.cloneValue(cell))
+              }
           }
           res.iterator
         } finally {

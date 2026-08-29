@@ -20,15 +20,7 @@ package org.apache.hadoop.hbase.spark
 import java.util.concurrent.ExecutorService
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.client.{
-  Admin,
-  BufferedMutator,
-  BufferedMutatorParams,
-  Connection,
-  RegionLocator,
-  Table,
-  TableBuilder
-}
+import org.apache.hadoop.hbase.client.{Admin, BufferedMutator, BufferedMutatorParams, Connection, RegionLocator, Table, TableBuilder}
 import org.scalatest.funsuite.AnyFunSuite
 import scala.util.Random
 
@@ -167,17 +159,17 @@ class HBaseConnectionCacheSuite extends AnyFunSuite with Logging {
 
     HBaseConnectionCache.setTimeout(500)
     val threads: Array[Thread] = new Array[Thread](100)
-for (i <- 0 to 99) {
-  threads.update(i, new Thread(new TestThread()))
-  threads(i).start()
-}
-try {
-  threads.foreach { x => x.join() }
-} catch {
-  case e: InterruptedException =>
-    Thread.currentThread().interrupt()
-    throw e
-}
+    for (i <- 0 to 99) {
+      threads.update(i, new Thread(new TestThread()))
+      threads(i).start()
+    }
+    try {
+      threads.foreach { x => x.join() }
+    } catch {
+      case e: InterruptedException =>
+        Thread.currentThread().interrupt()
+        throw e
+    }
 
     Thread.sleep(1000)
     HBaseConnectionCache.connectionMap.synchronized {
