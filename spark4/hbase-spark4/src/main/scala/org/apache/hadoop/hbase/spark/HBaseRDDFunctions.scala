@@ -190,7 +190,7 @@ object HBaseRDDFunctions {
      * of columns.
      *
      * @param tableName                      The HBase table we are loading into
-     * @param flatMap                        A flapMap function that will make every row in the RDD
+     * @param flatMap                        A flatMap function that will make every row in the RDD
      *                                       into N cells for the bulk load
      * @param stagingDir                     The location on the FileSystem to bulk load into
      * @param familyHFileWriteOptionsMap     Options that will define how the HFile for a

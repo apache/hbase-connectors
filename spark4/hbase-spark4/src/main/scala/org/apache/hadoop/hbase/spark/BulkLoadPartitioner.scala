@@ -31,17 +31,17 @@ import org.apache.yetus.audience.InterfaceAudience
  */
 @InterfaceAudience.Public
 class BulkLoadPartitioner(startKeys: Array[Array[Byte]]) extends Partitioner {
-  // when table not exist, startKeys = Byte[0][]
-  override def numPartitions: Int = if (startKeys.length == 0) 1 else startKeys.length
-
-  override def getPartition(key: Any): Int = {
-
-    val comparator: Comparator[Array[Byte]] = new Comparator[Array[Byte]] {
+  @transient private lazy val comparator: Comparator[Array[Byte]] =
+    new Comparator[Array[Byte]] {
       override def compare(o1: Array[Byte], o2: Array[Byte]): Int = {
         Bytes.compareTo(o1, o2)
       }
     }
 
+  // when table not exist, startKeys = Byte[0][]
+  override def numPartitions: Int = if (startKeys.length == 0) 1 else startKeys.length
+
+  override def getPartition(key: Any): Int = {
     val rowKey: Array[Byte] =
       key match {
         case qualifier: KeyFamilyQualifier =>

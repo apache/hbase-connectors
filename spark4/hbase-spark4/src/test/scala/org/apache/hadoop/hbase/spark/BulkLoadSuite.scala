@@ -66,7 +66,7 @@ class BulkLoadSuite
   }
 
   override def afterAll(): Unit = {
-    logInfo("shuting down minicluster")
+    logInfo("shutting down minicluster")
     TEST_UTIL.shutdownMiniCluster()
     logInfo(" - minicluster shut down")
     TEST_UTIL.cleanupTestDir()
@@ -100,6 +100,7 @@ class BulkLoadSuite
     val stagingUri = new URI(uri + "staging_dir")
     val stagingFolder = new File(stagingUri)
     val fs = new Path(stagingUri.toString).getFileSystem(config)
+    val conn = ConnectionFactory.createConnection(config)
     try {
       hbaseContext.bulkLoad[(Array[Byte], (Array[Byte], Array[Byte], Array[Byte]))](
         rdd,
@@ -119,12 +120,16 @@ class BulkLoadSuite
       assert(fs.listStatus(new Path(stagingFolder.getPath)).length == 2)
 
     } finally {
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
-        admin.disableTable(TableName.valueOf(tableName))
-        admin.deleteTable(TableName.valueOf(tableName))
+        val admin = conn.getAdmin
+        try {
+          admin.disableTable(TableName.valueOf(tableName))
+          admin.deleteTable(TableName.valueOf(tableName))
+        } finally {
+          admin.close()
+        }
       } finally {
-        admin.close()
+        conn.close()
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -205,13 +210,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -256,13 +259,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -348,13 +355,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -399,13 +404,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -519,13 +528,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -570,13 +577,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -703,13 +714,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -754,13 +763,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -834,13 +847,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -885,13 +896,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 
@@ -993,13 +1008,11 @@ class BulkLoadSuite
     val conn = ConnectionFactory.createConnection(config)
 
     val load = new LoadIncrementalHFiles(config)
+    val admin = conn.getAdmin
     val table = conn.getTable(TableName.valueOf(tableName))
+    val regionLocator = conn.getRegionLocator(TableName.valueOf(tableName))
     try {
-      load.doBulkLoad(
-        new Path(stagingFolder.getPath),
-        conn.getAdmin,
-        table,
-        conn.getRegionLocator(TableName.valueOf(tableName)))
+      load.doBulkLoad(new Path(stagingFolder.getPath), admin, table, regionLocator)
 
       val cells5 = table.get(new Get(Bytes.toBytes("5"))).listCells()
       assert(cells5.size == 1)
@@ -1044,13 +1057,17 @@ class BulkLoadSuite
       assert(Bytes.toString(CellUtil.cloneQualifier(cells1.get(0))).equals("a"))
 
     } finally {
-      table.close()
-      val admin = ConnectionFactory.createConnection(config).getAdmin
       try {
+        table.close()
+        regionLocator.close()
         admin.disableTable(TableName.valueOf(tableName))
         admin.deleteTable(TableName.valueOf(tableName))
       } finally {
-        admin.close()
+        try {
+          admin.close()
+        } finally {
+          conn.close()
+        }
       }
       fs.delete(new Path(stagingFolder.getPath), true)
 

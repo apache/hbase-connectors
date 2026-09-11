@@ -21,7 +21,6 @@ import java.io.IOException
 import java.net.InetSocketAddress
 import java.util
 import java.util.UUID
-import javax.management.openmbean.KeyAlreadyExistsException
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileAlreadyExistsException, FileSystem, Path}
 import org.apache.hadoop.hbase.{CellComparator, CellUtil, HConstants, HRegionLocation, KeyValue, TableName}
@@ -151,13 +150,10 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
    *                  HBase Deletes
    * @param batchSize       The number of delete to batch before sending to HBase
    */
-  def bulkDelete[T](
-      rdd: RDD[T],
-      tableName: TableName,
-      f: (T) => Delete,
-      batchSize: Integer): Unit = {
-    bulkMutation(rdd, tableName, f, batchSize)
-  }
+  def bulkDelete[T](rdd: RDD[T], tableName: TableName, f: (T) => Delete, batchSize: Integer): Unit =
+    {
+      bulkMutation(rdd, tableName, f, batchSize)
+    }
 
   /**
    * A simple abstraction over the HBaseContext.mapPartition method.
@@ -327,13 +323,12 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
             val table = connection.getTable(TableName.valueOf(tName))
             try {
               val mutationList = new java.util.ArrayList[Mutation]()
-              iterator.foreach {
-                t =>
-                  mutationList.add(f(t))
-                  if (mutationList.size >= batchSize) {
-                    table.batch(mutationList, null)
-                    mutationList.clear()
-                  }
+              iterator.foreach { t =>
+                mutationList.add(f(t))
+                if (mutationList.size >= batchSize) {
+                  table.batch(mutationList, null)
+                  mutationList.clear()
+                }
               }
               if (mutationList.size() > 0) {
                 table.batch(mutationList, null)
@@ -400,7 +395,7 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
    *
    * @param rdd                            The RDD we are bulk loading from
    * @param tableName                      The HBase table we are loading into
-   * @param flatMap                        A flapMap function that will make every
+   * @param flatMap                        A flatMap function that will make every
    *                                       row in the RDD
    *                                       into N cells for the bulk load
    * @param stagingDir                     The location on the FileSystem to bulk load into
@@ -454,7 +449,7 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
 
       // This is where all the magic happens
       // Here we are going to do the following things
-      // 1. FlapMap every row in the RDD into key column value tuples
+      // 1. FlatMap every row in the RDD into key column value tuples
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
@@ -586,7 +581,7 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
 
       // This is where all the magic happens
       // Here we are going to do the following things
-      // 1. FlapMap every row in the RDD into key column value tuples
+      // 1. FlatMap every row in the RDD into key column value tuples
       // 2. Then we are going to repartition sort and shuffle
       // 3. Finally we are going to write out our HFiles
       rdd
@@ -608,9 +603,9 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
             it.foreach {
               case (rowKey: ByteArrayWrapper, familiesQualifiersValues: FamiliesQualifiersValues) =>
                 if (Bytes.compareTo(previousRow, rowKey.value) == 0) {
-                  throw new KeyAlreadyExistsException(
+                  throw new IllegalArgumentException(
                     "The following key was sent to the " +
-                      "HFile load more then one: " + Bytes.toString(previousRow))
+                      "HFile load more than once: " + Bytes.toString(previousRow))
                 }
 
                 // The family map is a tree map so the families will be sorted
@@ -784,7 +779,7 @@ class HBaseContext(@transient val sc: SparkContext, @transient val config: Confi
       new ByteArrayWrapper(family), {
         val familyDir = new Path(stagingDir, Bytes.toString(family))
 
-        familyDir.getFileSystem(conf).mkdirs(familyDir);
+        familyDir.getFileSystem(conf).mkdirs(familyDir)
 
         val loc: HRegionLocation = {
           try {
