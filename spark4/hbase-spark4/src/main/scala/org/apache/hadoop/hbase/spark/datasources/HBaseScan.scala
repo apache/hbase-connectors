@@ -45,6 +45,7 @@ class HBaseScan(
     properties: Map[String, String],
     catalog: HBaseTableCatalog,
     pushedFilters: Array[Filter],
+    rowKeyFilters: Array[Filter],
     encoderClsName: String,
     @transient encoder: BytesEncoder)
     extends Scan
@@ -60,7 +61,7 @@ class HBaseScan(
   private def buildRowKeyFilter(): RowKeyFilter = {
     var superRowKeyFilter: RowKeyFilter = null
 
-    pushedFilters.foreach { f =>
+    rowKeyFilters.foreach { f =>
       val rowKeyFilter = new RowKeyFilter()
       traverseFilterTree(rowKeyFilter, f)
       if (superRowKeyFilter == null) {
