@@ -22,7 +22,8 @@ import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
 import org.apache.hadoop.hbase.spark.Logging
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -33,6 +34,7 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   var configFile: File = _
 
   val tableName = "test_provider"
+  val writeTableName = "test_write"
   val columnFamily = "cf"
   val numRows = 20
   val numRowsWithoutName = 3
@@ -54,6 +56,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
     logInfo(s" - created table $tableName")
+    TEST_UTIL.createTable(TableName.valueOf(writeTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $writeTableName")
 
     populateTestData()
 
@@ -215,5 +219,105 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
       .load()
     assert(df.count() == numRows + numRowsWithoutName)
+  }
+
+  // --- Write path tests ---
+
+  val writeCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$writeTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"name":{"cf":"$columnFamily", "col":"name", "type":"string"},
+    |"age":{"cf":"$columnFamily", "col":"age", "type":"string"},
+    |"salary":{"cf":"$columnFamily", "col":"salary", "type":"string"}
+    |}
+    |}""".stripMargin
+
+  private def loadWriteTable() = {
+    spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", writeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .load()
+  }
+
+  test("write DataFrame and read back") {
+    val writeSchema = StructType(Seq(
+      StructField("key", StringType),
+      StructField("name", StringType),
+      StructField("age", StringType),
+      StructField("salary", StringType)))
+    val data = Seq(
+      Row("wrow000", "Alice", "30", "50000"),
+      Row("wrow001", "Bob", "25", "45000"),
+      Row("wrow002", "Carol", "35", "60000"))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
+
+    df.write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", writeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val result = loadWriteTable()
+    assert(result.count() == 3)
+    val rows = result.orderBy("key").collect()
+    assert(rows(0).getAs[String]("key") == "wrow000")
+    assert(rows(0).getAs[String]("name") == "Alice")
+    assert(rows(1).getAs[String]("key") == "wrow001")
+    assert(rows(1).getAs[String]("age") == "25")
+    assert(rows(2).getAs[String]("salary") == "60000")
+  }
+
+  test("write preserves null columns") {
+    val writeSchema = StructType(Seq(
+      StructField("key", StringType),
+      StructField("name", StringType),
+      StructField("age", StringType),
+      StructField("salary", StringType)))
+    val data = Seq(
+      Row("wnull000", null, "40", "70000"),
+      Row("wnull001", "Dave", null, null))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
+
+    df.write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", writeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val result = loadWriteTable().filter("key LIKE 'wnull%'").orderBy("key")
+    assert(result.count() == 2)
+    val rows = result.collect()
+    assert(rows(0).getAs[String]("key") == "wnull000")
+    assert(rows(0).getAs[String]("name") == null)
+    assert(rows(0).getAs[String]("age") == "40")
+    assert(rows(1).getAs[String]("key") == "wnull001")
+    assert(rows(1).getAs[String]("name") == "Dave")
+    assert(rows(1).getAs[String]("salary") == null)
+  }
+
+  test("write with short name 'hbase' alias") {
+    val writeSchema = StructType(Seq(
+      StructField("key", StringType),
+      StructField("name", StringType),
+      StructField("age", StringType),
+      StructField("salary", StringType)))
+    val data = Seq(Row("wshort000", "Eve", "28", "55000"))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
+
+    df.write
+      .format("hbase")
+      .option("catalog", writeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val result = loadWriteTable().filter("key = 'wshort000'")
+    assert(result.count() == 1)
+    assert(result.first().getAs[String]("name") == "Eve")
   }
 }
