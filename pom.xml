@@ -162,7 +162,7 @@
     <restrict-imports.enforcer.version>0.14.0</restrict-imports.enforcer.version>
     <protobuf.plugin.version>0.5.0</protobuf.plugin.version>
     <commons-io.version>2.18.0</commons-io.version>
-    <avro.version>1.11.4</avro.version>
+    <avro.version>1.11.5</avro.version>
     <commons-lang3.version>3.18.0</commons-lang3.version>
     <os.maven.version>1.6.1</os.maven.version>
     <glassfish.el.version>3.0.1-b08</glassfish.el.version>
