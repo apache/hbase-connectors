@@ -18,14 +18,18 @@
 package org.apache.hadoop.hbase.spark.datasources
 
 import org.apache.spark.sql.connector.write.{BatchWrite, WriteBuilder}
+import org.apache.spark.sql.connector.write.streaming.StreamingWrite
 import org.apache.spark.sql.types.StructType
 import org.apache.yetus.audience.InterfaceAudience
 
 /**
  * This is a new class in the spark4 module. Implements WriteBuilder for the DS V2 write path.
+ * Produces an HBaseBatchWrite for batch writes (via buildForBatch()) and an HBaseStreamingWrite
+ * for Structured Streaming sinks (via buildForStreaming()).
  *
- * In the spark 3 DS V1 model, there was no WriteBuilder. The write path was handled by
+ * In the spark 3 DS V1 model, there was no WriteBuilder. The batch write path was handled by
  * CreatableRelationProvider.createRelation() which called InsertableRelation.insert() directly.
+ * Streaming writes used the DStream-based HBaseDStreamFunctions.hbaseBulkPut().
  *
  * @param schema
  * @param properties
@@ -36,5 +40,9 @@ class HBaseWriteBuilder(schema: StructType, properties: Map[String, String])
 
   override def buildForBatch(): BatchWrite = {
     new HBaseBatchWrite(schema, properties)
+  }
+
+  override def buildForStreaming(): StreamingWrite = {
+    new HBaseStreamingWrite(schema, properties)
   }
 }

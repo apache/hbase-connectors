@@ -29,10 +29,14 @@ import scala.jdk.CollectionConverters._
 /**
  * This is a new class in the spark4 module. Implements Table, SupportsRead, and SupportsWrite.
  * Represents the HBase table as a Spark entity. Declares its schema (from the catalog) and
- * capabilities (BATCH_READ, BATCH_WRITE).
- * When Spark wants to read, it calls newScanBuilder(). When Spark wants to write, it calls newWriteBuilder().
+ * capabilities (BATCH_READ, BATCH_WRITE, STREAMING_WRITE).
+ * When Spark wants to read, it calls newScanBuilder(). When Spark wants to write (batch or streaming),
+ * it calls newWriteBuilder(); the returned HBaseWriteBuilder produces either an HBaseBatchWrite
+ * (for batch) or an HBaseStreamingWrite (for Structured Streaming sinks).
+ *
  * In the spark 3 DS V1 model, there was no separate "table" concept, BaseRelation bundled schema and
- * read/write logic together.
+ * read/write logic together. Streaming was handled via DStreams in HBaseDStreamFunctions.
+ *
  * @param tableSchema
  * @param properties
  */
@@ -50,7 +54,10 @@ class HBaseTable(tableSchema: StructType, properties: Map[String, String])
   override def schema(): StructType = tableSchema
 
   override def capabilities(): util.Set[TableCapability] = {
-    Set(TableCapability.BATCH_READ, TableCapability.BATCH_WRITE).asJava
+    Set(
+      TableCapability.BATCH_READ,
+      TableCapability.BATCH_WRITE,
+      TableCapability.STREAMING_WRITE).asJava
   }
 
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder = {
