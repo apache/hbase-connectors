@@ -61,12 +61,12 @@ class HBaseTable(tableSchema: StructType, properties: Map[String, String])
   }
 
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder = {
-    val mergedProps = properties ++ options.asScala.toMap
+    val mergedProps = properties ++ options.asCaseSensitiveMap().asScala.toMap
     new HBaseScanBuilder(tableSchema, mergedProps)
   }
 
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = {
-    val mergedProps = properties ++ info.options().asScala.toMap
+    val mergedProps = properties ++ info.options().asCaseSensitiveMap().asScala.toMap
     new HBaseWriteBuilder(info.schema(), mergedProps)
   }
 }

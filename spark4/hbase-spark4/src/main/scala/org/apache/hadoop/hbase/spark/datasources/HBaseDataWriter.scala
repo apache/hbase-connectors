@@ -20,7 +20,7 @@ package org.apache.hadoop.hbase.spark.datasources
 import java.util.ArrayList
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.{Put, Table}
-import org.apache.hadoop.hbase.spark.{HBaseConnectionCache, Logging, SmartConnection}
+import org.apache.hadoop.hbase.spark.{AvroSerdes, HBaseConnectionCache, Logging, SmartConnection}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
@@ -128,21 +128,27 @@ class HBaseDataWriter(
   private val MILLIS_PER_DAY = 86400000L
 
   private def getValueBytes(row: InternalRow, idx: Int, field: Field): Array[Byte] = {
-    field.dt match {
-      case BooleanType => Bytes.toBytes(row.getBoolean(idx))
-      case ByteType => Array(row.getByte(idx))
-      case ShortType => Bytes.toBytes(row.getShort(idx))
-      case IntegerType => Bytes.toBytes(row.getInt(idx))
-      case LongType => Bytes.toBytes(row.getLong(idx))
-      case FloatType => Bytes.toBytes(row.getFloat(idx))
-      case DoubleType => Bytes.toBytes(row.getDouble(idx))
-      case StringType => Bytes.toBytes(row.getUTF8String(idx).toString)
-      case BinaryType => row.getBinary(idx)
-      case DateType => Bytes.toBytes(row.getInt(idx).toLong * MILLIS_PER_DAY)
-      case TimestampType => Bytes.toBytes(row.getLong(idx) / 1000)
-      case dt: DecimalType =>
-        Bytes.toBytes(row.getDecimal(idx, dt.precision, dt.scale).toJavaBigDecimal)
-      case _ => throw new UnsupportedOperationException(s"unsupported data type ${field.dt}")
+    if (field.exeSchema.isDefined) {
+      val struct = row.getStruct(idx, field.dt.asInstanceOf[StructType].length)
+      val record = field.catalystToAvroFromInternalRow(struct)
+      AvroSerdes.serialize(record, field.exeSchema.get)
+    } else {
+      field.dt match {
+        case BooleanType => Bytes.toBytes(row.getBoolean(idx))
+        case ByteType => Array(row.getByte(idx))
+        case ShortType => Bytes.toBytes(row.getShort(idx))
+        case IntegerType => Bytes.toBytes(row.getInt(idx))
+        case LongType => Bytes.toBytes(row.getLong(idx))
+        case FloatType => Bytes.toBytes(row.getFloat(idx))
+        case DoubleType => Bytes.toBytes(row.getDouble(idx))
+        case StringType => Bytes.toBytes(row.getUTF8String(idx).toString)
+        case BinaryType => row.getBinary(idx)
+        case DateType => Bytes.toBytes(row.getInt(idx).toLong * MILLIS_PER_DAY)
+        case TimestampType => Bytes.toBytes(row.getLong(idx) / 1000)
+        case dt: DecimalType =>
+          Bytes.toBytes(row.getDecimal(idx, dt.precision, dt.scale).toJavaBigDecimal)
+        case _ => throw new UnsupportedOperationException(s"unsupported data type ${field.dt}")
+      }
     }
   }
 }

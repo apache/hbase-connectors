@@ -35,7 +35,10 @@ import org.apache.avro.io._
 import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.yetus.audience.InterfaceAudience
 import scala.jdk.CollectionConverters._
 
@@ -405,6 +408,95 @@ object SchemaConverters {
             while (convertersIterator.hasNext) {
               val converter = convertersIterator.next()
               record.put(fieldNamesIterator.next(), converter(rowIterator.next()))
+            }
+            record
+          }
+        }
+    }
+  }
+
+  /**
+   * Constructs a converter function from Spark InternalRow types to Avro. Used by the DS V2 write
+   * path where the writer receives InternalRow instead of Row.
+   */
+  def createConverterToAvroFromInternalRow(
+      dataType: DataType,
+      structName: String,
+      recordNamespace: String): (Any) => Any = {
+    dataType match {
+      case BinaryType =>
+        (item: Any) =>
+          item match {
+            case null => null
+            case bytes: Array[Byte] => ByteBuffer.wrap(bytes)
+          }
+      case ByteType | ShortType | IntegerType | LongType | FloatType | DoubleType | BooleanType =>
+        identity
+      case StringType =>
+        (item: Any) => if (item == null) null else item.asInstanceOf[UTF8String].toString
+      case _: DecimalType => (item: Any) => if (item == null) null else item.toString
+      case TimestampType =>
+        (item: Any) => if (item == null) null else item.asInstanceOf[Long] / 1000
+      case ArrayType(elementType, _) =>
+        val elementConverter =
+          createConverterToAvroFromInternalRow(elementType, structName, recordNamespace)
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val sourceArray = item.asInstanceOf[ArrayData]
+            val targetArray = new util.ArrayList[Any](sourceArray.numElements())
+            var idx = 0
+            while (idx < sourceArray.numElements()) {
+              targetArray.add(elementConverter(sourceArray.get(idx, elementType)))
+              idx += 1
+            }
+            targetArray
+          }
+        }
+      case MapType(StringType, valueType, _) =>
+        val valueConverter =
+          createConverterToAvroFromInternalRow(valueType, structName, recordNamespace)
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val mapData = item.asInstanceOf[MapData]
+            val keys = mapData.keyArray()
+            val values = mapData.valueArray()
+            val javaMap = new HashMap[String, Any]()
+            var idx = 0
+            while (idx < mapData.numElements()) {
+              javaMap.put(
+                keys.getUTF8String(idx).toString,
+                valueConverter(values.get(idx, valueType)))
+              idx += 1
+            }
+            javaMap
+          }
+        }
+      case structType: StructType =>
+        val builder = SchemaBuilder.record(structName).namespace(recordNamespace)
+        val schema: Schema =
+          SchemaConverters.convertStructToAvro(structType, builder, recordNamespace)
+        val fieldConverters = structType.fields.map(field =>
+          createConverterToAvroFromInternalRow(field.dataType, field.name, recordNamespace))
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val record = new Record(schema)
+            val row = item.asInstanceOf[InternalRow]
+            var i = 0
+            while (i < structType.length) {
+              if (row.isNullAt(i)) {
+                record.put(structType.fields(i).name, null)
+              } else {
+                record.put(
+                  structType.fields(i).name,
+                  fieldConverters(i)(row.get(i, structType.fields(i).dataType)))
+              }
+              i += 1
             }
             record
           }

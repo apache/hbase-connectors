@@ -19,9 +19,11 @@ package org.apache.hadoop.hbase.spark.datasources
 
 import java.io.{File, FileOutputStream}
 import java.nio.file.Files
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
-import org.apache.hadoop.hbase.spark.Logging
+import org.apache.hadoop.hbase.spark.{AvroSerdes, Logging}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.execution.streaming.MemoryStream
@@ -63,8 +65,13 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     logInfo(s" - created table $writeTableName")
     TEST_UTIL.createTable(TableName.valueOf(streamTableName), Bytes.toBytes(columnFamily))
     logInfo(s" - created table $streamTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroWriteTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroWriteTableName")
 
     populateTestData()
+    populateAvroTestData()
 
     val tmpDir = new File("target", "test-tmp")
     tmpDir.mkdirs()
@@ -554,5 +561,122 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     assert(result.length == 1)
     assert(result(0).getAs[String]("name") == "Nora-Updated")
     assert(result(0).getAs[String]("age") == "31")
+  }
+
+  // --- Avro schema field tests ---
+
+  val avroTableName = "test_avro"
+  val avroWriteTableName = "test_avro_write"
+
+  val avroSchemaString: String =
+    s"""{"namespace": "example.avro",
+       |   "type": "record", "name": "User",
+       |    "fields": [
+       |      {"name": "name", "type": "string"},
+       |      {"name": "favorite_number", "type": ["int", "null"]},
+       |      {"name": "favorite_color", "type": ["string", "null"]}
+       |    ]
+       |}""".stripMargin
+
+  val avroSchema: Schema = new Schema.Parser().parse(avroSchemaString)
+
+  val avroCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroSchema"}
+    |}
+    |}""".stripMargin
+
+  val avroWriteCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroWriteTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroSchema"}
+    |}
+    |}""".stripMargin
+
+  private def populateAvroTestData(): Unit = {
+    val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+    val table = connection.getTable(TableName.valueOf(avroTableName))
+    try {
+      for (i <- 0 until 10) {
+        val key = f"arow$i%03d"
+        val user = new GenericData.Record(avroSchema)
+        user.put("name", s"name${"%03d".format(i)}")
+        user.put("favorite_number", i)
+        user.put("favorite_color", s"color${"%03d".format(i)}")
+        val avroBytes = AvroSerdes.serialize(user, avroSchema)
+        val put = new Put(Bytes.toBytes(key))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("col1"), avroBytes)
+        table.put(put)
+      }
+    } finally {
+      table.close()
+      connection.close()
+    }
+  }
+
+  private def loadAvroTable() = {
+    spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .load()
+  }
+
+  test("read Avro fields from HBase") {
+    val df = loadAvroTable()
+    assert(df.count() == 10)
+    df.printSchema()
+    val rows = df.orderBy("key").collect()
+    assert(rows(0).getAs[String]("key") == "arow000")
+    val struct0 = rows(0).getAs[Row]("col1")
+    assert(struct0.getAs[String]("name") == "name000")
+    assert(struct0.getAs[Int]("favorite_number") == 0)
+    assert(struct0.getAs[String]("favorite_color") == "color000")
+  }
+
+  test("write and read Avro fields round-trip") {
+    val df = loadAvroTable()
+
+    df.write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroWriteCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .mode("append")
+      .save()
+
+    val result = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroWriteCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .load()
+
+    assert(result.count() == 10)
+    val rows = result.orderBy("key").collect()
+    assert(rows(5).getAs[String]("key") == "arow005")
+    val struct5 = rows(5).getAs[Row]("col1")
+    assert(struct5.getAs[String]("name") == "name005")
+    assert(struct5.getAs[Int]("favorite_number") == 5)
+    assert(struct5.getAs[String]("favorite_color") == "color005")
+  }
+
+  test("Avro filtered query on nested struct field") {
+    val df = loadAvroTable()
+    val filtered = df.filter("col1.name = 'name005'")
+    assert(filtered.count() == 1)
+    val row = filtered.first()
+    assert(row.getAs[String]("key") == "arow005")
+    val struct = row.getAs[Row]("col1")
+    assert(struct.getAs[String]("favorite_color") == "color005")
   }
 }

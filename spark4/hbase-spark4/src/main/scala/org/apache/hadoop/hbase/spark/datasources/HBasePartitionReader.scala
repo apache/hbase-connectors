@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.spark.{AndLogicExpression, DynamicLogicExpression
   LessThanOrEqualLogicExpression, Logging, OrLogicExpression, PassThroughLogicExpression,
   PushdownMappedField, SmartConnection, SparkSQLPushDownFilter, StartsWithLogicExpression}
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -282,6 +283,19 @@ class HBasePartitionReader(
         DateTimeUtils.fromJavaTimestamp(t)
       case dt: DecimalType =>
         Decimal(value.asInstanceOf[java.math.BigDecimal], dt.precision, dt.scale)
+      case structType: StructType =>
+        val row = value.asInstanceOf[Row]
+        val values = new Array[Any](structType.length)
+        var i = 0
+        while (i < structType.length) {
+          if (row.isNullAt(i)) {
+            values(i) = null
+          } else {
+            values(i) = convertToInternalRow(row.get(i), structType.fields(i).dataType)
+          }
+          i += 1
+        }
+        new GenericInternalRow(values)
       case _ => value
     }
   }
