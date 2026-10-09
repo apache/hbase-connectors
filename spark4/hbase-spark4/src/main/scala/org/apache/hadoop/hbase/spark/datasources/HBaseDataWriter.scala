@@ -129,9 +129,12 @@ class HBaseDataWriter(
 
   private def getValueBytes(row: InternalRow, idx: Int, field: Field): Array[Byte] = {
     if (field.exeSchema.isDefined) {
-      val struct = row.getStruct(idx, field.dt.asInstanceOf[StructType].length)
-      val record = field.catalystToAvroFromInternalRow(struct)
-      AvroSerdes.serialize(record, field.exeSchema.get)
+      val value = field.dt match {
+        case st: StructType => row.getStruct(idx, st.length)
+        case _ => row.get(idx, field.dt)
+      }
+      val converted = field.catalystToAvroFromInternalRow(value)
+      AvroSerdes.serialize(converted, field.exeSchema.get)
     } else {
       field.dt match {
         case BooleanType => Bytes.toBytes(row.getBoolean(idx))

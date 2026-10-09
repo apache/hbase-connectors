@@ -58,7 +58,7 @@ case class Field(
   }
 
   lazy val catalystToAvroFromInternalRow: (Any) => Any = {
-    SchemaConverters.createConverterToAvroFromInternalRow(dt, colName, "recordNamespace")
+    SchemaConverters.createConverterToAvroFromInternalRow(dt, exeSchema.get)
   }
 
   def cfBytes: Array[Byte] = {

@@ -418,11 +418,22 @@ object SchemaConverters {
   /**
    * Constructs a converter function from Spark InternalRow types to Avro. Used by the DS V2 write
    * path where the writer receives InternalRow instead of Row.
+   *
+   * This overload accepts the actual Avro Schema so that GenericRecord instances are built against
+   * the original schema rather than one reconstructed from the Spark StructType. The round-trip
+   * through convertStructToAvro loses nullable unions, FIXED types, and named-record identities,
+   * which causes GenericDatumWriter to reject the record when serializing against the original
+   * schema.
    */
   def createConverterToAvroFromInternalRow(
       dataType: DataType,
-      structName: String,
-      recordNamespace: String): (Any) => Any = {
+      avroSchema: Schema): (Any) => Any = {
+    val resolvedSchema = avroSchema.getType match {
+      case UNION =>
+        val nonNull = avroSchema.getTypes.asScala.filterNot(_.getType == NULL)
+        if (nonNull.size == 1) nonNull.head else avroSchema
+      case _ => avroSchema
+    }
     dataType match {
       case BinaryType =>
         (item: Any) =>
@@ -439,7 +450,7 @@ object SchemaConverters {
         (item: Any) => if (item == null) null else item.asInstanceOf[Long] / 1000
       case ArrayType(elementType, _) =>
         val elementConverter =
-          createConverterToAvroFromInternalRow(elementType, structName, recordNamespace)
+          createConverterToAvroFromInternalRow(elementType, resolvedSchema.getElementType)
         (item: Any) => {
           if (item == null) {
             null
@@ -456,7 +467,7 @@ object SchemaConverters {
         }
       case MapType(StringType, valueType, _) =>
         val valueConverter =
-          createConverterToAvroFromInternalRow(valueType, structName, recordNamespace)
+          createConverterToAvroFromInternalRow(valueType, resolvedSchema.getValueType)
         (item: Any) => {
           if (item == null) {
             null
@@ -476,16 +487,15 @@ object SchemaConverters {
           }
         }
       case structType: StructType =>
-        val builder = SchemaBuilder.record(structName).namespace(recordNamespace)
-        val schema: Schema =
-          SchemaConverters.convertStructToAvro(structType, builder, recordNamespace)
-        val fieldConverters = structType.fields.map(field =>
-          createConverterToAvroFromInternalRow(field.dataType, field.name, recordNamespace))
+        val avroFields = resolvedSchema.getFields.asScala
+        val fieldConverters = structType.fields.zipWithIndex.map { case (field, i) =>
+          createConverterToAvroFromInternalRow(field.dataType, avroFields(i).schema())
+        }
         (item: Any) => {
           if (item == null) {
             null
           } else {
-            val record = new Record(schema)
+            val record = new Record(resolvedSchema)
             val row = item.asInstanceOf[InternalRow]
             var i = 0
             while (i < structType.length) {
@@ -503,6 +513,7 @@ object SchemaConverters {
         }
     }
   }
+
 }
 
 @InterfaceAudience.Private
