@@ -19,9 +19,11 @@ package org.apache.hadoop.hbase.spark.datasources
 
 import java.io.{File, FileOutputStream}
 import java.nio.file.Files
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
-import org.apache.hadoop.hbase.spark.Logging
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Get, Put}
+import org.apache.hadoop.hbase.spark.{AvroSerdes, Logging}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.execution.streaming.MemoryStream
@@ -63,8 +65,17 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     logInfo(s" - created table $writeTableName")
     TEST_UTIL.createTable(TableName.valueOf(streamTableName), Bytes.toBytes(columnFamily))
     logInfo(s" - created table $streamTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroWriteTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroWriteTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroPrimitiveTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroPrimitiveTableName")
+    TEST_UTIL.createTable(TableName.valueOf(avroComplexTableName), Bytes.toBytes(columnFamily))
+    logInfo(s" - created table $avroComplexTableName")
 
     populateTestData()
+    populateAvroTestData()
 
     val tmpDir = new File("target", "test-tmp")
     tmpDir.mkdirs()
@@ -554,5 +565,253 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     assert(result.length == 1)
     assert(result(0).getAs[String]("name") == "Nora-Updated")
     assert(result(0).getAs[String]("age") == "31")
+  }
+
+  // --- Avro schema field tests ---
+
+  val avroTableName = "test_avro"
+  val avroWriteTableName = "test_avro_write"
+
+  val avroSchemaString: String =
+    s"""{"namespace": "example.avro",
+       |   "type": "record", "name": "User",
+       |    "fields": [
+       |      {"name": "name", "type": "string"},
+       |      {"name": "favorite_number", "type": ["int", "null"]},
+       |      {"name": "favorite_color", "type": ["string", "null"]}
+       |    ]
+       |}""".stripMargin
+
+  val avroSchema: Schema = new Schema.Parser().parse(avroSchemaString)
+
+  val avroCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroSchema"}
+    |}
+    |}""".stripMargin
+
+  val avroWriteCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroWriteTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroSchema"}
+    |}
+    |}""".stripMargin
+
+  private def populateAvroTestData(): Unit = {
+    val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+    val table = connection.getTable(TableName.valueOf(avroTableName))
+    try {
+      for (i <- 0 until 10) {
+        val key = f"arow$i%03d"
+        val user = new GenericData.Record(avroSchema)
+        user.put("name", s"name${"%03d".format(i)}")
+        user.put("favorite_number", i)
+        user.put("favorite_color", s"color${"%03d".format(i)}")
+        val avroBytes = AvroSerdes.serialize(user, avroSchema)
+        val put = new Put(Bytes.toBytes(key))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("col1"), avroBytes)
+        table.put(put)
+      }
+    } finally {
+      table.close()
+      connection.close()
+    }
+  }
+
+  private def loadAvroTable() = {
+    spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .load()
+  }
+
+  test("read Avro fields from HBase") {
+    val df = loadAvroTable()
+    assert(df.count() == 10)
+    df.printSchema()
+    val rows = df.orderBy("key").collect()
+    assert(rows(0).getAs[String]("key") == "arow000")
+    val struct0 = rows(0).getAs[Row]("col1")
+    assert(struct0.getAs[String]("name") == "name000")
+    assert(struct0.getAs[Int]("favorite_number") == 0)
+    assert(struct0.getAs[String]("favorite_color") == "color000")
+  }
+
+  test("write and read Avro fields round-trip") {
+    val df = loadAvroTable()
+
+    df.write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroWriteCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .mode("append")
+      .save()
+
+    val result = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroWriteCatalog,
+        "avroSchema" -> avroSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .load()
+
+    assert(result.count() == 10)
+    val rows = result.orderBy("key").collect()
+    assert(rows(5).getAs[String]("key") == "arow005")
+    val struct5 = rows(5).getAs[Row]("col1")
+    assert(struct5.getAs[String]("name") == "name005")
+    assert(struct5.getAs[Int]("favorite_number") == 5)
+    assert(struct5.getAs[String]("favorite_color") == "color005")
+  }
+
+  test("Avro filtered query on nested struct field") {
+    val df = loadAvroTable()
+    val filtered = df.filter("col1.name = 'name005'")
+    assert(filtered.count() == 1)
+    val row = filtered.first()
+    assert(row.getAs[String]("key") == "arow005")
+    val struct = row.getAs[Row]("col1")
+    assert(struct.getAs[String]("favorite_color") == "color005")
+  }
+
+  // --- Avro primitive type tests ---
+
+  val avroPrimitiveTableName = "test_avro_primitive"
+
+  val avroPrimitiveSchemaString: String = """{"type": "int"}"""
+
+  val avroPrimitiveCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroPrimitiveTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroPrimitiveSchema"}
+    |}
+    |}""".stripMargin
+
+  // --- Avro complex type (array/map) tests ---
+
+  val avroComplexTableName = "test_avro_complex"
+
+  val avroComplexSchemaString: String =
+    s"""{"namespace": "example.avro",
+       |   "type": "record", "name": "ComplexRecord",
+       |   "fields": [
+       |     {"name": "label", "type": "string"},
+       |     {"name": "tags", "type": {"type": "array", "items": "string"}},
+       |     {"name": "attrs", "type": {"type": "map", "values": "string"}}
+       |   ]
+       |}""".stripMargin
+
+  val avroComplexSchema: Schema = new Schema.Parser().parse(avroComplexSchemaString)
+
+  val avroComplexCatalog: String = s"""{
+    |"table":{"namespace":"default", "name":"$avroComplexTableName"},
+    |"rowkey":"key",
+    |"columns":{
+    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+    |"col1":{"cf":"$columnFamily", "col":"col1", "avro":"avroComplexSchema"}
+    |}
+    |}""".stripMargin
+
+  private def populateAvroComplexTestData(): Unit = {
+    val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+    val table = connection.getTable(TableName.valueOf(avroComplexTableName))
+    try {
+      for (i <- 0 until 5) {
+        val key = f"crow$i%03d"
+        val record = new GenericData.Record(avroComplexSchema)
+        record.put("label", s"label${"%03d".format(i)}")
+        val tags = new java.util.ArrayList[String]()
+        tags.add(s"tag${i}a")
+        tags.add(s"tag${i}b")
+        record.put("tags", tags)
+        val attrs = new java.util.HashMap[String, String]()
+        attrs.put("color", s"color$i")
+        attrs.put("size", s"size$i")
+        record.put("attrs", attrs)
+        val avroBytes = AvroSerdes.serialize(record, avroComplexSchema)
+        val put = new Put(Bytes.toBytes(key))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("col1"), avroBytes)
+        table.put(put)
+      }
+    } finally {
+      table.close()
+      connection.close()
+    }
+  }
+
+  test("read Avro fields with nested array and map types") {
+    populateAvroComplexTestData()
+    val df = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroComplexCatalog,
+        "avroComplexSchema" -> avroComplexSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .load()
+
+    val rows = df.orderBy("key").collect()
+    assert(rows.length == 5)
+
+    val struct0 = rows(0).getAs[Row]("col1")
+    assert(struct0.getAs[String]("label") == "label000")
+    val tags0 = struct0.getSeq[String](struct0.fieldIndex("tags"))
+    assert(tags0.toSeq == Seq("tag0a", "tag0b"))
+    val attrs0 = struct0.getMap[String, String](struct0.fieldIndex("attrs"))
+    assert(attrs0("color") == "color0")
+    assert(attrs0("size") == "size0")
+
+    val struct3 = rows(3).getAs[Row]("col1")
+    assert(struct3.getAs[String]("label") == "label003")
+    val tags3 = struct3.getSeq[String](struct3.fieldIndex("tags"))
+    assert(tags3.toSeq == Seq("tag3a", "tag3b"))
+    val attrs3 = struct3.getMap[String, String](struct3.fieldIndex("attrs"))
+    assert(attrs3("color") == "color3")
+    assert(attrs3("size") == "size3")
+  }
+
+  test("write Avro primitive type field") {
+    val writeSchema = StructType(Seq(
+      StructField("key", StringType),
+      StructField("col1", org.apache.spark.sql.types.IntegerType)))
+    val rows = (0 until 5).map(i =>
+      Row(f"prow$i%03d", 100 + i))
+    val writeDF = spark.createDataFrame(
+      spark.sparkContext.parallelize(rows), writeSchema)
+
+    writeDF.write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .options(Map(
+        "catalog" -> avroPrimitiveCatalog,
+        "avroPrimitiveSchema" -> avroPrimitiveSchemaString,
+        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .mode("append")
+      .save()
+
+    val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+    val table = connection.getTable(TableName.valueOf(avroPrimitiveTableName))
+    try {
+      val result0 = table.get(new Get(Bytes.toBytes("prow000")))
+      val value0 = result0.getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("col1"))
+      assert(Bytes.toInt(value0) == 100)
+
+      val result4 = table.get(new Get(Bytes.toBytes("prow004")))
+      val value4 = result4.getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("col1"))
+      assert(Bytes.toInt(value4) == 104)
+    } finally {
+      table.close()
+      connection.close()
+    }
   }
 }

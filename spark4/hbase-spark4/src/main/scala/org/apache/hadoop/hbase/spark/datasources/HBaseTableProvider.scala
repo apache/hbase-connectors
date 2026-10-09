@@ -60,7 +60,7 @@ class HBaseTableProvider extends TableProvider with DataSourceRegister {
   override def shortName(): String = "hbase"
 
   override def inferSchema(options: CaseInsensitiveStringMap): StructType = {
-    val params = options.asScala.toMap
+    val params = options.asScala.toMap ++ options.asCaseSensitiveMap().asScala.toMap
     HBaseTableCatalog(params).toDataType
   }
 

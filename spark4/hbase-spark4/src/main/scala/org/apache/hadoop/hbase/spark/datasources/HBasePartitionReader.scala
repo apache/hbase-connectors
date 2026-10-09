@@ -26,9 +26,10 @@ import org.apache.hadoop.hbase.spark.{AndLogicExpression, DynamicLogicExpression
   LessThanOrEqualLogicExpression, Logging, OrLogicExpression, PassThroughLogicExpression,
   PushdownMappedField, SmartConnection, SparkSQLPushDownFilter, StartsWithLogicExpression}
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.connector.read.PartitionReader
 import org.apache.spark.sql.sources._
@@ -282,6 +283,27 @@ class HBasePartitionReader(
         DateTimeUtils.fromJavaTimestamp(t)
       case dt: DecimalType =>
         Decimal(value.asInstanceOf[java.math.BigDecimal], dt.precision, dt.scale)
+      case ArrayType(elementType, _) =>
+        val seq = value.asInstanceOf[Seq[Any]]
+        new GenericArrayData(seq.map(convertToInternalRow(_, elementType)).toArray)
+      case MapType(keyType, valueType, _) =>
+        val map = value.asInstanceOf[Map[Any, Any]]
+        val keys = map.keys.map(convertToInternalRow(_, keyType)).toArray
+        val values = map.values.map(convertToInternalRow(_, valueType)).toArray
+        ArrayBasedMapData(keys, values)
+      case structType: StructType =>
+        val row = value.asInstanceOf[Row]
+        val values = new Array[Any](structType.length)
+        var i = 0
+        while (i < structType.length) {
+          if (row.isNullAt(i)) {
+            values(i) = null
+          } else {
+            values(i) = convertToInternalRow(row.get(i), structType.fields(i).dataType)
+          }
+          i += 1
+        }
+        new GenericInternalRow(values)
       case _ => value
     }
   }
