@@ -98,8 +98,10 @@ YETUS_ARGS+=("--spotbugs-strict-precheck")
 YETUS_ARGS+=("--archive-list=${ARCHIVE_PATTERN_LIST}")
 # URL for user-side presentation in reports and such to our artifacts
 YETUS_ARGS+=("--build-url-artifacts=${BUILD_URL_ARTIFACTS}")
-# plugins to enable
-YETUS_ARGS+=("--plugins=${PLUGINS}")
+# plugins to enable (-jira: this is a GitHub-only project; the jira plugin
+# misidentifies the PR URL as a JIRA issue, downloads a login page, and
+# fails the sentinel status check)
+YETUS_ARGS+=("--plugins=${PLUGINS},-jira")
 YETUS_ARGS+=("--tests-filter=test4tests")
 # run in docker mode and specifically point to our
 # Dockerfile since we don't want to use the auto-pulled version.
