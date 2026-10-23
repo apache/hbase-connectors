@@ -35,7 +35,10 @@ import org.apache.avro.io._
 import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.yetus.audience.InterfaceAudience
 import scala.jdk.CollectionConverters._
 
@@ -411,15 +414,152 @@ object SchemaConverters {
         }
     }
   }
+
+  /**
+   * Constructs a converter function from Spark InternalRow types to Avro. Used by the DS V2 write
+   * path where the writer receives InternalRow instead of Row.
+   *
+   * This overload accepts the actual Avro Schema so that GenericRecord instances are built against
+   * the original schema rather than one reconstructed from the Spark StructType. The round-trip
+   * through convertStructToAvro loses nullable unions, FIXED types, and named-record identities,
+   * which causes GenericDatumWriter to reject the record when serializing against the original
+   * schema.
+   */
+  def createConverterToAvroFromInternalRow(
+      dataType: DataType,
+      avroSchema: Schema): (Any) => Any = {
+    val resolvedSchema = avroSchema.getType match {
+      case UNION =>
+        val nonNull = avroSchema.getTypes.asScala.filterNot(_.getType == NULL)
+        if (nonNull.size == 1) nonNull.head else avroSchema
+      case _ => avroSchema
+    }
+    dataType match {
+      case BinaryType =>
+        resolvedSchema.getType match {
+          case FIXED =>
+            val fixedSize = resolvedSchema.getFixedSize
+            (item: Any) =>
+              if (item == null) null
+              else {
+                val bytes = item.asInstanceOf[Array[Byte]]
+                if (bytes.length != fixedSize) {
+                  throw new SchemaConversionException(
+                    s"Expected $fixedSize bytes for FIXED type " +
+                      s"'${resolvedSchema.getFullName}', got ${bytes.length}")
+                }
+                new Fixed(resolvedSchema, bytes)
+              }
+          case _ =>
+            (item: Any) =>
+              if (item == null) null
+              else ByteBuffer.wrap(item.asInstanceOf[Array[Byte]])
+        }
+      case ByteType | ShortType | IntegerType | LongType | FloatType | DoubleType | BooleanType |
+          DateType =>
+        identity
+      case StringType =>
+        resolvedSchema.getType match {
+          case ENUM =>
+            (item: Any) =>
+              if (item == null) null
+              else new GenericData.EnumSymbol(resolvedSchema, item.asInstanceOf[UTF8String].toString)
+          case _ =>
+            (item: Any) =>
+              if (item == null) null else item.asInstanceOf[UTF8String].toString
+        }
+      case _: DecimalType => (item: Any) => if (item == null) null else item.toString
+      case TimestampType =>
+        (item: Any) => if (item == null) null else item.asInstanceOf[Long] / 1000
+      case ArrayType(elementType, _) =>
+        val elementConverter =
+          createConverterToAvroFromInternalRow(elementType, resolvedSchema.getElementType)
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val sourceArray = item.asInstanceOf[ArrayData]
+            val targetArray = new util.ArrayList[Any](sourceArray.numElements())
+            var idx = 0
+            while (idx < sourceArray.numElements()) {
+              targetArray.add(elementConverter(sourceArray.get(idx, elementType)))
+              idx += 1
+            }
+            targetArray
+          }
+        }
+      case MapType(StringType, valueType, _) =>
+        val valueConverter =
+          createConverterToAvroFromInternalRow(valueType, resolvedSchema.getValueType)
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val mapData = item.asInstanceOf[MapData]
+            val keys = mapData.keyArray()
+            val values = mapData.valueArray()
+            val javaMap = new HashMap[String, Any]()
+            var idx = 0
+            while (idx < mapData.numElements()) {
+              javaMap.put(
+                keys.getUTF8String(idx).toString,
+                valueConverter(values.get(idx, valueType)))
+              idx += 1
+            }
+            javaMap
+          }
+        }
+      case structType: StructType =>
+        val fieldConverters = structType.fields.map { field =>
+          val avroField = resolvedSchema.getField(field.name)
+          if (avroField == null) {
+            throw new SchemaConversionException(
+              s"Spark field '${field.name}' not found in Avro schema " +
+                s"'${resolvedSchema.getFullName}'")
+          }
+          createConverterToAvroFromInternalRow(field.dataType, avroField.schema())
+        }
+        (item: Any) => {
+          if (item == null) {
+            null
+          } else {
+            val record = new Record(resolvedSchema)
+            val row = item.asInstanceOf[InternalRow]
+            var i = 0
+            while (i < structType.length) {
+              if (row.isNullAt(i)) {
+                record.put(structType.fields(i).name, null)
+              } else {
+                record.put(
+                  structType.fields(i).name,
+                  fieldConverters(i)(row.get(i, structType.fields(i).dataType)))
+              }
+              i += 1
+            }
+            record
+          }
+        }
+      case other =>
+        throw new UnsupportedOperationException(
+          s"Cannot convert Spark type $other to Avro")
+    }
+  }
+
 }
 
 @InterfaceAudience.Private
 object AvroSerdes {
-  // We only handle top level is record or primary type now
+  // Handles top-level records, primitives, and nullable unions (e.g. ["null","int"])
   def serialize(input: Any, schema: Schema): Array[Byte] = {
     schema.getType match {
       case BOOLEAN => Bytes.toBytes(input.asInstanceOf[Boolean])
-      case BYTES | FIXED => input.asInstanceOf[Array[Byte]]
+      case BYTES | FIXED => input match {
+        case bytes: Array[Byte] => bytes
+        case buf: ByteBuffer =>
+          val arr = new Array[Byte](buf.remaining)
+          buf.get(arr)
+          arr
+      }
       case DOUBLE => Bytes.toBytes(input.asInstanceOf[Double])
       case FLOAT => Bytes.toBytes(input.asInstanceOf[Float])
       case INT => Bytes.toBytes(input.asInstanceOf[Int])
@@ -432,7 +572,17 @@ object AvroSerdes {
         val encoder2: BinaryEncoder = EncoderFactory.get().directBinaryEncoder(bao2, null)
         writer2.write(gr, encoder2)
         bao2.toByteArray()
-      case _ => throw new Exception(s"unsupported data type ${schema.getType}")
+      case UNION =>
+        val nonNull = schema.getTypes.asScala.filterNot(_.getType == NULL)
+        if (nonNull.size == 1) {
+          serialize(input, nonNull.head)
+        } else {
+          throw new UnsupportedOperationException(
+            s"Top-level union with more than one non-null branch is not supported: " +
+              s"${schema.getTypes.asScala.map(_.getType).mkString(", ")}")
+        }
+      case _ => throw new UnsupportedOperationException(
+        s"Unsupported Avro type for serialization: ${schema.getType}")
     }
   }
 
