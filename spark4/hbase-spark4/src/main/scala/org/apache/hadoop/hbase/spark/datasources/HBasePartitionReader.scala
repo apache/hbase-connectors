@@ -127,7 +127,7 @@ class HBasePartitionReader(
       } else {
         val cell = currentResult.getColumnLatestCell(
           Bytes.toBytes(field.cf), Bytes.toBytes(field.col))
-        if (cell == null || cell.getValueLength == 0) {
+        if (cell == null) {
           values(idx) = null
         } else {
           val v = CellUtil.cloneValue(cell)

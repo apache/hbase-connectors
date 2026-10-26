@@ -267,7 +267,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     val data = Seq(
       Row("wrow000", "Alice", "30", "50000"),
       Row("wrow001", "Bob", "25", "45000"),
-      Row("wrow002", "Carol", "35", "60000"))
+      Row("wrow002", "Carol", "35", "60000"),
+      Row("wrow003", "", "40", ""))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
 
     df.write
@@ -278,13 +279,15 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       .save()
 
     val result = loadWriteTable()
-    assert(result.count() == 3)
+    assert(result.count() == 4)
     val rows = result.orderBy("key").collect()
     assert(rows(0).getAs[String]("key") == "wrow000")
     assert(rows(0).getAs[String]("name") == "Alice")
     assert(rows(1).getAs[String]("key") == "wrow001")
     assert(rows(1).getAs[String]("age") == "25")
     assert(rows(2).getAs[String]("salary") == "60000")
+    assert(rows(3).getAs[String]("name") == "")
+    assert(rows(3).getAs[String]("salary") == "")
   }
 
   test("write preserves null columns") {
