@@ -226,9 +226,20 @@ case class HBaseRelation(
     val rdd = data.rdd
     def convertToPut(row: Row) = {
       // construct bytes for row key
-      val rowBytes = rkIdxedFields.map {
-        case (x, y) =>
-          Utils.toBytes(row(x), y)
+      val rowBytes = rkIdxedFields.zipWithIndex.map {
+        case ((x, field), index) =>
+          val bytes = Utils.toBytes(row(x), field)
+          if (field.length == -1 && field.dt == StringType) {
+            require(
+              !bytes.contains(HBaseTableCatalog.delimiter),
+              s"Row key column '${field.colName}' cannot contain the delimiter")
+            if (index < rkIdxedFields.length - 1) bytes :+ HBaseTableCatalog.delimiter else bytes
+          } else {
+            require(
+              field.length != -1 || index == rkIdxedFields.length - 1,
+              s"Variable-length row key column '${field.colName}' must be last or a string")
+            bytes
+          }
       }
       val rLen = rowBytes.foldLeft(0) {
         case (x, y) =>
@@ -285,17 +296,18 @@ case class HBaseRelation(
                 val pos = row.indexOf(HBaseTableCatalog.delimiter, idx)
                 if (pos == -1 || pos > row.length) {
                   // this is at the last dimension
-                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length)
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)
                   (row.length + 1, parsed ++ Seq((field, value)))
                 } else {
                   val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
-                  (pos, parsed ++ Seq((field, value)))
+                  (pos + 1, parsed ++ Seq((field, value)))
                 }
               // We don't know the length, assume it extends to the end of the rowkey.
               case _ =>
                 (
                   row.length + 1,
-                  parsed ++ Seq((field, Utils.hbaseFieldToScalaType(field, row, idx, row.length))))
+                  parsed ++ Seq(
+                    (field, Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx))))
             }
           }
         })
