@@ -312,7 +312,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       Row("ab", "c", 7, "tail", "first"),
       Row("a", "bc", 7, "tail", "second"),
       Row("", "x", 0, "末", "empty"),
-      Row("é", "猫", -1, "", "unicode"))
+      Row("é", "猫", -1, "", "unicode"),
+      Row("n", "k", 1, "tail\u0000part", "nul in final key"))
     spark
       .createDataFrame(spark.sparkContext.parallelize(data), schema)
       .write
@@ -327,8 +328,11 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     try {
       val firstKey = Bytes.toBytes("ab\u0000c\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
       val secondKey = Bytes.toBytes("a\u0000bc\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
+      val finalNulKey = Bytes.toBytes("n\u0000k\u0000") ++ Bytes.toBytes(1) ++
+        Bytes.toBytes("tail\u0000part")
       assert(!table.get(new Get(firstKey)).isEmpty)
       assert(!table.get(new Get(secondKey)).isEmpty)
+      assert(!table.get(new Get(finalNulKey)).isEmpty)
     } finally {
       table.close()
       connection.close()
@@ -347,6 +351,40 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       rows == data
         .map(r => (r.getString(0), r.getString(1), r.getInt(2), r.getString(3), r.getString(4)))
         .toSet)
+  }
+
+  test("write and read NUL in a single row key") {
+    val tableName = "test_single_key_with_nul"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val singleCatalog = s"""{
+      |"table":{"namespace":"default", "name":"$tableName"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+      |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+      |}
+      |}""".stripMargin
+    val key = "a\u0000b"
+    val schema = StructType(Seq(StructField("key", StringType), StructField("value", StringType)))
+    spark
+      .createDataFrame(spark.sparkContext.parallelize(Seq(Row(key, "value"))), schema)
+      .write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", singleCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val rows = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", singleCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .load()
+      .select("key", "value")
+      .collect()
+    assert(rows.length == 1)
+    assert(rows.head.getString(0) == key)
+    assert(rows.head.getString(1) == "value")
   }
 
   test("write preserves null columns") {

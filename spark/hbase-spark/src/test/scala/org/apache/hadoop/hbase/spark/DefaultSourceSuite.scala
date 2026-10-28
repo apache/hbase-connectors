@@ -1092,7 +1092,8 @@ class DefaultSourceSuite
       ("ab", "c", 7, "tail", "first"),
       ("a", "bc", 7, "tail", "second"),
       ("", "x", 0, "末", "empty"),
-      ("é", "猫", -1, "", "unicode"))
+      ("é", "猫", -1, "", "unicode"),
+      ("n", "k", 1, "tail\u0000part", "nul in final key"))
     sc.parallelize(data)
       .toDF("key1", "key2", "key3", "key4", "value")
       .write
@@ -1105,8 +1106,11 @@ class DefaultSourceSuite
     try {
       val firstKey = Bytes.toBytes("ab\u0000c\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
       val secondKey = Bytes.toBytes("a\u0000bc\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
+      val finalNulKey = Bytes.toBytes("n\u0000k\u0000") ++ Bytes.toBytes(1) ++
+        Bytes.toBytes("tail\u0000part")
       assert(!table.get(new Get(firstKey)).isEmpty)
       assert(!table.get(new Get(secondKey)).isEmpty)
+      assert(!table.get(new Get(finalNulKey)).isEmpty)
     } finally {
       table.close()
       connection.close()
@@ -1118,6 +1122,33 @@ class DefaultSourceSuite
       .map(r => (r.getString(0), r.getString(1), r.getInt(2), r.getString(3), r.getString(4)))
       .toSet
     assert(rows == data.toSet)
+  }
+
+  test("write and read NUL in a single row key") {
+    val tableName = "single_key_with_nul"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val catalog = s"""{
+                    |"table":{"namespace":"default", "name":"$tableName"},
+                    |"rowkey":"key",
+                    |"columns":{
+                    |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+                    |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+                    |}
+                    |}""".stripMargin
+    val sql = sqlContext
+    import sql.implicits._
+    val key = "a\u0000b"
+    sc.parallelize(Seq((key, "value")))
+      .toDF("key", "value")
+      .write
+      .options(Map(HBaseTableCatalog.tableCatalog -> catalog))
+      .format("org.apache.hadoop.hbase.spark")
+      .save()
+
+    val rows = withCatalog(catalog).select("key", "value").collect()
+    assert(rows.length == 1)
+    assert(rows.head.getString(0) == key)
+    assert(rows.head.getString(1) == "value")
   }
 
   test("empty column") {

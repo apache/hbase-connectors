@@ -114,11 +114,11 @@ class HBaseDataWriter(
       case ((idx, field), index) =>
         require(!record.isNullAt(idx), s"Row key column '${field.colName}' must not be null")
         val bytes = getValueBytes(record, idx, field)
-        if (field.length == -1 && field.dt == StringType) {
+        if (field.length == -1 && field.dt == StringType && index < rkIdxedFields.length - 1) {
           require(
             !bytes.contains(HBaseTableCatalog.delimiter),
             s"Row key column '${field.colName}' cannot contain the delimiter")
-          if (index < rkIdxedFields.length - 1) bytes :+ HBaseTableCatalog.delimiter else bytes
+          bytes :+ HBaseTableCatalog.delimiter
         } else {
           require(
             field.length != -1 || index == rkIdxedFields.length - 1,
