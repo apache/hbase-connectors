@@ -315,8 +315,9 @@ class HBasePartitionReader(
   }
 
   private def parseRowKey(row: Array[Byte], keyFields: Seq[Field]): Map[Field, Any] = {
-    keyFields
-      .foldLeft((0, Seq[(Field, Any)]())) { (state, field) =>
+    keyFields.zipWithIndex
+      .foldLeft((0, Seq[(Field, Any)]())) { (state, indexedField) =>
+        val (field, index) = indexedField
         val idx = state._1
         val parsed = state._2
         if (field.length != -1) {
@@ -325,7 +326,9 @@ class HBasePartitionReader(
         } else {
           field.dt match {
             case StringType =>
-              val pos = row.indexOf(HBaseTableCatalog.delimiter, idx)
+              val pos =
+                if (index == keyFields.length - 1) -1
+                else row.indexOf(HBaseTableCatalog.delimiter, idx)
               if (pos == -1 || pos > row.length) {
                 val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)
                 (row.length + 1, parsed :+ (field, value))

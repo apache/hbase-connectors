@@ -226,9 +226,20 @@ case class HBaseRelation(
     val rdd = data.rdd
     def convertToPut(row: Row) = {
       // construct bytes for row key
-      val rowBytes = rkIdxedFields.map {
-        case (x, y) =>
-          Utils.toBytes(row(x), y)
+      val rowBytes = rkIdxedFields.zipWithIndex.map {
+        case ((x, field), index) =>
+          val bytes = Utils.toBytes(row(x), field)
+          if (field.length == -1 && field.dt == StringType && index < rkIdxedFields.length - 1) {
+            require(
+              !bytes.contains(HBaseTableCatalog.delimiter),
+              s"Row key column '${field.colName}' cannot contain the delimiter")
+            bytes :+ HBaseTableCatalog.delimiter
+          } else {
+            require(
+              field.length != -1 || index == rkIdxedFields.length - 1,
+              s"Variable-length row key column '${field.colName}' must be last or a string")
+            bytes
+          }
       }
       val rLen = rowBytes.foldLeft(0) {
         case (x, y) =>
@@ -270,9 +281,10 @@ case class HBaseRelation(
    * @param keyFields all of the fields in the row key, ORDERED by their order in the row key.
    */
   def parseRowKey(row: Array[Byte], keyFields: Seq[Field]): Map[Field, Any] = {
-    keyFields
+    keyFields.zipWithIndex
       .foldLeft((0, Seq[(Field, Any)]()))(
-        (state, field) => {
+        (state, indexedField) => {
+          val (field, index) = indexedField
           val idx = state._1
           val parsed = state._2
           if (field.length != -1) {
@@ -282,20 +294,23 @@ case class HBaseRelation(
           } else {
             field.dt match {
               case StringType =>
-                val pos = row.indexOf(HBaseTableCatalog.delimiter, idx)
+                val pos =
+                  if (index == keyFields.length - 1) -1
+                  else row.indexOf(HBaseTableCatalog.delimiter, idx)
                 if (pos == -1 || pos > row.length) {
                   // this is at the last dimension
-                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length)
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)
                   (row.length + 1, parsed ++ Seq((field, value)))
                 } else {
                   val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
-                  (pos, parsed ++ Seq((field, value)))
+                  (pos + 1, parsed ++ Seq((field, value)))
                 }
               // We don't know the length, assume it extends to the end of the rowkey.
               case _ =>
                 (
                   row.length + 1,
-                  parsed ++ Seq((field, Utils.hbaseFieldToScalaType(field, row, idx, row.length))))
+                  parsed ++ Seq(
+                    (field, Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx))))
             }
           }
         })

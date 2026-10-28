@@ -110,10 +110,21 @@ class HBaseDataWriter(
   }
 
   private def buildRowKey(record: InternalRow): Array[Byte] = {
-    val rowBytes = rkIdxedFields.map { case (idx, field) =>
-      require(!record.isNullAt(idx),
-        s"Row key column '${field.colName}' must not be null")
-      getValueBytes(record, idx, field)
+    val rowBytes = rkIdxedFields.zipWithIndex.map {
+      case ((idx, field), index) =>
+        require(!record.isNullAt(idx), s"Row key column '${field.colName}' must not be null")
+        val bytes = getValueBytes(record, idx, field)
+        if (field.length == -1 && field.dt == StringType && index < rkIdxedFields.length - 1) {
+          require(
+            !bytes.contains(HBaseTableCatalog.delimiter),
+            s"Row key column '${field.colName}' cannot contain the delimiter")
+          bytes :+ HBaseTableCatalog.delimiter
+        } else {
+          require(
+            field.length != -1 || index == rkIdxedFields.length - 1,
+            s"Variable-length row key column '${field.colName}' must be last or a string")
+          bytes
+        }
     }
     val totalLen = rowBytes.foldLeft(0)(_ + _.length)
     val result = new Array[Byte](totalLen)

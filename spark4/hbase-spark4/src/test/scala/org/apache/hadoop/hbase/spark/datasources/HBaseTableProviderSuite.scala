@@ -28,7 +28,7 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.streaming.Trigger
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -285,6 +285,106 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     assert(rows(1).getAs[String]("key") == "wrow001")
     assert(rows(1).getAs[String]("age") == "25")
     assert(rows(2).getAs[String]("salary") == "60000")
+  }
+
+  test("write and read composite row keys with variable-length strings") {
+    val tableName = "test_composite_keys"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val compositeCatalog = s"""{
+      |"table":{"namespace":"default", "name":"$tableName"},
+      |"rowkey":"key1:key2:key3:key4",
+      |"columns":{
+      |"key1":{"cf":"rowkey", "col":"key1", "type":"string"},
+      |"key2":{"cf":"rowkey", "col":"key2", "type":"string"},
+      |"key3":{"cf":"rowkey", "col":"key3", "type":"int"},
+      |"key4":{"cf":"rowkey", "col":"key4", "type":"string"},
+      |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+      |}
+      |}""".stripMargin
+    val schema = StructType(
+      Seq(
+        StructField("key1", StringType),
+        StructField("key2", StringType),
+        StructField("key3", IntegerType),
+        StructField("key4", StringType),
+        StructField("value", StringType)))
+    val data = Seq(
+      Row("ab", "c", 7, "tail", "first"),
+      Row("a", "bc", 7, "tail", "second"),
+      Row("", "x", 0, "末", "empty"),
+      Row("é", "猫", -1, "", "unicode"),
+      Row("n", "k", 1, "tail\u0000part", "nul in final key"))
+    spark
+      .createDataFrame(spark.sparkContext.parallelize(data), schema)
+      .write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", compositeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+    val table = connection.getTable(TableName.valueOf(tableName))
+    try {
+      val firstKey = Bytes.toBytes("ab\u0000c\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
+      val secondKey = Bytes.toBytes("a\u0000bc\u0000") ++ Bytes.toBytes(7) ++ Bytes.toBytes("tail")
+      val finalNulKey = Bytes.toBytes("n\u0000k\u0000") ++ Bytes.toBytes(1) ++
+        Bytes.toBytes("tail\u0000part")
+      assert(!table.get(new Get(firstKey)).isEmpty)
+      assert(!table.get(new Get(secondKey)).isEmpty)
+      assert(!table.get(new Get(finalNulKey)).isEmpty)
+    } finally {
+      table.close()
+      connection.close()
+    }
+
+    val rows = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", compositeCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .load()
+      .select("key1", "key2", "key3", "key4", "value")
+      .collect()
+      .map(r => (r.getString(0), r.getString(1), r.getInt(2), r.getString(3), r.getString(4)))
+      .toSet
+    assert(
+      rows == data
+        .map(r => (r.getString(0), r.getString(1), r.getInt(2), r.getString(3), r.getString(4)))
+        .toSet)
+  }
+
+  test("write and read NUL in a single row key") {
+    val tableName = "test_single_key_with_nul"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val singleCatalog = s"""{
+      |"table":{"namespace":"default", "name":"$tableName"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+      |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+      |}
+      |}""".stripMargin
+    val key = "a\u0000b"
+    val schema = StructType(Seq(StructField("key", StringType), StructField("value", StringType)))
+    spark
+      .createDataFrame(spark.sparkContext.parallelize(Seq(Row(key, "value"))), schema)
+      .write
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", singleCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .mode("append")
+      .save()
+
+    val rows = spark.read
+      .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+      .option("catalog", singleCatalog)
+      .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+      .load()
+      .select("key", "value")
+      .collect()
+    assert(rows.length == 1)
+    assert(rows.head.getString(0) == key)
+    assert(rows.head.getString(1) == "value")
   }
 
   test("write preserves null columns") {
