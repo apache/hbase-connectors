@@ -22,3 +22,4 @@ Connectors for [Apache HBase&trade;](https://hbase.apache.org)
 
   * [Kafka Proxy](https://github.com/apache/hbase-connectors/tree/master/kafka)
   * [Spark](https://github.com/apache/hbase-connectors/tree/master/spark)
+  * [Python-Thrift2](https://github.com/apache/hbase-connectors/tree/master/thrift-python)
