@@ -493,7 +493,7 @@ case class HBaseRelation(
       superRowKeyFilter = new RowKeyFilter
     }
 
-    (superRowKeyFilter, superDynamicLogicExpression, queryValueArray)
+    (superRowKeyFilter.normalize(), superDynamicLogicExpression, queryValueArray)
   }
 
   /**
@@ -1140,6 +1140,31 @@ class RowKeyFilter(
         result = result || (upperBoundPass && lowerBoundPass)
       })
     result
+  }
+
+  // Normalize after the complete filter tree is built, before region pruning and Get batching.
+  def normalize(): RowKeyFilter = {
+    val normalizedRanges = new mutable.MutableList[ScanRange]()
+    ranges
+      .sortWith((left, right) => Bytes.compareTo(left.lowerBound, right.lowerBound) < 0)
+      .foreach {
+        range =>
+          normalizedRanges.lastOption match {
+            case Some(previous) =>
+              val cmp = previous.compareRange(previous.upperBound, range.lowerBound)
+              if (cmp > 0 ||
+                (cmp == 0 && (previous.isUpperBoundEqualTo || range.isLowerBoundEqualTo))) {
+                previous.mergeUnion(range)
+              } else {
+                normalizedRanges += range
+              }
+            case None => normalizedRanges += range
+          }
+      }
+    ranges = normalizedRanges
+    val seen = new java.util.TreeSet[Array[Byte]](Bytes.BYTES_COMPARATOR)
+    points = points.filter(p => seen.add(p) && !ranges.exists(_.containsPoint(p)))
+    this
   }
 
   /**

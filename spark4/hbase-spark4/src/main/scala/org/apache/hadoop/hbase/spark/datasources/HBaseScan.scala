@@ -74,7 +74,7 @@ class HBaseScan(
     if (superRowKeyFilter == null) {
       superRowKeyFilter = new RowKeyFilter
     }
-    superRowKeyFilter
+    superRowKeyFilter.normalize()
   }
 
   private def traverseFilterTree(

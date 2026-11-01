@@ -160,12 +160,12 @@ class HBasePartitionReader(
 
   private def buildScanner(range: Range): ResultScanner = {
     val scan = (range.lower, range.upper) match {
-      case (Some(Bound(a, _)), Some(upper)) =>
-        setStopRow(new Scan().withStartRow(a), upper)
+      case (Some(Bound(a, inc)), Some(upper)) =>
+        setStopRow(new Scan().withStartRow(a, inc), upper)
       case (None, Some(upper)) =>
         setStopRow(new Scan(), upper)
-      case (Some(Bound(a, _)), None) =>
-        new Scan().withStartRow(a)
+      case (Some(Bound(a, inc)), None) =>
+        new Scan().withStartRow(a, inc)
       case (None, None) =>
         new Scan()
     }
