@@ -165,8 +165,23 @@ class RowKeyFilter(
           }
       }
     ranges = normalizedRanges
+    val sortedRanges = ranges.toArray
+    def coveredByRange(point: Array[Byte]): Boolean = {
+      var low = 0
+      var high = sortedRanges.length
+      // Find the last range whose lower bound is at or before the point.
+      while (low < high) {
+        val mid = (low + high) >>> 1
+        if (Bytes.compareTo(sortedRanges(mid).lowerBound, point) <= 0) {
+          low = mid + 1
+        } else {
+          high = mid
+        }
+      }
+      low > 0 && sortedRanges(low - 1).containsPoint(point)
+    }
     val seen = new java.util.TreeSet[Array[Byte]](Bytes.BYTES_COMPARATOR)
-    points = points.filter(p => seen.add(p) && !ranges.exists(_.containsPoint(p)))
+    points = points.filter(p => seen.add(p) && !coveredByRange(p))
     this
   }
 

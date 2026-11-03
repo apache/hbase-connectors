@@ -335,6 +335,10 @@ class DefaultSourceSuite
         ("(key > 'm' AND key < 'z') OR key = 'm'", Seq("m", successor, "ma", "n")),
         ("key < 'b' OR key = 'z'", Seq("a", "z")),
         (
+          "key < 'b' OR (key > 'm' AND key < 'z') OR key = 'l' OR " +
+            "key = 'm' OR key = 'z' OR key = 'a'",
+          Seq("a", "l", "m", successor, "ma", "n", "z")),
+        (
           "(key >= 'a' AND key <= 'b') OR (key >= 'n' AND key <= 'z') OR " +
             "(key >= 'b' AND key <= 'n')",
           keys))

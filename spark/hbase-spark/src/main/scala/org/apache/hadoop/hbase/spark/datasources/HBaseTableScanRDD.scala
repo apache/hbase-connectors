@@ -185,7 +185,7 @@ class HBaseTableScanRDD(
     val scan = (range.lower, range.upper) match {
       case (Some(Bound(a, b)), Some(Bound(c, d))) =>
         new Scan().withStartRow(a, b).withStopRow(c, d)
-      case (None, Some(Bound(c, d))) => new Scan(Array[Byte](), c)
+      case (None, Some(Bound(c, d))) => new Scan().withStopRow(c, d)
       case (Some(Bound(a, b)), None) => new Scan().withStartRow(a, b)
       case (None, None) => new Scan()
     }

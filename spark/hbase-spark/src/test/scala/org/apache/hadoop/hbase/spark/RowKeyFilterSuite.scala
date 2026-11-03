@@ -66,6 +66,42 @@ class RowKeyFilterSuite extends FunSuite {
     }
   }
 
+  test("normalize preserves point order across disjoint ranges and gaps") {
+    for (lowerInclusive <- Seq(false, true); upperInclusive <- Seq(false, true)) {
+      val scans = Seq(
+        range("m", null, lowerInclusive, true),
+        range("a", "c", lowerInclusive, upperInclusive),
+        range("g", "i", lowerInclusive, upperInclusive))
+      val keys = Seq("z", "i", "0", "h", "m", "d", "b", "g", "c", "a", "l", "d", "0")
+      val expected = keys.distinct.filterNot(key => scans.exists(_.containsPoint(bytes(key))))
+      val result = filter(ranges = scans, points = keys.map(bytes)).normalize()
+      assert(result.points.map(Bytes.toString(_)).toSeq == expected)
+      val normalized = result.toString
+      assert(result.normalize().toString == normalized)
+    }
+  }
+
+  test("normalize checks at most one range per unique point") {
+    val count = 1024
+    var checks = 0
+    val scans = (0 until count).map {
+      i =>
+        new ScanRange(Bytes.toBytes(4 * i + 1), true, Bytes.toBytes(4 * i), true) {
+          override def containsPoint(point: Array[Byte]): Boolean = {
+            checks += 1
+            super.containsPoint(point)
+          }
+        }
+    }
+    val keys = (0 until count).reverse.map(i => Bytes.toBytes(4 * i + 2))
+    val result = filter(ranges = scans.reverse, points = keys ++ keys.map(_.clone())).normalize()
+    assert(result.ranges.size == count)
+    assert(result.points.size == count)
+    assert(
+      result.points.zip(keys).forall { case (actual, expected) => actual.sameElements(expected) })
+    assert(checks <= count, s"$checks range checks for $count unique points")
+  }
+
   test("normalize coalesces bridged ranges in every input order") {
     val bounds = Seq(("a", "c"), ("g", "i"), ("b", "h"))
     bounds.permutations.foreach {
