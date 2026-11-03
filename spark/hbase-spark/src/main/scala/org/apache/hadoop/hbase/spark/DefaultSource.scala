@@ -493,7 +493,7 @@ case class HBaseRelation(
       superRowKeyFilter = new RowKeyFilter
     }
 
-    (superRowKeyFilter, superDynamicLogicExpression, queryValueArray)
+    (superRowKeyFilter.normalize(), superDynamicLogicExpression, queryValueArray)
   }
 
   /**
@@ -1140,6 +1140,46 @@ class RowKeyFilter(
         result = result || (upperBoundPass && lowerBoundPass)
       })
     result
+  }
+
+  // Normalize after the complete filter tree is built, before region pruning and Get batching.
+  def normalize(): RowKeyFilter = {
+    val normalizedRanges = new mutable.MutableList[ScanRange]()
+    ranges
+      .sortWith((left, right) => Bytes.compareTo(left.lowerBound, right.lowerBound) < 0)
+      .foreach {
+        range =>
+          normalizedRanges.lastOption match {
+            case Some(previous) =>
+              val cmp = previous.compareRange(previous.upperBound, range.lowerBound)
+              if (cmp > 0 ||
+                (cmp == 0 && (previous.isUpperBoundEqualTo || range.isLowerBoundEqualTo))) {
+                previous.mergeUnion(range)
+              } else {
+                normalizedRanges += range
+              }
+            case None => normalizedRanges += range
+          }
+      }
+    ranges = normalizedRanges
+    val sortedRanges = ranges.toArray
+    def coveredByRange(point: Array[Byte]): Boolean = {
+      var low = 0
+      var high = sortedRanges.length
+      // Find the last range whose lower bound is at or before the point.
+      while (low < high) {
+        val mid = (low + high) >>> 1
+        if (Bytes.compareTo(sortedRanges(mid).lowerBound, point) <= 0) {
+          low = mid + 1
+        } else {
+          high = mid
+        }
+      }
+      low > 0 && sortedRanges(low - 1).containsPoint(point)
+    }
+    val seen = new java.util.TreeSet[Array[Byte]](Bytes.BYTES_COMPARATOR)
+    points = points.filter(p => seen.add(p) && !coveredByRange(p))
+    this
   }
 
   /**

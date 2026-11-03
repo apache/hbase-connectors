@@ -48,7 +48,8 @@ class HBaseTableScanRDD(
     } else {
       None
     }
-    val upper = if (r.upperBound != null && r.upperBound.length > 0) {
+    // Only null is unbounded; an empty upper key must not turn an empty range into a full scan.
+    val upper = if (r.upperBound != null) {
       if (!r.isUpperBoundEqualTo) {
         Some(Bound(r.upperBound, false))
       } else {
@@ -182,9 +183,10 @@ class HBaseTableScanRDD(
       filter: Option[SparkSQLPushDownFilter],
       columns: Seq[Field]): Scan = {
     val scan = (range.lower, range.upper) match {
-      case (Some(Bound(a, b)), Some(Bound(c, d))) => new Scan(a, c)
-      case (None, Some(Bound(c, d))) => new Scan(Array[Byte](), c)
-      case (Some(Bound(a, b)), None) => new Scan(a)
+      case (Some(Bound(a, b)), Some(Bound(c, d))) =>
+        new Scan().withStartRow(a, b).withStopRow(c, d)
+      case (None, Some(Bound(c, d))) => new Scan().withStopRow(c, d)
+      case (Some(Bound(a, b)), None) => new Scan().withStartRow(a, b)
       case (None, None) => new Scan()
     }
     handleTimeSemantics(scan)

@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.sources.{EqualTo, Or}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 import org.xml.sax.SAXParseException
 
@@ -291,6 +292,85 @@ class DefaultSourceSuite
 
   override def beforeEach(): Unit = {
     DefaultSourceStaticUtils.lastFiveExecutionRules.clear()
+  }
+
+  test("HBASE-30509 row-key unions read each row once across regions and Get batches") {
+
+    val rowKeyTable = TableName.valueOf("row_key_union")
+    val successor = "m" + 0.toChar
+    val table = TEST_UTIL.createTable(
+      rowKeyTable,
+      Bytes.toBytes(columnFamily),
+      Array(Bytes.toBytes("m"), Bytes.toBytes(successor)))
+    val keys = Seq("a", "b", "l", "m", successor, "ma", "n", "z")
+    try {
+      keys.foreach {
+        key =>
+          val put = new Put(Bytes.toBytes(key))
+          put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("value"), Bytes.toBytes("same"))
+          table.put(put)
+      }
+    } finally {
+      table.close()
+    }
+    try {
+      val rowKeyCatalog = s"""{
+        |"table":{"namespace":"default", "name":"${rowKeyTable.getNameAsString}"},
+        |"rowkey":"key",
+        |"columns":{
+        |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+        |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+        |}}""".stripMargin
+      val options =
+        Map(HBaseTableCatalog.tableCatalog -> rowKeyCatalog, HBaseSparkConf.BULKGET_SIZE -> "1")
+      val frame = sqlContext.read.options(options).format("org.apache.hadoop.hbase.spark").load()
+      val cases = Seq(
+        ("key < '' OR key = 'a'", Seq("a")),
+        ("key <= '' OR key = 'a'", Seq("a")),
+        ("key < 'm' OR key = 'a'", Seq("a", "b", "l")),
+        ("key = 'a' OR key < 'm'", Seq("a", "b", "l")),
+        ("key < 'm' OR key = 'm'", Seq("a", "b", "l", "m")),
+        ("key <= 'm' OR key = 'm'", Seq("a", "b", "l", "m")),
+        ("key > 'm' OR key = 'm'", Seq("m", successor, "ma", "n", "z")),
+        ("(key > 'm' AND key < 'z') OR key = 'm'", Seq("m", successor, "ma", "n")),
+        ("key < 'b' OR key = 'z'", Seq("a", "z")),
+        (
+          "key < 'b' OR (key > 'm' AND key < 'z') OR key = 'l' OR " +
+            "key = 'm' OR key = 'z' OR key = 'a'",
+          Seq("a", "l", "m", successor, "ma", "n", "z")),
+        (
+          "(key >= 'a' AND key <= 'b') OR (key >= 'n' AND key <= 'z') OR " +
+            "(key >= 'b' AND key <= 'n')",
+          keys))
+      cases.foreach {
+        case (predicate, expected) =>
+          val actual = frame.filter(predicate).select("key").collect().map(_.getString(0)).sorted
+          assert(actual.toSeq == expected, predicate)
+      }
+      val prefixBoundary = frame
+        .filter((frame("key") <= "m") || (frame("key") === successor))
+        .select("key")
+        .collect()
+        .map(_.getString(0))
+        .sorted
+      assert(prefixBoundary.toSeq == Seq("a", "b", "l", "m", successor))
+      val values = frame.filter("key < 'm' OR key = 'a'").select("value").collect()
+      assert(values.map(_.getString(0)).toSeq == Seq.fill(3)("same"))
+
+      // Pass repeated points directly so Catalyst cannot simplify them before Get batching.
+      val repeatedPoints = Or(
+        Or(Or(EqualTo("key", "a"), EqualTo("key", "b")), EqualTo("key", "a")),
+        EqualTo("key", "z"))
+      val relation = HBaseRelation(options, None)(sqlContext)
+      val actual = relation
+        .buildScan(Array("key", "value"), Array(repeatedPoints))
+        .collect()
+        .map(_.getString(0))
+        .sorted
+      assert(actual.toSeq == Seq("a", "b", "z"))
+    } finally {
+      TEST_UTIL.deleteTable(rowKeyTable)
+    }
   }
 
   /**
