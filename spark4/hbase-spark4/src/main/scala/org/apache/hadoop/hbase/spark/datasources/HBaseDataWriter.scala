@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.{Put, Table}
 import org.apache.hadoop.hbase.spark.{AvroSerdes, HBaseConnectionCache, Logging, SmartConnection}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.connector.write.{DataWriter, WriterCommitMessage}
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
@@ -136,8 +137,6 @@ class HBaseDataWriter(
     result
   }
 
-  private val MILLIS_PER_DAY = 86400000L
-
   private def getValueBytes(row: InternalRow, idx: Int, field: Field): Array[Byte] = {
     if (field.exeSchema.isDefined) {
       val value = field.dt match {
@@ -157,8 +156,11 @@ class HBaseDataWriter(
         case DoubleType => Bytes.toBytes(row.getDouble(idx))
         case StringType => Bytes.toBytes(row.getUTF8String(idx).toString)
         case BinaryType => row.getBinary(idx)
-        case DateType => Bytes.toBytes(row.getInt(idx).toLong * MILLIS_PER_DAY)
-        case TimestampType => Bytes.toBytes(row.getLong(idx) / 1000)
+        // Same millis as Spark 3's java.sql.Date/Timestamp.getTime, which the read path expects:
+        // local midnight for dates, and microseconds floored to milliseconds for timestamps.
+        case DateType => Bytes.toBytes(DateTimeUtils.toJavaDate(row.getInt(idx)).getTime)
+        case TimestampType =>
+          Bytes.toBytes(DateTimeUtils.toJavaTimestamp(row.getLong(idx)).getTime)
         case dt: DecimalType =>
           Bytes.toBytes(row.getDecimal(idx, dt.precision, dt.scale).toJavaBigDecimal)
         case _ => throw new UnsupportedOperationException(s"unsupported data type ${field.dt}")
