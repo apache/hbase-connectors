@@ -36,7 +36,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.yetus.audience.InterfaceAudience
@@ -470,7 +470,10 @@ object SchemaConverters {
         }
       case _: DecimalType => (item: Any) => if (item == null) null else item.toString
       case TimestampType =>
-        (item: Any) => if (item == null) null else item.asInstanceOf[Long] / 1000
+        // Match createConverterToAvro's Timestamp.getTime, which floors micros to millis.
+        (item: Any) =>
+          if (item == null) null
+          else DateTimeUtils.toJavaTimestamp(item.asInstanceOf[Long]).getTime
       case ArrayType(elementType, _) =>
         val elementConverter =
           createConverterToAvroFromInternalRow(elementType, resolvedSchema.getElementType)
