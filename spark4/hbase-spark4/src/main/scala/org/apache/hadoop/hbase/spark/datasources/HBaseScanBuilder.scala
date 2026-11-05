@@ -20,7 +20,7 @@ package org.apache.hadoop.hbase.spark.datasources
 import org.apache.hadoop.hbase.spark.Logging
 import org.apache.spark.sql.connector.read.{Scan, ScanBuilder, SupportsPushDownFilters, SupportsPushDownRequiredColumns}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable.ListBuffer
 
@@ -57,33 +57,25 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val hasCompositeRowKey = catalog.getRowKey.size > 1
 
-    def isSupported(f: Filter): Boolean = f match {
-      case EqualTo(attr, _) => isSupportedField(attr)
-      case LessThan(attr, _) => isSupportedField(attr)
-      case GreaterThan(attr, _) => isSupportedField(attr)
-      case LessThanOrEqual(attr, _) => isSupportedField(attr)
-      case GreaterThanOrEqual(attr, _) => isSupportedField(attr)
-      case StringStartsWith(attr, _) => isSupportedField(attr)
-      case IsNull(attr) => isSupportedField(attr)
-      case IsNotNull(attr) => isSupportedField(attr)
-      case Or(left, right) => isSupported(left) && isSupported(right)
-      case And(left, right) => isSupported(left) && isSupported(right)
-      case _ => false
-    }
-
-    def isSupportedField(attr: String): Boolean = {
-      catalog.sMap.map.get(attr) match {
-        case Some(field) => !(hasCompositeRowKey && field.isRowKey)
-        case None => false
-      }
-    }
+    def dataTypeOf(attr: String): Option[DataType] =
+      catalog.sMap.map
+        .get(attr)
+        .filter(
+          field =>
+            !(hasCompositeRowKey && field.isRowKey) &&
+              field.avroSchema.isEmpty && field.serdes.isEmpty)
+        .map(_.dt)
 
     val supported = new ListBuffer[Filter]()
     val unsupported = new ListBuffer[Filter]()
 
-    filters.foreach { f =>
-      if (isSupported(f)) supported += f
-      else unsupported += f
+    filters.foreach {
+      f =>
+        if (PredicatePushdownSupport.isSupported(
+            f,
+            dataTypeOf,
+            encoder.getClass == classOf[NaiveEncoder])) supported += f
+        else unsupported += f
     }
 
     _rowKeyFilters = supported.toArray
@@ -109,7 +101,13 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
   }
 
   override def build(): Scan = {
-    new HBaseScan(requiredSchema, properties, catalog, _pushedFilters, _rowKeyFilters,
-      encoderClsName, encoder)
+    new HBaseScan(
+      requiredSchema,
+      properties,
+      catalog,
+      _pushedFilters,
+      _rowKeyFilters,
+      encoderClsName,
+      encoder)
   }
 }

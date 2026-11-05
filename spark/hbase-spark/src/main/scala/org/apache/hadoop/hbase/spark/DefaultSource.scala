@@ -472,20 +472,34 @@ case class HBaseRelation(
     val queryValueList = new mutable.MutableList[Array[Byte]]
     var superDynamicLogicExpression: DynamicLogicExpression = null
 
-    filters.foreach(
-      f => {
-        val rowKeyFilter = new RowKeyFilter()
-        val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
-        if (superDynamicLogicExpression == null) {
-          superDynamicLogicExpression = logicExpression
-          superRowKeyFilter = rowKeyFilter
-        } else {
-          superDynamicLogicExpression =
-            new AndLogicExpression(superDynamicLogicExpression, logicExpression)
-          superRowKeyFilter.mergeIntersect(rowKeyFilter)
-        }
+    def dataTypeOf(attr: String): Option[org.apache.spark.sql.types.DataType] =
+      catalog.sMap.map
+        .get(attr)
+        .filter(
+          field =>
+            !(catalog.getRowKey.size > 1 && field.isRowKey) &&
+              field.avroSchema.isEmpty && field.serdes.isEmpty)
+        .map(_.dt)
 
-      })
+    // Reject before encoding or pruning: Spark's residual filter cannot restore excluded rows.
+    filters
+      .filter(
+        PredicatePushdownSupport
+          .isSupported(_, dataTypeOf, encoder.getClass == classOf[NaiveEncoder]))
+      .foreach(
+        f => {
+          val rowKeyFilter = new RowKeyFilter()
+          val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
+          if (superDynamicLogicExpression == null) {
+            superDynamicLogicExpression = logicExpression
+            superRowKeyFilter = rowKeyFilter
+          } else {
+            superDynamicLogicExpression =
+              new AndLogicExpression(superDynamicLogicExpression, logicExpression)
+            superRowKeyFilter.mergeIntersect(rowKeyFilter)
+          }
+
+        })
 
     val queryValueArray = queryValueList.toArray
 

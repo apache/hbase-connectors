@@ -34,15 +34,118 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
                     |}
                     |}""".stripMargin
 
-  val schema = StructType(Seq(
-    StructField("key", StringType),
-    StructField("name", StringType),
-    StructField("age", IntegerType),
-    StructField("salary", DoubleType)))
+  val schema = StructType(
+    Seq(
+      StructField("key", StringType),
+      StructField("name", StringType),
+      StructField("age", IntegerType),
+      StructField("salary", DoubleType)))
 
   val properties = Map(HBaseTableCatalog.tableCatalog -> catalog)
 
   private def newBuilder(): HBaseScanBuilder = new HBaseScanBuilder(schema, properties)
+
+  private def typedBuilder(dataType: String, pushDown: Boolean = true): HBaseScanBuilder = {
+    val typedCatalog = s"""{
+      |"table":{"namespace":"default", "name":"testtable"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"$dataType"},
+      |"value":{"cf":"cf", "col":"value", "type":"$dataType"}
+      |}}""".stripMargin
+    val options = Map(
+      HBaseTableCatalog.tableCatalog -> typedCatalog,
+      HBaseSparkConf.PUSHDOWN_COLUMN_FILTER -> pushDown.toString)
+    new HBaseScanBuilder(HBaseTableCatalog(options).toDataType, options)
+  }
+
+  test("HBASE-30510 unsafe comparisons remain residual for columns and row keys") {
+    val values = Seq[(String, Any)](
+      "byte" -> 1.toByte,
+      "date" -> java.sql.Date.valueOf("2026-01-01"),
+      "timestamp" -> java.sql.Timestamp.valueOf("2026-01-01 00:00:00.123456"),
+      "decimal(10,2)" -> new java.math.BigDecimal("1.00"),
+      "float" -> 0.0f,
+      "double" -> 0.0d)
+    for ((dataType, value) <- values; attr <- Seq("key", "value")) {
+      val filters = Array[Filter](
+        LessThan(attr, value),
+        LessThanOrEqual(attr, value),
+        GreaterThan(attr, value),
+        GreaterThanOrEqual(attr, value)) ++
+        (if (dataType == "byte") Array.empty[Filter] else Array[Filter](EqualTo(attr, value)))
+      val builder = typedBuilder(dataType)
+      assert(builder.pushFilters(filters).toSeq == filters.toSeq, s"$dataType $attr")
+      assert(builder.pushedFilters().isEmpty)
+      builder.build().toBatch
+    }
+  }
+
+  test("HBASE-30510 safe primitive comparisons still push down") {
+    val values = Seq[(String, Any)](
+      "boolean" -> true,
+      "short" -> 1.toShort,
+      "int" -> 1,
+      "long" -> 1L,
+      "string" -> "value",
+      "binary" -> Array[Byte](1, 2))
+    for ((dataType, value) <- values) {
+      val builder = typedBuilder(dataType)
+      val filters = Array[Filter](EqualTo("value", value), GreaterThan("value", value))
+      assert(builder.pushFilters(filters).isEmpty, dataType)
+      assert(builder.pushedFilters().toSeq == filters.toSeq)
+    }
+    val builder = typedBuilder("byte")
+    assert(builder.pushFilters(Array(EqualTo("key", 1.toByte))).isEmpty)
+  }
+
+  test("HBASE-30510 mixed compound filters are returned intact to Spark") {
+    val safe = EqualTo("key", "row001")
+    val unsafe = GreaterThan("salary", 0.0d)
+    for (compound <- Seq(And(safe, unsafe), Or(safe, unsafe), Or(And(safe, unsafe), safe))) {
+      val builder = newBuilder()
+      assert(builder.pushFilters(Array(compound, safe)).toSeq == Seq(compound))
+      assert(builder.pushedFilters().toSeq == Seq(safe))
+    }
+  }
+
+  test("HBASE-30510 invalid literals and prefix types are not encoded") {
+    val filters = Array[Filter](
+      EqualTo("age", 1L),
+      GreaterThan("age", 1L),
+      EqualTo("name", null),
+      GreaterThan("name", null),
+      StringStartsWith("age", "1"))
+    val builder = newBuilder()
+    assert(builder.pushFilters(filters).toSeq == filters.toSeq)
+    assert(builder.pushedFilters().isEmpty)
+  }
+
+  test("HBASE-30510 null checks do not require comparison encoding") {
+    val builder = typedBuilder("timestamp")
+    val filters = Array[Filter](IsNull("value"), IsNotNull("value"))
+    assert(builder.pushFilters(filters).isEmpty)
+    assert(builder.pushedFilters().toSeq == filters.toSeq)
+  }
+
+  test("HBASE-30510 Avro primitive comparisons are left to Spark") {
+    val avroCatalog = catalog.replace("\"type\":\"int\"", "\"avro\":\"intSchema\"")
+    val options = Map(HBaseTableCatalog.tableCatalog -> avroCatalog, "intSchema" -> "\"int\"")
+    val builder = new HBaseScanBuilder(HBaseTableCatalog(options).toDataType, options)
+    val filters = Array[Filter](EqualTo("age", 1), GreaterThan("age", 1))
+    assert(builder.pushFilters(filters).toSeq == filters.toSeq)
+    assert(builder.pushedFilters().isEmpty)
+  }
+
+  test("HBASE-30510 unknown encoder capabilities do not prune row keys") {
+    val options = properties +
+      (HBaseSparkConf.QUERY_ENCODER -> classOf[UnverifiedQueryEncoder].getName)
+    val builder = new HBaseScanBuilder(schema, options)
+    val filter = GreaterThan("key", "row001")
+    assert(builder.pushFilters(Array(filter)).toSeq == Seq(filter))
+    assert(builder.pushedFilters().isEmpty)
+    builder.build().toBatch
+  }
 
   test("EqualTo on known column is pushed") {
     val builder = newBuilder()
@@ -61,7 +164,7 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
 
   test("GreaterThan on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(GreaterThan("salary", 50000.0)))
+    val unsupported = builder.pushFilters(Array(GreaterThan("age", 30)))
     assert(unsupported.isEmpty)
     assert(builder.pushedFilters().length == 1)
   }
@@ -126,10 +229,8 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
 
   test("mixed supported and unsupported filters are separated") {
     val builder = newBuilder()
-    val filters = Array[Filter](
-      EqualTo("name", "Alice"),
-      EqualTo("unknown", "value"),
-      GreaterThan("age", 20))
+    val filters =
+      Array[Filter](EqualTo("name", "Alice"), EqualTo("unknown", "value"), GreaterThan("age", 20))
     val unsupported = builder.pushFilters(filters)
     assert(unsupported.length == 1)
     assert(unsupported(0) == EqualTo("unknown", "value"))
@@ -158,4 +259,12 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
     builder.pushFilters(Array(GreaterThan("age", 20), LessThan("age", 40)))
     assert(builder.pushedFilters().length == 2)
   }
+}
+
+class UnverifiedQueryEncoder extends NaiveEncoder {
+  override def encode(dt: DataType, value: Any): Array[Byte] =
+    throw new AssertionError("Unverified encoder must not encode a pushed comparison")
+
+  override def ranges(value: Any): Option[BoundRanges] =
+    throw new AssertionError("Unverified encoder must not prune row keys")
 }

@@ -22,12 +22,13 @@ import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Get, Put}
-import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog}
+import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog, Utils}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.sources.{EqualTo, Or}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 import org.xml.sax.SAXParseException
 
@@ -1534,4 +1535,182 @@ class DefaultSourceSuite
       case _: NullPointerException => fail("Unexpected NPE thrown")
     }
   }
+
+  private def checkTypeAwarePredicates(
+      name: String,
+      dataType: String,
+      values: Seq[Any],
+      predicates: Seq[String],
+      rowKey: Boolean,
+      avro: Boolean = false): Unit = {
+    val testTable = TableName.valueOf(s"type_aware_${name}_${if (rowKey) "key" else "column"}")
+    val valueType = if (avro) "\"avro\":\"valueSchema\"" else s""""type":"$dataType""""
+    val valueFamily = if (rowKey) "rowkey" else columnFamily
+    val rowKeyName = if (rowKey) "value" else "key"
+    val keyColumn = if (rowKey) "" else """"key":{"cf":"rowkey", "col":"key", "type":"string"},"""
+    val json = s"""{
+      |"table":{"namespace":"default", "name":"${testTable.getNameAsString}"},
+      |"rowkey":"$rowKeyName",
+      |"columns":{
+      |$keyColumn
+      |"value":{"cf":"$valueFamily", "col":"value", $valueType},
+      |"id":{"cf":"$columnFamily", "col":"id", "type":"string"},
+      |"safe":{"cf":"$columnFamily", "col":"safe", "type":"int"}
+      |}}""".stripMargin
+    val options = Map(
+      HBaseTableCatalog.tableCatalog -> json,
+      "valueSchema" -> """{"type":"record","name":"TypeAwareValue","fields":[{"name":"number","type":"int"}]}""")
+    new HBaseContext(sc, TEST_UTIL.getConfiguration)
+    val field = HBaseTableCatalog(options).getField("value")
+    val testValues = if (rowKey) values else values :+ null
+    val rows = testValues.zipWithIndex.map { case (value, i) => Row(value, s"id$i", i) }
+    val expectedSchema = StructType(
+      Seq(
+        StructField("value", field.dt),
+        StructField("id", StringType),
+        StructField("safe", IntegerType)))
+    // Materialized input prevents the reference predicates from reaching the connector.
+    val reference = sqlContext.createDataFrame(sc.parallelize(rows), expectedSchema)
+    val table = TEST_UTIL.createTable(testTable, Bytes.toBytes(columnFamily))
+    try {
+      rows.foreach {
+        row =>
+          val index = row.getInt(2)
+          val key = if (rowKey) Utils.toBytes(row.get(0), field) else Bytes.toBytes(s"key$index")
+          val put = new Put(key)
+          put.addColumn(
+            Bytes.toBytes(columnFamily),
+            Bytes.toBytes("id"),
+            Bytes.toBytes(row.getString(1)))
+          put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("safe"), Bytes.toBytes(index))
+          if (!rowKey && !row.isNullAt(0)) {
+            put.addColumn(
+              Bytes.toBytes(columnFamily),
+              Bytes.toBytes("value"),
+              Utils.toBytes(row.get(0), field))
+          }
+          table.put(put)
+      }
+      val combined = predicates ++ Seq(
+        s"(${predicates.head}) AND safe >= 1",
+        s"(${predicates.head}) OR safe = 0",
+        s"((${predicates.head}) OR safe = 0) AND safe < 4") ++
+        (if (rowKey) Seq.empty else Seq("value IS NULL", "value IS NOT NULL"))
+      combined.foreach {
+        predicate =>
+          val expected =
+            reference.filter(predicate).select("id").collect().map(_.getString(0)).sorted.toSeq
+          for (enabled <- Seq(true, false)) {
+            val actual = sqlContext.read
+              .format("org.apache.hadoop.hbase.spark")
+              .options(options)
+              .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+              .load()
+              .filter(predicate)
+              .select("id")
+              .collect()
+              .map(_.getString(0))
+              .sorted
+              .toSeq
+            assert(
+              actual == expected,
+              s"$name rowKey=$rowKey pushdown=$enabled predicate=$predicate")
+          }
+      }
+    } finally {
+      table.close()
+      TEST_UTIL.deleteTable(testTable)
+    }
+  }
+
+  for (rowKey <- Seq(false, true)) {
+    test(s"HBASE-30510 byte comparisons match Spark, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "byte",
+        "byte",
+        Seq(Byte.MinValue, -1.toByte, 0.toByte, 1.toByte, 2.toByte, Byte.MaxValue),
+        Seq("value < 0", "value <= 1", "value > 1", "value >= 127", "value = 2"),
+        rowKey)
+    }
+    test(s"HBASE-30510 date comparisons match Spark, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "date",
+        "date",
+        Seq("1969-12-31", "1970-01-01", "2026-01-01").map(java.sql.Date.valueOf),
+        Seq("value < DATE '1970-01-01'", "value >= DATE '2026-01-01'", "value = DATE '2026-01-01'"),
+        rowKey)
+    }
+    test(s"HBASE-30510 timestamp comparisons match Spark, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "timestamp",
+        "timestamp",
+        Seq("1969-12-31 23:59:59.999", "1970-01-01 00:00:00", "2026-01-01 00:00:00.123")
+          .map(java.sql.Timestamp.valueOf),
+        Seq(
+          "value < TIMESTAMP '1970-01-01 00:00:00'",
+          "value > TIMESTAMP '2026-01-01 00:00:00.122999'",
+          "value <= TIMESTAMP '2026-01-01 00:00:00.123'",
+          "value = TIMESTAMP '2026-01-01 00:00:00.123456'"),
+        rowKey)
+    }
+    test(s"HBASE-30510 decimal comparisons match Spark, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "decimal",
+        "decimal(10,2)",
+        Seq("-2.00", "0.00", "1.0", "1.00", "2.00").map(new java.math.BigDecimal(_)),
+        Seq("value < 0", "value > 1", "value >= 1", "value = 1.00"),
+        rowKey)
+    }
+    test(s"HBASE-30510 floating point comparisons match Spark, rowKey=$rowKey") {
+      val doubles = Seq(
+        Double.NegativeInfinity,
+        -1.0d,
+        -0.0d,
+        0.0d,
+        1.0d,
+        Double.PositiveInfinity,
+        Double.NaN,
+        java.lang.Double.longBitsToDouble(0x7ff8000000000001L))
+      val floats = Seq(
+        Float.NegativeInfinity,
+        -1.0f,
+        -0.0f,
+        0.0f,
+        1.0f,
+        Float.PositiveInfinity,
+        Float.NaN,
+        java.lang.Float.intBitsToFloat(0x7fc00001))
+      for ((name, values) <- Seq[(String, Seq[Any])]("double" -> doubles, "float" -> floats)) {
+        checkTypeAwarePredicates(
+          name,
+          name,
+          values,
+          Seq(
+            "value >= 0",
+            "value = 0",
+            s"value > CAST('Infinity' AS $name)",
+            s"value = CAST('NaN' AS $name)"),
+          rowKey)
+      }
+    }
+    test(s"HBASE-30510 safe integer ranges remain correct, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "int",
+        "int",
+        Seq(Int.MinValue, -1, 0, 1, 2, Int.MaxValue),
+        Seq("value < 0", "value <= 1", "value > 1", "value >= 2147483647", "value = -1"),
+        rowKey)
+    }
+  }
+
+  test("HBASE-30510 Avro record comparisons use Spark evaluation") {
+    checkTypeAwarePredicates(
+      "avro",
+      "struct<number:int>",
+      Seq(Row(-2), Row(0), Row(2)),
+      Seq("value > named_struct('number', 0)", "value = named_struct('number', 2)"),
+      rowKey = false,
+      avro = true)
+  }
+
 }
