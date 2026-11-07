@@ -34,12 +34,11 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
                     |}
                     |}""".stripMargin
 
-  val schema = StructType(
-    Seq(
-      StructField("key", StringType),
-      StructField("name", StringType),
-      StructField("age", IntegerType),
-      StructField("salary", DoubleType)))
+  val schema = StructType(Seq(
+    StructField("key", StringType),
+    StructField("name", StringType),
+    StructField("age", IntegerType),
+    StructField("salary", DoubleType)))
 
   val properties = Map(HBaseTableCatalog.tableCatalog -> catalog)
 
@@ -229,8 +228,10 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
 
   test("mixed supported and unsupported filters are separated") {
     val builder = newBuilder()
-    val filters =
-      Array[Filter](EqualTo("name", "Alice"), EqualTo("unknown", "value"), GreaterThan("age", 20))
+    val filters = Array[Filter](
+      EqualTo("name", "Alice"),
+      EqualTo("unknown", "value"),
+      GreaterThan("age", 20))
     val unsupported = builder.pushFilters(filters)
     assert(unsupported.length == 1)
     assert(unsupported(0) == EqualTo("unknown", "value"))
@@ -250,6 +251,17 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
     builder.pruneColumns(pruned)
     val scan = builder.build()
     assert(scan.readSchema() == pruned)
+  }
+
+  test("NULL checks are detected inside residual filter trees") {
+    val mixed = Or(GreaterThan("age", 1.toByte), IsNull("name"))
+    assert(PredicatePushdownSupport.containsNullCheck(mixed))
+    assert(PredicatePushdownSupport.containsNullCheck(Not(IsNotNull("name"))))
+    assert(PredicatePushdownSupport.containsNullCheck(Not(EqualNullSafe("name", "Alice"))))
+    assert(PredicatePushdownSupport.containsNullCheck(And(EqualTo("key", "row001"), mixed)))
+    assert(
+      !PredicatePushdownSupport.containsNullCheck(
+        And(EqualTo("key", "row001"), GreaterThan("age", 20))))
   }
 
   test("multiple pushFilters calls replace previous filters") {

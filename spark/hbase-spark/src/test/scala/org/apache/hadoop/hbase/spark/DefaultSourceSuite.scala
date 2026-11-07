@@ -90,6 +90,7 @@ class DefaultSourceSuite
     with BeforeAndAfterAll
     with Logging {
   @transient var sc: SparkContext = null
+  private var suiteHBaseContext: HBaseContext = _
   var TEST_UTIL: HBaseTestingUtility = new HBaseTestingUtility
 
   val t1TableName = "t1"
@@ -257,7 +258,7 @@ class DefaultSourceSuite
             |}
           |}""".stripMargin
 
-    new HBaseContext(sc, TEST_UTIL.getConfiguration)
+    suiteHBaseContext = new HBaseContext(sc, TEST_UTIL.getConfiguration)
     sqlContext = new SQLContext(sc)
 
     df = sqlContext.load(
@@ -1542,9 +1543,10 @@ class DefaultSourceSuite
       values: Seq[Any],
       predicates: Seq[String],
       rowKey: Boolean,
-      avro: Boolean = false): Unit = {
+      avroSchema: Option[String] = None): Unit = {
     val testTable = TableName.valueOf(s"type_aware_${name}_${if (rowKey) "key" else "column"}")
-    val valueType = if (avro) "\"avro\":\"valueSchema\"" else s""""type":"$dataType""""
+    val valueType =
+      if (avroSchema.isDefined) "\"avro\":\"valueSchema\"" else s""""type":"$dataType""""
     val valueFamily = if (rowKey) "rowkey" else columnFamily
     val rowKeyName = if (rowKey) "value" else "key"
     val keyColumn = if (rowKey) "" else """"key":{"cf":"rowkey", "col":"key", "type":"string"},"""
@@ -1557,10 +1559,9 @@ class DefaultSourceSuite
       |"id":{"cf":"$columnFamily", "col":"id", "type":"string"},
       |"safe":{"cf":"$columnFamily", "col":"safe", "type":"int"}
       |}}""".stripMargin
-    val options = Map(
-      HBaseTableCatalog.tableCatalog -> json,
-      "valueSchema" -> """{"type":"record","name":"TypeAwareValue","fields":[{"name":"number","type":"int"}]}""")
-    new HBaseContext(sc, TEST_UTIL.getConfiguration)
+    val options =
+      Map(HBaseTableCatalog.tableCatalog -> json, "valueSchema" -> avroSchema.getOrElse(""))
+    LatestHBaseContextCache.latest = suiteHBaseContext
     val field = HBaseTableCatalog(options).getField("value")
     val testValues = if (rowKey) values else values :+ null
     val rows = testValues.zipWithIndex.map { case (value, i) => Row(value, s"id$i", i) }
@@ -1710,7 +1711,78 @@ class DefaultSourceSuite
       Seq(Row(-2), Row(0), Row(2)),
       Seq("value > named_struct('number', 0)", "value = named_struct('number', 2)"),
       rowKey = false,
-      avro = true)
+      avroSchema = Some(
+        """{"type":"record","name":"TypeAwareValue","fields":[{"name":"number","type":"int"}]}"""))
+  }
+
+  for (rowKey <- Seq(false, true)) {
+    test(s"HBASE-30510 primitive Avro comparisons use Spark evaluation, rowKey=$rowKey") {
+      checkTypeAwarePredicates(
+        "avro_int",
+        "int",
+        Seq(-2, 0, 2, 100),
+        Seq("value > 0", "value = 100", "value < 0", "value = 1"),
+        rowKey = rowKey,
+        avroSchema = Some("\"int\""))
+    }
+  }
+
+  test("HBASE-30510 residual NULL predicates preserve sparse rows") {
+    val testTable = TableName.valueOf("type_aware_sparse_null")
+    val json = s"""{
+      |"table":{"namespace":"default", "name":"${testTable.getNameAsString}"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+      |"b":{"cf":"$columnFamily", "col":"b", "type":"byte"},
+      |"s":{"cf":"$columnFamily", "col":"s", "type":"string"}
+      |}}""".stripMargin
+    val options = Map(HBaseTableCatalog.tableCatalog -> json)
+    LatestHBaseContextCache.latest = suiteHBaseContext
+    val table = TEST_UTIL.createTable(testTable, Bytes.toBytes(columnFamily))
+    try {
+      // This row exists only through a qualifier absent from the catalog and projection.
+      val sparse = new Put(Bytes.toBytes("a"))
+      sparse.addColumn(
+        Bytes.toBytes(columnFamily),
+        Bytes.toBytes("unmapped"),
+        Bytes.toBytes("exists"))
+      table.put(sparse)
+      for ((key, value) <- Seq("b" -> 2.toByte, "c" -> 0.toByte)) {
+        val put = new Put(Bytes.toBytes(key))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("b"), Array(value))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("s"), Bytes.toBytes("present"))
+        table.put(put)
+      }
+      val predicates = Seq(
+        "b > 1 OR s IS NULL" -> Seq("a", "b"),
+        "b > 1 OR NOT (s IS NOT NULL)" -> Seq("a", "b"),
+        "NOT (s <=> 'present')" -> Seq("a"),
+        "s <=> NULL" -> Seq("a"),
+        "s IS NULL" -> Seq("a"),
+        "s IS NOT NULL" -> Seq("b", "c"),
+        "key = 'a' AND (b > 1 OR s IS NULL)" -> Seq("a"),
+        "key = 'a' AND NOT (s <=> 'present')" -> Seq("a"),
+        "key = 'b' AND (b > 1 OR s IS NULL)" -> Seq("b"),
+        "s IS NULL OR key = 'c'" -> Seq("a", "c"))
+      for ((predicate, expected) <- predicates; enabled <- Seq(true, false)) {
+        val actual = sqlContext.read
+          .format("org.apache.hadoop.hbase.spark")
+          .options(options)
+          .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+          .load()
+          .filter(predicate)
+          .select("key")
+          .collect()
+          .map(_.getString(0))
+          .sorted
+          .toSeq
+        assert(actual == expected, s"pushdown=$enabled predicate=$predicate")
+      }
+    } finally {
+      table.close()
+      TEST_UTIL.deleteTable(testTable)
+    }
   }
 
 }

@@ -359,6 +359,7 @@ case class HBaseRelation(
    */
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
 
+    val hasNullCheck = filters.exists(PredicatePushdownSupport.containsNullCheck)
     val pushDownTuple = buildPushDownPredicatesResource(filters)
     val pushDownRowKeyFilter = pushDownTuple._1
     var pushDownDynamicLogicExpression = pushDownTuple._2
@@ -429,7 +430,8 @@ case class HBaseRelation(
       this,
       hbaseContext,
       pushDownFilterJava,
-      requiredQualifierDefinitionList.seq)
+      requiredQualifierDefinitionList.seq,
+      hasNullCheck)
     pushDownRowKeyFilter.points.foreach(hRdd.addPoint(_))
     pushDownRowKeyFilter.ranges.foreach(hRdd.addRange(_))
 
@@ -452,7 +454,9 @@ case class HBaseRelation(
       scan.setCacheBlocks(blockCacheEnable)
       scan.setBatch(batchNum)
       scan.setCaching(cacheSize)
-      requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
+      if (!hasNullCheck) {
+        requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
+      }
 
       val rdd = hbaseContext
         .hbaseRDD(TableName.valueOf(tableName), scan)

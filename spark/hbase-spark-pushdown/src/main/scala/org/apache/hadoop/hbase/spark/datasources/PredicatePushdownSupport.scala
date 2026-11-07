@@ -24,6 +24,16 @@ import org.apache.yetus.audience.InterfaceAudience
 @InterfaceAudience.Private
 private[spark] object PredicatePushdownSupport {
 
+  // Inspect the original filters, including residual predicates. Restricting a Scan/Get to
+  // requested qualifiers can hide rows whose only cells are in other columns.
+  def containsNullCheck(filter: Filter): Boolean = filter match {
+    case IsNull(_) | IsNotNull(_) | EqualNullSafe(_, _) => true
+    case And(left, right) => containsNullCheck(left) || containsNullCheck(right)
+    case Or(left, right) => containsNullCheck(left) || containsNullCheck(right)
+    case Not(child) => containsNullCheck(child)
+    case _ => false
+  }
+
   def isSupported(
       filter: Filter,
       dataTypeOf: String => Option[DataType],
@@ -43,6 +53,8 @@ private[spark] object PredicatePushdownSupport {
       }
     }
 
+    // Only the exact built-in NaiveEncoder has validated comparison tags and row-key ranges.
+    // Subclasses and custom encoders may override either operation, so their ranges stay in Spark.
     // Byte has no comparison tag, and its ranges do not split signed values at zero.
     def supportsRange(attr: String, value: Any): Boolean =
       isNaiveEncoder && hasSafeLiteral(attr, value) && !dataTypeOf(attr).contains(ByteType)
