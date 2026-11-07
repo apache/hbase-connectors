@@ -33,7 +33,8 @@ class HBaseTableScanRDD(
     relation: HBaseRelation,
     val hbaseContext: HBaseContext,
     @transient val filter: Option[SparkSQLPushDownFilter] = None,
-    val columns: Seq[Field] = Seq.empty)
+    val columns: Seq[Field] = Seq.empty,
+    hasNullCheck: Boolean = false)
     extends RDD[Result](relation.sqlContext.sparkContext, Nil) {
   private def sparkConf = SparkEnv.get.conf
   @transient var ranges = Seq.empty[Range]
@@ -136,7 +137,7 @@ class HBaseTableScanRDD(
               handleTimeSemantics(g)
               columns.foreach {
                 d =>
-                  if (!d.isRowKey) {
+                  if (!hasNullCheck && !d.isRowKey) {
                     g.addColumn(d.cfBytes, d.colBytes)
                   }
               }
@@ -193,12 +194,13 @@ class HBaseTableScanRDD(
 
     columns.foreach {
       d =>
-        if (!d.isRowKey) {
+        if (!hasNullCheck && !d.isRowKey) {
           scan.addColumn(d.cfBytes, d.colBytes)
         }
     }
     scan.setCacheBlocks(relation.blockCacheEnable)
-    scan.setBatch(relation.batchNum)
+    // Cell batches would expose incomplete rows to NULL predicates.
+    if (!hasNullCheck) scan.setBatch(relation.batchNum)
     scan.setCaching(relation.cacheSize)
     filter.foreach(scan.setFilter(_))
     scan

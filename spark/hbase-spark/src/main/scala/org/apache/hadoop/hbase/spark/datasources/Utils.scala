@@ -18,6 +18,8 @@
 package org.apache.hadoop.hbase.spark.datasources
 
 import java.sql.{Date, Timestamp}
+import org.apache.avro.Schema
+import org.apache.avro.Schema.Type._
 import org.apache.hadoop.hbase.spark.AvroSerdes
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.types._
@@ -27,13 +29,27 @@ import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Private
 object Utils {
 
+  // AvroSerdes writes top-level primitives as raw HBase bytes, without Avro framing.
+  // Spark 4 also unwraps nullable top-level unions before writing those bytes.
+  private def usesRawAvroEncoding(schema: Schema): Boolean = schema.getType match {
+    case BOOLEAN | BYTES | FIXED | DOUBLE | FLOAT | INT | LONG | STRING => true
+    case UNION =>
+      val types = schema.getTypes
+      if (types.size() == 2 && types.get(0).getType == NULL)
+        usesRawAvroEncoding(types.get(1))
+      else if (types.size() == 2 && types.get(1).getType == NULL)
+        usesRawAvroEncoding(types.get(0))
+      else false
+    case _ => false
+  }
+
   /**
    * Parses the hbase field to it's corresponding
    * scala type which can then be put into a Spark GenericRow
    * which is then automatically converted by Spark.
    */
   def hbaseFieldToScalaType(f: Field, src: Array[Byte], offset: Int, length: Int): Any = {
-    if (f.exeSchema.isDefined) {
+    if (f.exeSchema.exists(schema => !usesRawAvroEncoding(schema))) {
       // If we have avro schema defined, use it to get record, and then convert them to catalyst data type
       val m = AvroSerdes.deserialize(src, f.exeSchema.get)
       val n = f.avroToCatalyst.map(_(m))

@@ -60,7 +60,8 @@ class HBasePartitionReader(
     pushedFilters: Array[Filter],
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
-    wrappedConf: SerializableConfiguration)
+    wrappedConf: SerializableConfiguration,
+    hasNullCheck: Boolean)
     extends PartitionReader[InternalRow]
     with Logging {
 
@@ -73,7 +74,6 @@ class HBasePartitionReader(
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
   private val scanFields = (requiredFields ++ filterFields).distinct.filterNot(_.isRowKey)
-  private val hasNullCheck = pushedFilters.exists(containsNullCheck)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
 
   private val bulkGetSize = properties
@@ -174,8 +174,10 @@ class HBasePartitionReader(
     properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach { rows =>
       if (rows > 0) scan.setCaching(rows)
     }
-    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach { batch =>
-      if (batch > 0) scan.setBatch(batch)
+    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach {
+      batch =>
+        // Cell batches would expose incomplete rows to NULL predicates.
+        if (batch > 0 && !hasNullCheck) scan.setBatch(batch)
     }
     handleTimeSemantics(scan)
 
@@ -454,13 +456,5 @@ class HBasePartitionReader(
       result = if (result == null) expr else new AndLogicExpression(result, expr)
     }
     result
-  }
-
-  private def containsNullCheck(f: Filter): Boolean = f match {
-    case IsNull(_) => true
-    case IsNotNull(_) => true
-    case And(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case Or(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case _ => false
   }
 }
