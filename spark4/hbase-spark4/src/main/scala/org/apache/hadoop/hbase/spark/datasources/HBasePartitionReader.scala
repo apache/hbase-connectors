@@ -174,8 +174,10 @@ class HBasePartitionReader(
     properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach { rows =>
       if (rows > 0) scan.setCaching(rows)
     }
-    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach { batch =>
-      if (batch > 0) scan.setBatch(batch)
+    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach {
+      batch =>
+        // Cell batches would expose incomplete rows to NULL predicates.
+        if (batch > 0 && !hasNullCheck) scan.setBatch(batch)
     }
     handleTimeSemantics(scan)
 

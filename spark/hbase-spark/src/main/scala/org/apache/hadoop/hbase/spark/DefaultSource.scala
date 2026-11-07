@@ -452,9 +452,9 @@ case class HBaseRelation(
     if (resultRDD == null) {
       val scan = new Scan()
       scan.setCacheBlocks(blockCacheEnable)
-      scan.setBatch(batchNum)
       scan.setCaching(cacheSize)
       if (!hasNullCheck) {
+        scan.setBatch(batchNum)
         requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
       }
 

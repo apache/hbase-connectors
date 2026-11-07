@@ -199,7 +199,8 @@ class HBaseTableScanRDD(
         }
     }
     scan.setCacheBlocks(relation.blockCacheEnable)
-    scan.setBatch(relation.batchNum)
+    // Cell batches would expose incomplete rows to NULL predicates.
+    if (!hasNullCheck) scan.setBatch(relation.batchNum)
     scan.setCaching(relation.cacheSize)
     filter.foreach(scan.setFilter(_))
     scan

@@ -1239,6 +1239,13 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         val put = new Put(Bytes.toBytes(key))
         put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("b"), Array(value))
         put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("s"), Bytes.toBytes("present"))
+        // Force cell batching to split the mapped columns from the unmapped cells.
+        for (qualifier <- Seq("u0", "u1")) {
+          put.addColumn(
+            Bytes.toBytes(columnFamily),
+            Bytes.toBytes(qualifier),
+            Bytes.toBytes("unmapped"))
+        }
         table.put(put)
       }
       val predicates = Seq(
@@ -1251,12 +1258,18 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         "key = 'a' AND (b > 1 OR s IS NULL)" -> Seq("a"),
         "key = 'a' AND NOT (s <=> 'present')" -> Seq("a"),
         "key = 'b' AND (b > 1 OR s IS NULL)" -> Seq("b"),
-        "s IS NULL OR key = 'c'" -> Seq("a", "c"))
-      for ((predicate, expected) <- predicates; enabled <- Seq(true, false)) {
-        val actual = spark.read
+        "s IS NULL OR key = 'c'" -> Seq("a", "c"),
+        "(key = 'a' OR b > 1) AND s IS NULL" -> Seq("a"),
+        "key >= 'b' AND (b > 1 OR s IS NULL)" -> Seq("b"))
+      for ((predicate, expected) <- predicates;
+        enabled <- Seq(true, false);
+        batchSize <- Seq(None, Some(1), Some(2))) {
+        val reader = spark.read
           .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
           .options(options)
           .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+        batchSize.foreach(size => reader.option(HBaseSparkConf.QUERY_BATCHSIZE, size.toString))
+        val actual = reader
           .load()
           .filter(predicate)
           .select("key")
@@ -1264,7 +1277,7 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
           .map(_.getString(0))
           .sorted
           .toSeq
-        assert(actual == expected, s"pushdown=$enabled predicate=$predicate")
+        assert(actual == expected, s"pushdown=$enabled batchSize=$batchSize predicate=$predicate")
       }
     } finally {
       table.close()

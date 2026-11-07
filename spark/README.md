@@ -55,3 +55,5 @@ prefix and NULL checks are checked separately. Disabling
 NULL checks in residual predicates also prevent qualifier pruning for Scan and
 Get operations. Reading all qualifiers preserves rows that exist only through
 cells outside the requested columns, at the cost of reading additional data.
+Cell batching (`hbase.spark.query.batchsize`) is disabled for these scans so NULL
+predicates see complete rows.
