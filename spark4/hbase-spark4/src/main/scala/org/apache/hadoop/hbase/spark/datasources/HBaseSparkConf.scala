@@ -37,7 +37,7 @@ object HBaseSparkConf {
   /** The number of rows for caching that will be passed to scan. */
   val QUERY_CACHEDROWS = "hbase.spark.query.cachedrows"
 
-  /** Set the maximum number of values to return for each call to next() in scan. */
+  /** Retained for compatibility; the Spark 4 datasource ignores cell batching to return complete rows. */
   val QUERY_BATCHSIZE = "hbase.spark.query.batchsize"
 
   /** The number of BulkGets send to HBase. */
