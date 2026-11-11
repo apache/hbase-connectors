@@ -97,6 +97,7 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       .master("local[2]")
       .appName("HBaseTableProviderSuite")
       .config("spark.hadoopRDD.ignoreEmptySplits", "false")
+      .config(HBaseSparkConf.QUERY_BATCHSIZE, "1")
       .getOrCreate()
   }
 

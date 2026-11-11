@@ -58,7 +58,8 @@ class HBasePartitionReader(
     pushedFilters: Array[Filter],
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
-    wrappedConf: SerializableConfiguration)
+    wrappedConf: SerializableConfiguration,
+    readOptions: HBaseReadOptions)
     extends PartitionReader[InternalRow]
     with Logging {
 
@@ -71,16 +72,6 @@ class HBasePartitionReader(
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
-
-  private val bulkGetSize = properties
-    .get(HBaseSparkConf.BULKGET_SIZE)
-    .map(_.toInt)
-    .getOrElse(HBaseSparkConf.DEFAULT_BULKGET_SIZE)
-
-  private val blockCacheEnable = properties
-    .get(HBaseSparkConf.QUERY_CACHEBLOCKS)
-    .map(_.toBoolean)
-    .getOrElse(HBaseSparkConf.DEFAULT_QUERY_CACHEBLOCKS)
 
   private val scanners = new ListBuffer[ResultScanner]()
 
@@ -168,9 +159,9 @@ class HBasePartitionReader(
         new Scan()
     }
 
-    scan.setCacheBlocks(blockCacheEnable)
-    properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach {
-      rows => if (rows > 0) scan.setCaching(rows)
+    scan.setCacheBlocks(readOptions.cacheBlocks)
+    if (readOptions.cachedRows > 0) {
+      scan.setCaching(readOptions.cachedRows)
     }
     handleTimeSemantics(scan)
     pushDownFilter.foreach(scan.setFilter(_))
@@ -179,7 +170,7 @@ class HBasePartitionReader(
   }
 
   private def buildGets(points: Seq[Array[Byte]]): Iterator[Result] = {
-    points.grouped(bulkGetSize).flatMap {
+    points.grouped(readOptions.bulkGetSize).flatMap {
       batch =>
         val gets = new ArrayList[Get](batch.size)
         batch.foreach {

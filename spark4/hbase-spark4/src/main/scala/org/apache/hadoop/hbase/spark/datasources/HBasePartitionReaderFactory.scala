@@ -29,7 +29,6 @@ import org.apache.yetus.audience.InterfaceAudience
  *
  * In the spark 3 DS V1 model, there was no factory, the RDD.compute(partition) call directly created the iterator.
  *
- *
  * @param requiredSchema
  * @param properties
  * @param catalog
@@ -45,7 +44,8 @@ class HBasePartitionReaderFactory(
     pushedFilters: Array[Filter],
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
-    wrappedConf: SerializableConfiguration)
+    wrappedConf: SerializableConfiguration,
+    readOptions: HBaseReadOptions)
     extends PartitionReaderFactory
     with Serializable {
 
@@ -59,6 +59,7 @@ class HBasePartitionReaderFactory(
       pushedFilters,
       encoderClsName,
       usePushDownColumnFilter,
-      wrappedConf)
+      wrappedConf,
+      readOptions)
   }
 }

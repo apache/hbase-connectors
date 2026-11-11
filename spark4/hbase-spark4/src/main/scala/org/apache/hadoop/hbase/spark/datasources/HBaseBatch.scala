@@ -67,29 +67,39 @@ class HBaseBatch(
         val startKeys = keys.getFirst
         val endKeys = keys.getSecond
 
-        val regions = startKeys.zip(endKeys).zipWithIndex.map { case ((start, end), idx) =>
-          HBaseRegion(idx, Some(start), Some(end),
-            Some(regionLocator.getRegionLocation(start).getHostname))
+        val regions = startKeys.zip(endKeys).zipWithIndex.map {
+          case ((start, end), idx) =>
+            HBaseRegion(
+              idx,
+              Some(start),
+              Some(end),
+              Some(regionLocator.getRegionLocation(start).getHostname))
         }
 
-        val scanRanges = rowKeyFilter.ranges.toSeq.map { sr =>
-          Range(
-            Option(sr.lowerBound).filter(_.nonEmpty).map(Bound(_, sr.isLowerBoundEqualTo)),
-            Option(sr.upperBound).map(Bound(_, sr.isUpperBoundEqualTo)))
+        val scanRanges = rowKeyFilter.ranges.toSeq.map {
+          sr =>
+            Range(
+              Option(sr.lowerBound).filter(_.nonEmpty).map(Bound(_, sr.isLowerBoundEqualTo)),
+              Option(sr.upperBound).map(Bound(_, sr.isUpperBoundEqualTo)))
         }
         val points = rowKeyFilter.points.toSeq
 
-        regions.flatMap { region =>
-          val regionRange = Range(region)
-          val intersectedRanges = Ranges.and(regionRange, scanRanges)
-          val intersectedPoints = Points.and(regionRange, points)
+        regions.flatMap {
+          region =>
+            val regionRange = Range(region)
+            val intersectedRanges = Ranges.and(regionRange, scanRanges)
+            val intersectedPoints = Points.and(regionRange, points)
 
-          if (intersectedRanges.nonEmpty || intersectedPoints.nonEmpty) {
-            Some(HBaseInputPartition(
-              region.index, intersectedRanges, intersectedPoints, region.server): InputPartition)
-          } else {
-            None
-          }
+            if (intersectedRanges.nonEmpty || intersectedPoints.nonEmpty) {
+              Some(
+                HBaseInputPartition(
+                  region.index,
+                  intersectedRanges,
+                  intersectedPoints,
+                  region.server): InputPartition)
+            } else {
+              None
+            }
         }
       } finally {
         regionLocator.close()
@@ -100,14 +110,17 @@ class HBaseBatch(
   }
 
   override def createReaderFactory(): PartitionReaderFactory = {
+    val sparkContext = SparkSession.active.sparkContext
+    val readOptions = HBaseReadOptions(properties, sparkContext.getConf)
     val usePushDownColumnFilter = properties
       .get(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER)
       .map(_.toBoolean)
       .getOrElse(HBaseSparkConf.DEFAULT_PUSHDOWN_COLUMN_FILTER)
 
-    val hadoopConf = SparkSession.active.sparkContext.hadoopConfiguration
+    val hadoopConf = sparkContext.hadoopConfiguration
     val hbaseConf = HBaseConfiguration.create(hadoopConf)
-    properties.get(HBaseSparkConf.HBASE_CONFIG_LOCATION)
+    properties
+      .get(HBaseSparkConf.HBASE_CONFIG_LOCATION)
       .foreach(_.split(",").foreach(r => hbaseConf.addResource(new Path(r))))
     val wrappedConf = new SerializableConfiguration(hbaseConf)
 
@@ -118,6 +131,7 @@ class HBaseBatch(
       pushedFilters,
       encoderClsName,
       usePushDownColumnFilter,
-      wrappedConf)
+      wrappedConf,
+      readOptions)
   }
 }
