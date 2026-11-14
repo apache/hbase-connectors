@@ -33,7 +33,8 @@ class HBaseTableScanRDD(
     relation: HBaseRelation,
     val hbaseContext: HBaseContext,
     @transient val filter: Option[SparkSQLPushDownFilter] = None,
-    val columns: Seq[Field] = Seq.empty)
+    val columns: Seq[Field] = Seq.empty,
+    hasNullCheck: Boolean = false)
     extends RDD[Result](relation.sqlContext.sparkContext, Nil) {
   private def sparkConf = SparkEnv.get.conf
   @transient var ranges = Seq.empty[Range]
@@ -98,6 +99,12 @@ class HBaseTableScanRDD(
       ps.foreach(x => logDebug(x.toString))
     }
     regions.release()
+    if (relation.batchNum > 0 && (hasNullCheck || filter.nonEmpty) &&
+      ps.exists(_.scanRanges.nonEmpty)) {
+      logWarning(
+        s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=${relation.batchNum} because " +
+          "predicate evaluation requires complete rows")
+    }
     ShutdownHookManager.affixShutdownHook(
       new Thread() {
         override def run() {
@@ -136,7 +143,7 @@ class HBaseTableScanRDD(
               handleTimeSemantics(g)
               columns.foreach {
                 d =>
-                  if (!d.isRowKey) {
+                  if (!hasNullCheck && !d.isRowKey) {
                     g.addColumn(d.cfBytes, d.colBytes)
                   }
               }
@@ -193,12 +200,13 @@ class HBaseTableScanRDD(
 
     columns.foreach {
       d =>
-        if (!d.isRowKey) {
+        if (!hasNullCheck && !d.isRowKey) {
           scan.addColumn(d.cfBytes, d.colBytes)
         }
     }
     scan.setCacheBlocks(relation.blockCacheEnable)
-    scan.setBatch(relation.batchNum)
+    // Both pushed row filters and residual NULL checks need complete rows.
+    if (!hasNullCheck && filter.isEmpty) scan.setBatch(relation.batchNum)
     scan.setCaching(relation.cacheSize)
     filter.foreach(scan.setFilter(_))
     scan
