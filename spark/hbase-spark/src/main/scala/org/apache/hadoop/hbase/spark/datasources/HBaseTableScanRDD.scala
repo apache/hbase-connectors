@@ -99,6 +99,12 @@ class HBaseTableScanRDD(
       ps.foreach(x => logDebug(x.toString))
     }
     regions.release()
+    if (relation.batchNum > 0 && (hasNullCheck || filter.nonEmpty) &&
+      ps.exists(_.scanRanges.nonEmpty)) {
+      logWarning(
+        s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=${relation.batchNum} because " +
+          "predicate evaluation requires complete rows")
+    }
     ShutdownHookManager.affixShutdownHook(
       new Thread() {
         override def run() {
@@ -199,8 +205,8 @@ class HBaseTableScanRDD(
         }
     }
     scan.setCacheBlocks(relation.blockCacheEnable)
-    // Cell batches would expose incomplete rows to NULL predicates.
-    if (!hasNullCheck) scan.setBatch(relation.batchNum)
+    // Both pushed row filters and residual NULL checks need complete rows.
+    if (!hasNullCheck && filter.isEmpty) scan.setBatch(relation.batchNum)
     scan.setCaching(relation.cacheSize)
     filter.foreach(scan.setFilter(_))
     scan

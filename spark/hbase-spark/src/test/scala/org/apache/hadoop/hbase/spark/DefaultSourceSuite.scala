@@ -21,7 +21,7 @@ import java.sql.{Date, Timestamp}
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Get, Put}
+import org.apache.hadoop.hbase.client.{ColumnFamilyDescriptorBuilder, ConnectionFactory, Get, Put, TableDescriptorBuilder}
 import org.apache.hadoop.hbase.spark.datasources.{HBaseSparkConf, HBaseTableCatalog, Utils}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
@@ -1727,7 +1727,7 @@ class DefaultSourceSuite
     }
   }
 
-  test("HBASE-30510 residual NULL predicates preserve sparse rows") {
+  test("HBASE-30510 filters preserve complete rows across batching and pread switches") {
     val testTable = TableName.valueOf("type_aware_sparse_null")
     val json = s"""{
       |"table":{"namespace":"default", "name":"${testTable.getNameAsString}"},
@@ -1735,11 +1735,17 @@ class DefaultSourceSuite
       |"columns":{
       |"key":{"cf":"rowkey", "col":"key", "type":"string"},
       |"b":{"cf":"$columnFamily", "col":"b", "type":"byte"},
-      |"s":{"cf":"$columnFamily", "col":"s", "type":"string"}
+      |"s":{"cf":"$columnFamily", "col":"a_s", "type":"string"},
+      |"late":{"cf":"$columnFamily", "col":"z_s", "type":"string"}
       |}}""".stripMargin
     val options = Map(HBaseTableCatalog.tableCatalog -> json)
     LatestHBaseContextCache.latest = suiteHBaseContext
-    val table = TEST_UTIL.createTable(testTable, Bytes.toBytes(columnFamily))
+    val family = ColumnFamilyDescriptorBuilder
+      .newBuilder(Bytes.toBytes(columnFamily))
+      .setConfiguration("hbase.storescanner.pread.max.bytes", "1024")
+      .build()
+    val descriptor = TableDescriptorBuilder.newBuilder(testTable).setColumnFamily(family).build()
+    val table = TEST_UTIL.createTable(descriptor, Array(Bytes.toBytes(columnFamily)))
     try {
       // This row exists only through a qualifier absent from the catalog and projection.
       val sparse = new Put(Bytes.toBytes("a"))
@@ -1751,16 +1757,24 @@ class DefaultSourceSuite
       for ((key, value) <- Seq("b" -> 2.toByte, "c" -> 0.toByte)) {
         val put = new Put(Bytes.toBytes(key))
         put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("b"), Array(value))
-        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("s"), Bytes.toBytes("present"))
-        // Force cell batching to split the mapped columns from the unmapped cells.
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("a_s"), Bytes.toBytes("present"))
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("z_s"), Bytes.toBytes("present"))
+        // Cross the PREAD threshold between the first and last mapped columns.
         for (qualifier <- Seq("u0", "u1")) {
           put.addColumn(
             Bytes.toBytes(columnFamily),
             Bytes.toBytes(qualifier),
-            Bytes.toBytes("unmapped"))
+            Array.fill[Byte](8192)(7))
         }
         table.put(put)
       }
+      // Exercise StoreScanner's disk-read path, not just MemStore reads.
+      TEST_UTIL.flush(testTable)
+      assert(
+        table.getDescriptor
+          .getColumnFamily(Bytes.toBytes(columnFamily))
+          .getConfiguration
+          .get("hbase.storescanner.pread.max.bytes") == "1024")
       val predicates = Seq(
         "b > 1 OR s IS NULL" -> Seq("a", "b"),
         "b > 1 OR NOT (s IS NOT NULL)" -> Seq("a", "b"),
@@ -1768,6 +1782,8 @@ class DefaultSourceSuite
         "s <=> NULL" -> Seq("a"),
         "s IS NULL" -> Seq("a"),
         "s IS NOT NULL" -> Seq("b", "c"),
+        "late IS NULL" -> Seq("a"),
+        "late IS NOT NULL" -> Seq("b", "c"),
         "key = 'a' AND (b > 1 OR s IS NULL)" -> Seq("a"),
         "key = 'a' AND NOT (s <=> 'present')" -> Seq("a"),
         "key = 'b' AND (b > 1 OR s IS NULL)" -> Seq("b"),
@@ -1791,6 +1807,21 @@ class DefaultSourceSuite
           .sorted
           .toSeq
         assert(actual == expected, s"pushdown=$enabled batchSize=$batchSize predicate=$predicate")
+      }
+
+      // Bypass Catalyst so inferred IsNotNull filters cannot hide the non-NULL batch guard.
+      for (batchSize <- Seq(-1, 0, 1, 2)) {
+        val relation = HBaseRelation(
+          options +
+            (HBaseSparkConf.QUERY_BATCHSIZE -> batchSize.toString),
+          None)(sqlContext)
+        val actual = relation
+          .buildScan(Array("key", "s"), Array(EqualTo("s", "present")))
+          .collect()
+          .map(_.getString(0))
+          .sorted
+          .toSeq
+        assert(actual == Seq("b", "c"), s"pushed equality batchSize=$batchSize")
       }
     } finally {
       table.close()

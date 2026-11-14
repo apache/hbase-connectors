@@ -147,6 +147,11 @@ public class SparkSQLPushDownFilter extends FilterBase {
   }
 
   @Override
+  public boolean hasFilterRow() {
+    return true;
+  }
+
+  @Override
   public boolean filterRow() throws IOException {
 
     try {

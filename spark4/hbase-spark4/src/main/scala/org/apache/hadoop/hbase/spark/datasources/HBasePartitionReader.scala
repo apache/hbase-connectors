@@ -86,6 +86,20 @@ class HBasePartitionReader(
     .map(_.toBoolean)
     .getOrElse(HBaseSparkConf.DEFAULT_QUERY_CACHEBLOCKS)
 
+  // Resolve only for Scan, and warn at most once per reader.
+  private lazy val scanBatchSize: Option[Int] = {
+    val batch = properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).filter(_ > 0)
+    if (hasNullCheck || pushDownFilter.nonEmpty) {
+      batch.foreach {
+        size =>
+          logWarning(
+            s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$size because " +
+              "predicate evaluation requires complete rows")
+      }
+      None
+    } else batch
+  }
+
   private val scanners = new ListBuffer[ResultScanner]()
 
   private val resultIterator: Iterator[Result] = {
@@ -174,11 +188,7 @@ class HBasePartitionReader(
     properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach { rows =>
       if (rows > 0) scan.setCaching(rows)
     }
-    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach {
-      batch =>
-        // Cell batches would expose incomplete rows to NULL predicates.
-        if (batch > 0 && !hasNullCheck) scan.setBatch(batch)
-    }
+    scanBatchSize.foreach(scan.setBatch)
     handleTimeSemantics(scan)
 
     if (!hasNullCheck) {
