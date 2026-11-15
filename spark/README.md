@@ -27,6 +27,57 @@ To generate an artifact for a different [Spark version](https://mvnrepository.co
 $ mvn -Dspark.version=3.1.2 -Dscala.version=2.12.10 -Dhadoop-three.version=3.2.0 -Dscala.binary.version=2.12 -Dhbase.version=2.4.8 clean install
 ```
 
+## Java batch API on Spark 4
+
+Spark 4 applications can use `org.apache.hbase.connectors.spark:hbase-spark4`
+(Scala 2.13, JDK 17+) and `org.apache.hadoop.hbase.spark.JavaHBaseContext`.
+The batch API retains the Spark 3 Java method signatures, including `scala.Tuple2`
+callback arguments. Applications must recompile against the Spark 4 dependencies.
+Java callers use Spark's Java function interfaces and `java.util.Iterator` without
+supplying Scala collection conversions or ClassTags.
+
+For example, with an existing table `example` and column family `cf`:
+
+```java
+import java.util.Arrays;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.spark.JavaHBaseContext;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+
+public class JavaHBaseBatchExample {
+  public static void main(String[] args) {
+    try (JavaSparkContext jsc = new JavaSparkContext(
+        new SparkConf().setAppName("JavaHBaseBatchExample"))) {
+      JavaHBaseContext context = new JavaHBaseContext(jsc, HBaseConfiguration.create());
+      TableName table = TableName.valueOf("example");
+      byte[] family = Bytes.toBytes("cf");
+      byte[] qualifier = Bytes.toBytes("value");
+      JavaRDD<String> keys = jsc.parallelize(Arrays.asList("row1", "row2"));
+      context.bulkPut(keys, table, key -> new Put(Bytes.toBytes(key))
+          .addColumn(family, qualifier, Bytes.toBytes("hello " + key)));
+      JavaRDD<String> values = context.bulkGet(table, 100, keys,
+          key -> new Get(Bytes.toBytes(key)),
+          result -> Bytes.toString(result.getValue(family, qualifier)));
+      System.out.println(values.collect());
+    }
+  }
+}
+```
+
+`foreachPartition` and `mapPartitions` supply a connector-managed Connection:
+callbacks must close the Tables, scanners and mutators they create, while leaving
+that Connection open. Both `hbaseRDD` scan overloads and the `bulkDelete` API are
+also available. `bulkLoad` and `bulkLoadThinRows` generate staging HFiles; callers
+must subsequently import them, for example with `LoadIncrementalHFiles.doBulkLoad`.
+For `bulkLoadThinRows`, each input record must contain all cells for its row key,
+and each row key must occur only once. Legacy DStream wrappers are not included.
+
 ## Configuration and Installation
 **Client-side** (Spark) configuration:
 - The HBase configuration file `hbase-site.xml` should be made available to Spark, it can be copied to `$SPARK_CONF_DIR` (default is $SPARK_HOME/conf`)
