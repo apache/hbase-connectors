@@ -47,7 +47,8 @@ class HBaseScan(
     pushedFilters: Array[Filter],
     rowKeyFilters: Array[Filter],
     encoderClsName: String,
-    @transient encoder: BytesEncoder)
+    @transient encoder: BytesEncoder,
+    hasNullCheck: Boolean)
     extends Scan
     with Logging {
 
@@ -55,7 +56,14 @@ class HBaseScan(
 
   override def toBatch: Batch = {
     val rowKeyFilter = buildRowKeyFilter()
-    new HBaseBatch(requiredSchema, properties, catalog, rowKeyFilter, pushedFilters, encoderClsName)
+    new HBaseBatch(
+      requiredSchema,
+      properties,
+      catalog,
+      rowKeyFilter,
+      pushedFilters,
+      encoderClsName,
+      hasNullCheck)
   }
 
   private def buildRowKeyFilter(): RowKeyFilter = {

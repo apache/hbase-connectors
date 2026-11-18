@@ -359,6 +359,7 @@ case class HBaseRelation(
    */
   override def buildScan(requiredColumns: Array[String], filters: Array[Filter]): RDD[Row] = {
 
+    val hasNullCheck = filters.exists(PredicatePushdownSupport.containsNullCheck)
     val pushDownTuple = buildPushDownPredicatesResource(filters)
     val pushDownRowKeyFilter = pushDownTuple._1
     var pushDownDynamicLogicExpression = pushDownTuple._2
@@ -429,7 +430,8 @@ case class HBaseRelation(
       this,
       hbaseContext,
       pushDownFilterJava,
-      requiredQualifierDefinitionList.seq)
+      requiredQualifierDefinitionList.seq,
+      hasNullCheck)
     pushDownRowKeyFilter.points.foreach(hRdd.addPoint(_))
     pushDownRowKeyFilter.ranges.foreach(hRdd.addRange(_))
 
@@ -450,9 +452,15 @@ case class HBaseRelation(
     if (resultRDD == null) {
       val scan = new Scan()
       scan.setCacheBlocks(blockCacheEnable)
-      scan.setBatch(batchNum)
       scan.setCaching(cacheSize)
-      requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
+      if (!hasNullCheck) {
+        scan.setBatch(batchNum)
+        requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
+      } else if (batchNum > 0) {
+        logWarning(
+          s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$batchNum because " +
+            "predicate evaluation requires complete rows")
+      }
 
       val rdd = hbaseContext
         .hbaseRDD(TableName.valueOf(tableName), scan)
@@ -472,20 +480,34 @@ case class HBaseRelation(
     val queryValueList = new mutable.MutableList[Array[Byte]]
     var superDynamicLogicExpression: DynamicLogicExpression = null
 
-    filters.foreach(
-      f => {
-        val rowKeyFilter = new RowKeyFilter()
-        val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
-        if (superDynamicLogicExpression == null) {
-          superDynamicLogicExpression = logicExpression
-          superRowKeyFilter = rowKeyFilter
-        } else {
-          superDynamicLogicExpression =
-            new AndLogicExpression(superDynamicLogicExpression, logicExpression)
-          superRowKeyFilter.mergeIntersect(rowKeyFilter)
-        }
+    def dataTypeOf(attr: String): Option[org.apache.spark.sql.types.DataType] =
+      catalog.sMap.map
+        .get(attr)
+        .filter(
+          field =>
+            !(catalog.getRowKey.size > 1 && field.isRowKey) &&
+              field.avroSchema.isEmpty && field.serdes.isEmpty)
+        .map(_.dt)
 
-      })
+    // Reject before encoding or pruning: Spark's residual filter cannot restore excluded rows.
+    filters
+      .filter(
+        PredicatePushdownSupport
+          .isSupported(_, dataTypeOf, encoder.getClass == classOf[NaiveEncoder]))
+      .foreach(
+        f => {
+          val rowKeyFilter = new RowKeyFilter()
+          val logicExpression = transverseFilterTree(rowKeyFilter, queryValueList, f)
+          if (superDynamicLogicExpression == null) {
+            superDynamicLogicExpression = logicExpression
+            superRowKeyFilter = rowKeyFilter
+          } else {
+            superDynamicLogicExpression =
+              new AndLogicExpression(superDynamicLogicExpression, logicExpression)
+            superRowKeyFilter.mergeIntersect(rowKeyFilter)
+          }
+
+        })
 
     val queryValueArray = queryValueList.toArray
 
