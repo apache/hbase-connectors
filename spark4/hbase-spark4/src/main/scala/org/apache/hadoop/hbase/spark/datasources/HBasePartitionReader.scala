@@ -20,20 +20,16 @@ package org.apache.hadoop.hbase.spark.datasources
 import java.util.ArrayList
 import org.apache.hadoop.hbase.{CellUtil, TableName}
 import org.apache.hadoop.hbase.client.{Get, Query, Result, ResultScanner, Scan, Table}
-import org.apache.hadoop.hbase.spark.{AndLogicExpression, DynamicLogicExpression,
-  EqualLogicExpression, GreaterThanLogicExpression, GreaterThanOrEqualLogicExpression,
-  HBaseConnectionCache, IsNullLogicExpression, LessThanLogicExpression,
-  LessThanOrEqualLogicExpression, Logging, OrLogicExpression, PassThroughLogicExpression,
-  PushdownMappedField, SmartConnection, SparkSQLPushDownFilter, StartsWithLogicExpression}
+import org.apache.hadoop.hbase.spark.{AndLogicExpression, DynamicLogicExpression, EqualLogicExpression, GreaterThanLogicExpression, GreaterThanOrEqualLogicExpression, HBaseConnectionCache, IsNullLogicExpression, LessThanLogicExpression, LessThanOrEqualLogicExpression, Logging, OrLogicExpression, PassThroughLogicExpression, PushdownMappedField, SmartConnection, SparkSQLPushDownFilter, StartsWithLogicExpression}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
-import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.connector.read.PartitionReader
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.Decimal
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable.ListBuffer
@@ -44,12 +40,14 @@ import scala.jdk.CollectionConverters._
  * The actual execution: opens an HBase scanner on the partition's range, attaches the SparkSQLPushDownFilter,
  * reads Result objects, and converts them to InternalRow. Implements next()/get()/close().
  *
- *
  * In the spark 3 DS V1 model, this logic was inside DefaultSource.buildScan()
  * which returned an RDD[Row] with its own compute() method.
  *
  * Ranges are executed as Scan operations, whilst points are executed as batched Get operations. This mirrors the spark3
  * HBaseTableScanRDD.compute() behavior.
+ *
+ * Scan and Get read all visible cells so rows without projected qualifiers are preserved.
+ * Projection happens in get(); scans do not use cell batches because each Result represents one Spark row.
  */
 @InterfaceAudience.Private
 class HBasePartitionReader(
@@ -72,8 +70,6 @@ class HBasePartitionReader(
 
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
-  private val scanFields = (requiredFields ++ filterFields).distinct.filterNot(_.isRowKey)
-  private val hasNullCheck = pushedFilters.exists(containsNullCheck)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
 
   private val bulkGetSize = properties
@@ -89,10 +85,11 @@ class HBasePartitionReader(
   private val scanners = new ListBuffer[ResultScanner]()
 
   private val resultIterator: Iterator[Result] = {
-    val scanIterators = partition.scanRanges.map { range =>
-      val scanner = buildScanner(range)
-      scanners += scanner
-      scannerToIterator(scanner)
+    val scanIterators = partition.scanRanges.map {
+      range =>
+        val scanner = buildScanner(range)
+        scanners += scanner
+        scannerToIterator(scanner)
     }
     val getIterator = if (partition.points.nonEmpty) {
       buildGets(partition.points)
@@ -121,23 +118,24 @@ class HBasePartitionReader(
     val keyValues = parseRowKey(rowKey, keyFields)
     val values = new Array[Any](requiredFields.length)
 
-    requiredFields.zipWithIndex.foreach { case (field, idx) =>
-      if (field.isRowKey) {
-        values(idx) = convertToInternalRow(keyValues.get(field).orNull, field.dt)
-      } else {
-        val cell = currentResult.getColumnLatestCell(
-          Bytes.toBytes(field.cf), Bytes.toBytes(field.col))
-        if (cell == null || cell.getValueLength == 0) {
-          values(idx) = null
+    requiredFields.zipWithIndex.foreach {
+      case (field, idx) =>
+        if (field.isRowKey) {
+          values(idx) = convertToInternalRow(keyValues.get(field).orNull, field.dt)
         } else {
-          val v = CellUtil.cloneValue(cell)
-          val scalaValue = field.dt match {
-            case BinaryType => v
-            case _ => Utils.hbaseFieldToScalaType(field, v, 0, v.length)
+          val cell =
+            currentResult.getColumnLatestCell(Bytes.toBytes(field.cf), Bytes.toBytes(field.col))
+          if (cell == null || cell.getValueLength == 0) {
+            values(idx) = null
+          } else {
+            val v = CellUtil.cloneValue(cell)
+            val scalaValue = field.dt match {
+              case BinaryType => v
+              case _ => Utils.hbaseFieldToScalaType(field, v, 0, v.length)
+            }
+            values(idx) = convertToInternalRow(scalaValue, field.dt)
           }
-          values(idx) = convertToInternalRow(scalaValue, field.dt)
         }
-      }
     }
     new GenericInternalRow(values)
   }
@@ -171,39 +169,27 @@ class HBasePartitionReader(
     }
 
     scan.setCacheBlocks(blockCacheEnable)
-    properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach { rows =>
-      if (rows > 0) scan.setCaching(rows)
-    }
-    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach { batch =>
-      if (batch > 0) scan.setBatch(batch)
+    properties.get(HBaseSparkConf.QUERY_CACHEDROWS).map(_.toInt).foreach {
+      rows => if (rows > 0) scan.setCaching(rows)
     }
     handleTimeSemantics(scan)
-
-    if (!hasNullCheck) {
-      scanFields.foreach { f =>
-        scan.addColumn(f.cfBytes, f.colBytes)
-      }
-    }
     pushDownFilter.foreach(scan.setFilter(_))
 
     table.getScanner(scan)
   }
 
   private def buildGets(points: Seq[Array[Byte]]): Iterator[Result] = {
-    points.grouped(bulkGetSize).flatMap { batch =>
-      val gets = new ArrayList[Get](batch.size)
-      batch.foreach { point =>
-        val g = new Get(point)
-        handleTimeSemantics(g)
-        if (!hasNullCheck) {
-          scanFields.foreach { f =>
-            g.addColumn(f.cfBytes, f.colBytes)
-          }
+    points.grouped(bulkGetSize).flatMap {
+      batch =>
+        val gets = new ArrayList[Get](batch.size)
+        batch.foreach {
+          point =>
+            val g = new Get(point)
+            handleTimeSemantics(g)
+            pushDownFilter.foreach(g.setFilter(_))
+            gets.add(g)
         }
-        pushDownFilter.foreach(g.setFilter(_))
-        gets.add(g)
-      }
-      table.get(gets).toSeq.iterator.filter(r => r != null && !r.isEmpty)
+        table.get(gets).toSeq.iterator.filter(r => r != null && !r.isEmpty)
     }
   }
 
@@ -237,16 +223,16 @@ class HBasePartitionReader(
       case (q: Get, None, Some(min), Some(max)) => q.setTimeRange(min, max)
       case (_, None, None, None) =>
       case _ =>
-        throw new IllegalArgumentException(
-          "Invalid combination of timestamp/time range provided.")
+        throw new IllegalArgumentException("Invalid combination of timestamp/time range provided.")
     }
     val maxVersions = properties.get(HBaseSparkConf.MAX_VERSIONS).map(_.toInt)
-    maxVersions.foreach { mv =>
-      query match {
-        case q: Scan => q.readVersions(mv)
-        case q: Get => q.readVersions(mv)
-        case _ =>
-      }
+    maxVersions.foreach {
+      mv =>
+        query match {
+          case q: Scan => q.readVersions(mv)
+          case q: Get => q.readVersions(mv)
+          case _ =>
+        }
     }
   }
 
@@ -257,18 +243,20 @@ class HBasePartitionReader(
     if (dynamicLogicExpression == null) return None
 
     val allFilterFields = (requiredFields ++ filterFields).distinct
-    val columnMappings = allFilterFields.map { field =>
-      new PushdownMappedField {
-        override def colName(): String = field.colName
-        override def cfBytes(): Array[Byte] = field.cfBytes
-        override def colBytes(): Array[Byte] = field.colBytes
-      }
+    val columnMappings = allFilterFields.map {
+      field =>
+        new PushdownMappedField {
+          override def colName(): String = field.colName
+          override def cfBytes(): Array[Byte] = field.cfBytes
+          override def colBytes(): Array[Byte] = field.colBytes
+        }
     }
-    Some(new SparkSQLPushDownFilter(
-      dynamicLogicExpression,
-      valueArray,
-      columnMappings.toList.asJava,
-      encoderClsName))
+    Some(
+      new SparkSQLPushDownFilter(
+        dynamicLogicExpression,
+        valueArray,
+        columnMappings.toList.asJava,
+        encoderClsName))
   }
 
   private def convertToInternalRow(value: Any, dataType: DataType): Any = {
@@ -291,10 +279,11 @@ class HBasePartitionReader(
         val keys = new Array[Any](map.size)
         val values = new Array[Any](map.size)
         var i = 0
-        map.foreach { case (k, v) =>
-          keys(i) = convertToInternalRow(k, keyType)
-          values(i) = convertToInternalRow(v, valueType)
-          i += 1
+        map.foreach {
+          case (k, v) =>
+            keys(i) = convertToInternalRow(k, keyType)
+            values(i) = convertToInternalRow(v, valueType)
+            i += 1
         }
         ArrayBasedMapData(keys, values)
       case structType: StructType =>
@@ -316,32 +305,33 @@ class HBasePartitionReader(
 
   private def parseRowKey(row: Array[Byte], keyFields: Seq[Field]): Map[Field, Any] = {
     keyFields.zipWithIndex
-      .foldLeft((0, Seq[(Field, Any)]())) { (state, indexedField) =>
-        val (field, index) = indexedField
-        val idx = state._1
-        val parsed = state._2
-        if (field.length != -1) {
-          val value = Utils.hbaseFieldToScalaType(field, row, idx, field.length)
-          (idx + field.length, parsed :+ (field, value))
-        } else {
-          field.dt match {
-            case StringType =>
-              val pos =
-                if (index == keyFields.length - 1) -1
-                else row.indexOf(HBaseTableCatalog.delimiter, idx)
-              if (pos == -1 || pos > row.length) {
-                val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)
-                (row.length + 1, parsed :+ (field, value))
-              } else {
-                val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
-                (pos + 1, parsed :+ (field, value))
-              }
-            case _ =>
-              (
-                row.length + 1,
-                parsed :+ (field, Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)))
+      .foldLeft((0, Seq[(Field, Any)]())) {
+        (state, indexedField) =>
+          val (field, index) = indexedField
+          val idx = state._1
+          val parsed = state._2
+          if (field.length != -1) {
+            val value = Utils.hbaseFieldToScalaType(field, row, idx, field.length)
+            (idx + field.length, parsed :+ (field, value))
+          } else {
+            field.dt match {
+              case StringType =>
+                val pos =
+                  if (index == keyFields.length - 1) -1
+                  else row.indexOf(HBaseTableCatalog.delimiter, idx)
+                if (pos == -1 || pos > row.length) {
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)
+                  (row.length + 1, parsed :+ (field, value))
+                } else {
+                  val value = Utils.hbaseFieldToScalaType(field, row, idx, pos - idx)
+                  (pos + 1, parsed :+ (field, value))
+                }
+              case _ =>
+                (
+                  row.length + 1,
+                  parsed :+ (field, Utils.hbaseFieldToScalaType(field, row, idx, row.length - idx)))
+            }
           }
-        }
       }
       ._2
       .toMap
@@ -430,8 +420,7 @@ class HBasePartitionReader(
           val field = catalog.sMap.map.get(attr).orNull
           if (field != null) {
             val i = idx; idx += 1; new GreaterThanOrEqualLogicExpression(attr, i)
-          }
-          else new PassThroughLogicExpression
+          } else new PassThroughLogicExpression
         case StringStartsWith(attr, _) =>
           val field = catalog.sMap.map.get(attr).orNull
           if (field != null) { val i = idx; idx += 1; new StartsWithLogicExpression(attr, i) }
@@ -449,18 +438,12 @@ class HBasePartitionReader(
     if (pushedFilters.isEmpty) return null
 
     var result: DynamicLogicExpression = null
-    pushedFilters.foreach { f =>
-      val expr = buildExpression(f)
-      result = if (result == null) expr else new AndLogicExpression(result, expr)
+    pushedFilters.foreach {
+      f =>
+        val expr = buildExpression(f)
+        result = if (result == null) expr else new AndLogicExpression(result, expr)
     }
     result
   }
 
-  private def containsNullCheck(f: Filter): Boolean = f match {
-    case IsNull(_) => true
-    case IsNotNull(_) => true
-    case And(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case Or(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case _ => false
-  }
 }

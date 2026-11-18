@@ -24,7 +24,7 @@ import java.util.TimeZone
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Get, Put}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Delete, Get, Put}
 import org.apache.hadoop.hbase.spark.{AvroSerdes, Logging}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.{Row, SparkSession}
@@ -92,7 +92,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       out.close()
     }
 
-    spark = SparkSession.builder()
+    spark = SparkSession
+      .builder()
       .master("local[2]")
       .appName("HBaseTableProviderSuite")
       .config("spark.hadoopRDD.ignoreEmptySplits", "false")
@@ -118,7 +119,10 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         val key = f"row$i%03d"
         val put = new Put(Bytes.toBytes(key))
         put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("name"), Bytes.toBytes(s"Name$i"))
-        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("age"), Bytes.toBytes(s"${20 + i}"))
+        put.addColumn(
+          Bytes.toBytes(columnFamily),
+          Bytes.toBytes("age"),
+          Bytes.toBytes(s"${20 + i}"))
         put.addColumn(
           Bytes.toBytes(columnFamily),
           Bytes.toBytes("salary"),
@@ -128,7 +132,10 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       for (i <- 0 until numRowsWithoutName) {
         val key = f"noname$i%03d"
         val put = new Put(Bytes.toBytes(key))
-        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes("age"), Bytes.toBytes(s"${50 + i}"))
+        put.addColumn(
+          Bytes.toBytes(columnFamily),
+          Bytes.toBytes("age"),
+          Bytes.toBytes(s"${50 + i}"))
         put.addColumn(
           Bytes.toBytes(columnFamily),
           Bytes.toBytes("salary"),
@@ -161,6 +168,184 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     val firstRow = df.orderBy("key").first()
     assert(firstRow.getString(0) == "row000")
     assert(firstRow.getString(1) == "Name0")
+  }
+
+  private def withSparseTable(test: Map[String, String] => Unit): Unit = {
+    val sparseTable = TableName.valueOf("sparse_projection")
+    val table =
+      TEST_UTIL.createTable(sparseTable, Array(Bytes.toBytes(columnFamily), Bytes.toBytes("other")))
+    try {
+      val cells = Seq(
+        ("r1", columnFamily, "name", "Alice", 1000L),
+        ("r2", columnFamily, "age", "20", 2000L),
+        ("r3", columnFamily, "unmapped", "exists", 2000L),
+        ("r4", "other", "unmapped", "exists", 2000L),
+        ("rw", columnFamily, "name", "Bob", 2000L),
+        ("rw", columnFamily, "age", "30", 2000L),
+        ("rw", columnFamily, "u0", "wide", 2000L),
+        ("rw", columnFamily, "u1", "wide", 2000L),
+        ("deleted", "other", "unmapped", "deleted", 2000L))
+      cells.foreach {
+        case (key, family, qualifier, value, timestamp) =>
+          val put = new Put(Bytes.toBytes(key))
+          put.addColumn(
+            Bytes.toBytes(family),
+            Bytes.toBytes(qualifier),
+            timestamp,
+            Bytes.toBytes(value))
+          table.put(put)
+      }
+      table.delete(new Delete(Bytes.toBytes("deleted")))
+      val json = s"""{
+        |"table":{"namespace":"default", "name":"${sparseTable.getNameAsString}"},
+        |"rowkey":"key",
+        |"columns":{
+        |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+        |"name":{"cf":"$columnFamily", "col":"name", "type":"string"},
+        |"age":{"cf":"$columnFamily", "col":"age", "type":"string"}
+        |}}""".stripMargin
+      test(
+        Map(
+          HBaseTableCatalog.tableCatalog -> json,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath,
+          HBaseSparkConf.BULKGET_SIZE -> "2"))
+    } finally {
+      table.close()
+      TEST_UTIL.deleteTable(sparseTable)
+    }
+  }
+
+  test("HBASE-30512 projections preserve sparse rows and complete wide rows") {
+    withSparseTable {
+      options =>
+        val expected = Seq(
+          Row("r1", "Alice"),
+          Row("r2", null),
+          Row("r3", null),
+          Row("r4", null),
+          Row("rw", "Bob"))
+        for (enabled <- Seq(true, false); batchSize <- Seq(None, Some(1), Some(2))) {
+          withClue(s"pushdown=$enabled batchSize=$batchSize: ") {
+            val reader = spark.read
+              .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+              .options(options)
+              .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+            batchSize.foreach(size => reader.option(HBaseSparkConf.QUERY_BATCHSIZE, size.toString))
+            val frame = reader.load()
+            val projected = frame.select("key", "name")
+            val rows = projected.collect().toSeq.sortBy(_.getString(0))
+            assert(rows == expected)
+            assert(projected.count() == rows.size)
+            assert(
+              frame.select("key").collect().map(_.getString(0)).sorted.toSeq ==
+                expected.map(_.getString(0)))
+            assert(
+              frame.select("name").collect().toSeq.groupBy(identity).view.mapValues(_.size).toMap ==
+                expected.map(row => Row(row.get(1))).groupBy(identity).view.mapValues(_.size).toMap)
+            assert(frame.selectExpr("1 AS marker").collect().toSeq == Seq.fill(5)(Row(1)))
+            assert(
+              frame.select("key", "name", "age").collect().toSeq.sortBy(_.getString(0)) == Seq(
+                Row("r1", "Alice", null),
+                Row("r2", null, "20"),
+                Row("r3", null, null),
+                Row("r4", null, null),
+                Row("rw", "Bob", "30")))
+            assert(
+              frame
+                .filter("name IS NULL")
+                .select("key", "name")
+                .collect()
+                .toSeq
+                .sortBy(_.getString(0)) == expected.slice(1, 4))
+            assert(
+              frame
+                .filter("key = 'r2' OR name = 'Alice'")
+                .select("key", "name")
+                .collect()
+                .toSeq
+                .sortBy(_.getString(0)) == expected.take(2))
+            assert(frame.filter("name = 'Bob'").select("key").collect().toSeq == Seq(Row("rw")))
+          }
+        }
+    }
+  }
+
+  test("HBASE-30512 Get batches preserve sparse rows without implicit NULL predicates") {
+    withSparseTable {
+      options =>
+        val required =
+          StructType(Seq(StructField("key", StringType), StructField("name", StringType)))
+        val points = Seq("r1", "r2", "r3", "r4", "rw", "missing")
+          .map(key => EqualTo("key", key))
+          .reduce[org.apache.spark.sql.sources.Filter]((left, right) => Or(left, right))
+        for (enabled <- Seq(true, false)) {
+          val readOptions = options + (HBaseSparkConf.PUSHDOWN_COLUMN_FILTER -> enabled.toString)
+          val builder = new HBaseScanBuilder(HBaseTableCatalog(readOptions).toDataType, readOptions)
+          builder.pushFilters(Array(points))
+          builder.pruneColumns(required)
+          val batch = builder.build().toBatch
+          val partitions = batch.planInputPartitions()
+          assert(partitions.nonEmpty)
+          assert(partitions.forall(_.asInstanceOf[HBaseInputPartition].scanRanges.isEmpty))
+          assert(partitions.map(_.asInstanceOf[HBaseInputPartition].points.size).sum == 6)
+          val factory = batch.createReaderFactory()
+          val rows = partitions.toSeq.flatMap {
+            partition =>
+              val reader = factory.createReader(partition)
+              val result = scala.collection.mutable.ArrayBuffer.empty[Row]
+              try {
+                while (reader.next()) {
+                  val row = reader.get()
+                  val name = if (row.isNullAt(1)) null else row.getUTF8String(1).toString
+                  result += Row(row.getUTF8String(0).toString, name)
+                }
+                result.toSeq
+              } finally {
+                reader.close()
+              }
+          }
+          assert(
+            rows.sortBy(_.getString(0)) == Seq(
+              Row("r1", "Alice"),
+              Row("r2", null),
+              Row("r3", null),
+              Row("r4", null),
+              Row("rw", "Bob")),
+            s"pushdown=$enabled")
+        }
+    }
+  }
+
+  test("HBASE-30512 row existence respects timestamps and time ranges") {
+    withSparseTable {
+      options =>
+        for (enabled <- Seq(true, false)) {
+          val reader = spark.read
+            .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+            .options(options)
+            .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+          val atTimestamp = reader.option(HBaseSparkConf.TIMESTAMP, "1000").load()
+          assert(atTimestamp.select("key", "name").collect().toSeq == Seq(Row("r1", "Alice")))
+          assert(atTimestamp.filter("key = 'r2'").select("key", "name").collect().isEmpty)
+          val inRange = spark.read
+            .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+            .options(options)
+            .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+            .option(HBaseSparkConf.TIMERANGE_START, "1500")
+            .option(HBaseSparkConf.TIMERANGE_END, "2500")
+            .load()
+          assert(
+            inRange.select("key", "name").collect().toSeq.sortBy(_.getString(0)) == Seq(
+              Row("r2", null),
+              Row("r3", null),
+              Row("r4", null),
+              Row("rw", "Bob")))
+          assert(inRange.filter("key = 'r1'").select("key", "name").collect().isEmpty)
+          assert(
+            inRange.filter("key = 'r2'").select("key", "name").collect().toSeq ==
+              Seq(Row("r2", null)))
+        }
+    }
   }
 
   test("filter with EqualTo on non-row-key column") {
@@ -362,11 +547,12 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   }
 
   test("write DataFrame and read back") {
-    val writeSchema = StructType(Seq(
-      StructField("key", StringType),
-      StructField("name", StringType),
-      StructField("age", StringType),
-      StructField("salary", StringType)))
+    val writeSchema = StructType(
+      Seq(
+        StructField("key", StringType),
+        StructField("name", StringType),
+        StructField("age", StringType),
+        StructField("salary", StringType)))
     val data = Seq(
       Row("wrow000", "Alice", "30", "50000"),
       Row("wrow001", "Bob", "25", "45000"),
@@ -522,11 +708,12 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
       val table = connection.getTable(TableName.valueOf(tableName))
       try {
-        data.foreach { r =>
-          val cell = table
-            .get(new Get(Bytes.toBytes(r.getString(0))))
-            .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("d"))
-          assert(Bytes.toLong(cell) == r.getDate(1).getTime, r.getDate(1).toString)
+        data.foreach {
+          r =>
+            val cell = table
+              .get(new Get(Bytes.toBytes(r.getString(0))))
+              .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("d"))
+            assert(Bytes.toLong(cell) == r.getDate(1).getTime, r.getDate(1).toString)
         }
       } finally {
         table.close()
@@ -583,11 +770,12 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
       val table = connection.getTable(TableName.valueOf(tableName))
       try {
-        data.foreach { r =>
-          val cell = table
-            .get(new Get(Bytes.toBytes(r.getString(0))))
-            .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("ts"))
-          assert(Bytes.toLong(cell) == r.getTimestamp(1).getTime, r.getString(0))
+        data.foreach {
+          r =>
+            val cell = table
+              .get(new Get(Bytes.toBytes(r.getString(0))))
+              .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("ts"))
+            assert(Bytes.toLong(cell) == r.getTimestamp(1).getTime, r.getString(0))
         }
       } finally {
         table.close()
@@ -610,14 +798,13 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   }
 
   test("write preserves null columns") {
-    val writeSchema = StructType(Seq(
-      StructField("key", StringType),
-      StructField("name", StringType),
-      StructField("age", StringType),
-      StructField("salary", StringType)))
-    val data = Seq(
-      Row("wnull000", null, "40", "70000"),
-      Row("wnull001", "Dave", null, null))
+    val writeSchema = StructType(
+      Seq(
+        StructField("key", StringType),
+        StructField("name", StringType),
+        StructField("age", StringType),
+        StructField("salary", StringType)))
+    val data = Seq(Row("wnull000", null, "40", "70000"), Row("wnull001", "Dave", null, null))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
 
     df.write
@@ -639,11 +826,12 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   }
 
   test("write with short name 'hbase' alias") {
-    val writeSchema = StructType(Seq(
-      StructField("key", StringType),
-      StructField("name", StringType),
-      StructField("age", StringType),
-      StructField("salary", StringType)))
+    val writeSchema = StructType(
+      Seq(
+        StructField("key", StringType),
+        StructField("name", StringType),
+        StructField("age", StringType),
+        StructField("salary", StringType)))
     val data = Seq(Row("wshort000", "Eve", "28", "55000"))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), writeSchema)
 
@@ -691,11 +879,11 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     implicit val sqlCtx = spark.sqlContext
     val source = MemoryStream[(String, String, String)]
 
-    source.addData(
-      ("srow000", "Frank", "32"),
-      ("srow001", "Grace", "27"))
+    source.addData(("srow000", "Frank", "32"), ("srow001", "Grace", "27"))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -726,7 +914,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("salias000", "Heidi", "41"))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("hbase")
       .option("catalog", streamCatalog)
@@ -754,7 +944,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("smulti000", "Ivy", "33"))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -767,7 +959,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("smulti001", "Jack", "29"), ("smulti002", "Kate", "36"))
 
-    val query2 = source.toDF().toDF("key", "name", "age")
+    val query2 = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -779,7 +973,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     query2.awaitTermination()
 
     val result = loadStreamTable()
-      .filter("key LIKE 'smulti%'").orderBy("key").collect()
+      .filter("key LIKE 'smulti%'")
+      .orderBy("key")
+      .collect()
     assert(result.length == 3)
     assert(result(0).getAs[String]("name") == "Ivy")
     assert(result(1).getAs[String]("name") == "Jack")
@@ -798,7 +994,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("snull000", null, "40"), ("snull001", "Leo", null))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -810,7 +1008,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     query.awaitTermination()
 
     val result = loadStreamTable()
-      .filter("key LIKE 'snull%'").orderBy("key").collect()
+      .filter("key LIKE 'snull%'")
+      .orderBy("key")
+      .collect()
     assert(result.length == 2)
     assert(result(0).getAs[String]("key") == "snull000")
     assert(result(0).getAs[String]("name") == null)
@@ -832,7 +1032,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData((null, "Mia", "25"))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -859,7 +1061,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("sover000", "Nora", "30"))
 
-    val query = source.toDF().toDF("key", "name", "age")
+    val query = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -872,7 +1076,9 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     source.addData(("sover000", "Nora-Updated", "31"))
 
-    val query2 = source.toDF().toDF("key", "name", "age")
+    val query2 = source
+      .toDF()
+      .toDF("key", "name", "age")
       .writeStream
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
       .option("catalog", streamCatalog)
@@ -948,10 +1154,11 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   private def loadAvroTable() = {
     spark.read
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
-      .options(Map(
-        "catalog" -> avroCatalog,
-        "avroSchema" -> avroSchemaString,
-        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .options(
+        Map(
+          "catalog" -> avroCatalog,
+          "avroSchema" -> avroSchemaString,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
       .load()
   }
 
@@ -971,19 +1178,21 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
 
     df.write
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
-      .options(Map(
-        "catalog" -> avroWriteCatalog,
-        "avroSchema" -> avroSchemaString,
-        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .options(
+        Map(
+          "catalog" -> avroWriteCatalog,
+          "avroSchema" -> avroSchemaString,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
       .mode("append")
       .save()
 
     val result = spark.read
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
-      .options(Map(
-        "catalog" -> avroWriteCatalog,
-        "avroSchema" -> avroSchemaString,
-        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .options(
+        Map(
+          "catalog" -> avroWriteCatalog,
+          "avroSchema" -> avroSchemaString,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
       .load()
 
     assert(result.count() == 10)
@@ -1076,10 +1285,11 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     populateAvroComplexTestData()
     val df = spark.read
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
-      .options(Map(
-        "catalog" -> avroComplexCatalog,
-        "avroComplexSchema" -> avroComplexSchemaString,
-        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .options(
+        Map(
+          "catalog" -> avroComplexCatalog,
+          "avroComplexSchema" -> avroComplexSchemaString,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
       .load()
 
     val rows = df.orderBy("key").collect()
@@ -1103,20 +1313,20 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
   }
 
   test("write Avro primitive type field") {
-    val writeSchema = StructType(Seq(
-      StructField("key", StringType),
-      StructField("col1", org.apache.spark.sql.types.IntegerType)))
-    val rows = (0 until 5).map(i =>
-      Row(f"prow$i%03d", 100 + i))
-    val writeDF = spark.createDataFrame(
-      spark.sparkContext.parallelize(rows), writeSchema)
+    val writeSchema = StructType(
+      Seq(
+        StructField("key", StringType),
+        StructField("col1", org.apache.spark.sql.types.IntegerType)))
+    val rows = (0 until 5).map(i => Row(f"prow$i%03d", 100 + i))
+    val writeDF = spark.createDataFrame(spark.sparkContext.parallelize(rows), writeSchema)
 
     writeDF.write
       .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
-      .options(Map(
-        "catalog" -> avroPrimitiveCatalog,
-        "avroPrimitiveSchema" -> avroPrimitiveSchemaString,
-        HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
+      .options(
+        Map(
+          "catalog" -> avroPrimitiveCatalog,
+          "avroPrimitiveSchema" -> avroPrimitiveSchemaString,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath))
       .mode("append")
       .save()
 
