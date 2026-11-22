@@ -105,7 +105,8 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
   override def pushedFilters(): Array[Filter] = _pushedFilters
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
-    this.requiredSchema = requiredSchema
+    // The reader decodes each Avro cell using its full catalog schema.
+    this.requiredSchema = StructType(requiredSchema.fieldNames.map(schema(_)))
   }
 
   override def build(): Scan = {
