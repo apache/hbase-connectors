@@ -46,6 +46,7 @@ class HBasePartitionReaderFactory(
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
     wrappedConf: SerializableConfiguration,
+    readOptions: HBaseReadOptions,
     hasNullCheck: Boolean)
     extends PartitionReaderFactory
     with Serializable {
@@ -61,6 +62,7 @@ class HBasePartitionReaderFactory(
       encoderClsName,
       usePushDownColumnFilter,
       wrappedConf,
+      readOptions,
       hasNullCheck)
   }
 }

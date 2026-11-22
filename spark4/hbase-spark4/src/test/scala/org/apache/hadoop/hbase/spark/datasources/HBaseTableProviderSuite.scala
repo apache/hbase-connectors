@@ -19,6 +19,8 @@ package org.apache.hadoop.hbase.spark.datasources
 
 import java.io.{File, FileOutputStream}
 import java.nio.file.Files
+import java.sql.{Date, Timestamp}
+import java.util.TimeZone
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
@@ -29,7 +31,8 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.execution.streaming.MemoryStream
 import org.apache.spark.sql.sources.{EqualTo, Or}
 import org.apache.spark.sql.streaming.Trigger
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{DateType, IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.TimestampType
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -485,6 +488,125 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     assert(rows.length == 1)
     assert(rows.head.getString(0) == key)
     assert(rows.head.getString(1) == "value")
+  }
+
+  test("write and read DateType keeps the calendar date in a non-UTC time zone") {
+    val tableName = "test_date_write"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val dateCatalog = s"""{
+      |"table":{"namespace":"default", "name":"$tableName"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+      |"d":{"cf":"$columnFamily", "col":"d", "type":"date"}
+      |}
+      |}""".stripMargin
+    val previousTimeZone = TimeZone.getDefault
+    // West of UTC, UTC midnight of a day still falls on the previous local day.
+    TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"))
+    try {
+      val data = Seq("1960-06-01", "1970-01-01", "2024-01-15").zipWithIndex.map {
+        case (d, i) => Row(s"row$i", Date.valueOf(d))
+      }
+      val schema = StructType(Seq(StructField("key", StringType), StructField("d", DateType)))
+      spark
+        .createDataFrame(spark.sparkContext.parallelize(data), schema)
+        .write
+        .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+        .option("catalog", dateCatalog)
+        .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+        .mode("append")
+        .save()
+
+      // Spark 3 stores java.sql.Date.getTime, i.e. local midnight in the JVM time zone.
+      val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+      val table = connection.getTable(TableName.valueOf(tableName))
+      try {
+        data.foreach { r =>
+          val cell = table
+            .get(new Get(Bytes.toBytes(r.getString(0))))
+            .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("d"))
+          assert(Bytes.toLong(cell) == r.getDate(1).getTime, r.getDate(1).toString)
+        }
+      } finally {
+        table.close()
+        connection.close()
+      }
+
+      val rows = spark.read
+        .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+        .option("catalog", dateCatalog)
+        .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+        .load()
+        .select("key", "d")
+        .collect()
+        .map(r => (r.getString(0), r.getDate(1).toString))
+        .toSet
+      assert(rows == data.map(r => (r.getString(0), r.getDate(1).toString)).toSet)
+    } finally {
+      TimeZone.setDefault(previousTimeZone)
+      TEST_UTIL.deleteTable(TableName.valueOf(tableName))
+    }
+  }
+
+  test("write and read TimestampType floors pre-epoch microseconds to milliseconds") {
+    val tableName = "test_timestamp_write"
+    TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))
+    val timestampCatalog = s"""{
+      |"table":{"namespace":"default", "name":"$tableName"},
+      |"rowkey":"key",
+      |"columns":{
+      |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+      |"ts":{"cf":"$columnFamily", "col":"ts", "type":"timestamp"}
+      |}
+      |}""".stripMargin
+    try {
+      // 1969-12-31 23:59:59.9985 UTC: -1500 microseconds, getTime == -2.
+      val preEpoch = new Timestamp(-2L)
+      preEpoch.setNanos(998500000)
+      // 1970-01-01 00:00:01.5005 UTC: 1500500 microseconds, getTime == 1500.
+      val postEpoch = new Timestamp(1500L)
+      postEpoch.setNanos(500500000)
+      val data = Seq(Row("pre", preEpoch), Row("post", postEpoch))
+      val schema =
+        StructType(Seq(StructField("key", StringType), StructField("ts", TimestampType)))
+      spark
+        .createDataFrame(spark.sparkContext.parallelize(data), schema)
+        .write
+        .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+        .option("catalog", timestampCatalog)
+        .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+        .mode("append")
+        .save()
+
+      // Spark 3 stores java.sql.Timestamp.getTime, which floors microseconds to milliseconds.
+      val connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration)
+      val table = connection.getTable(TableName.valueOf(tableName))
+      try {
+        data.foreach { r =>
+          val cell = table
+            .get(new Get(Bytes.toBytes(r.getString(0))))
+            .getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("ts"))
+          assert(Bytes.toLong(cell) == r.getTimestamp(1).getTime, r.getString(0))
+        }
+      } finally {
+        table.close()
+        connection.close()
+      }
+
+      val rows = spark.read
+        .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+        .option("catalog", timestampCatalog)
+        .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+        .load()
+        .select("key", "ts")
+        .collect()
+        .map(r => (r.getString(0), r.getTimestamp(1).getTime))
+        .toSet
+      assert(rows == data.map(r => (r.getString(0), r.getTimestamp(1).getTime)).toSet)
+    } finally {
+      TEST_UTIL.deleteTable(TableName.valueOf(tableName))
+    }
   }
 
   test("write preserves null columns") {

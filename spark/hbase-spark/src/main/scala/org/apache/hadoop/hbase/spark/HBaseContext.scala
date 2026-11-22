@@ -40,7 +40,7 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.spark.{SerializableWritable, SparkContext}
+import org.apache.spark.{SerializableWritable, SparkContext, TaskContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
@@ -496,13 +496,18 @@ class HBaseContext(
       it: Iterator[K],
       mp: (Iterator[K], Connection) => Iterator[U]): Iterator[U] = {
 
+    val taskContext = TaskContext.get()
+    if (taskContext == null) {
+      throw new IllegalStateException("hbaseMapPartition must run inside a Spark task")
+    }
     val config = getConf(configBroadcast)
     val smartConn = HBaseConnectionCache.getConnection(config)
-    try {
-      mp(it, smartConn.connection)
-    } finally {
-      if (smartConn != null) smartConn.close()
+    if (smartConn == null) {
+      throw new IllegalStateException("HBaseConnectionCache is closed")
     }
+    // The returned iterator may use the connection until the task finishes.
+    taskContext.addTaskCompletionListener[Unit](_ => smartConn.close())
+    mp(it, smartConn.connection)
   }
 
   /**

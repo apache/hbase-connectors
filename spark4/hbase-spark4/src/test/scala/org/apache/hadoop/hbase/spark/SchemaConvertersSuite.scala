@@ -139,6 +139,13 @@ class SchemaConvertersSuite extends AnyFunSuite {
     assert(converter(daysSinceEpoch) == 18500)
   }
 
+  test("TimestampType floors pre-epoch microseconds to milliseconds") {
+    val longSchema = Schema.create(Schema.Type.LONG)
+    val converter = SchemaConverters.createConverterToAvroFromInternalRow(TimestampType, longSchema)
+    assert(converter(-1500L) == -2L)
+    assert(converter(1500500L) == 1500L)
+  }
+
   test("unsupported type throws UnsupportedOperationException") {
     val intSchema = Schema.create(Schema.Type.INT)
     val ex = intercept[UnsupportedOperationException] {
