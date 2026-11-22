@@ -100,12 +100,14 @@ class HBaseBatch(
   }
 
   override def createReaderFactory(): PartitionReaderFactory = {
+    val sparkContext = SparkSession.active.sparkContext
+    val readOptions = HBaseReadOptions(properties, sparkContext.getConf)
     val usePushDownColumnFilter = properties
       .get(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER)
       .map(_.toBoolean)
       .getOrElse(HBaseSparkConf.DEFAULT_PUSHDOWN_COLUMN_FILTER)
 
-    val hadoopConf = SparkSession.active.sparkContext.hadoopConfiguration
+    val hadoopConf = sparkContext.hadoopConfiguration
     val hbaseConf = HBaseConfiguration.create(hadoopConf)
     properties.get(HBaseSparkConf.HBASE_CONFIG_LOCATION)
       .foreach(_.split(",").foreach(r => hbaseConf.addResource(new Path(r))))
@@ -118,6 +120,7 @@ class HBaseBatch(
       pushedFilters,
       encoderClsName,
       usePushDownColumnFilter,
-      wrappedConf)
+      wrappedConf,
+      readOptions)
   }
 }
