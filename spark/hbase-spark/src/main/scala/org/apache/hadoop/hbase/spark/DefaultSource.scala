@@ -457,7 +457,7 @@ case class HBaseRelation(
         scan.setBatch(batchNum)
         requiredQualifierDefinitionList.foreach(d => scan.addColumn(d.cfBytes, d.colBytes))
       } else if (batchNum > 0) {
-        logWarning(
+        logInfo(
           s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$batchNum because " +
             "predicate evaluation requires complete rows")
       }

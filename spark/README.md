@@ -57,7 +57,7 @@ Get operations. Reading all qualifiers preserves rows that exist only through
 cells outside the requested columns, at the cost of reading additional data.
 Cell batching (`hbase.spark.query.batchsize`) is disabled for scans with NULL
 checks or a server-side SQL filter, since predicate evaluation requires complete
-rows. A warning is logged when a positive batch size is ignored.
+rows. A message is logged at INFO when a positive batch size is ignored.
 
 The SQL pushdown filter declares that it needs complete rows, including when
 scanner limits or PREAD switching would otherwise produce partial results.

@@ -101,7 +101,7 @@ class HBaseTableScanRDD(
     regions.release()
     if (relation.batchNum > 0 && (hasNullCheck || filter.nonEmpty) &&
       ps.exists(_.scanRanges.nonEmpty)) {
-      logWarning(
+      logInfo(
         s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=${relation.batchNum} because " +
           "predicate evaluation requires complete rows")
     }

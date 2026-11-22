@@ -92,7 +92,7 @@ class HBasePartitionReader(
     if (hasNullCheck || pushDownFilter.nonEmpty) {
       batch.foreach {
         size =>
-          logWarning(
+          logInfo(
             s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$size because " +
               "predicate evaluation requires complete rows")
       }
