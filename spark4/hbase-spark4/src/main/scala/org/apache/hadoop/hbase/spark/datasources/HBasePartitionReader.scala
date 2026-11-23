@@ -61,7 +61,8 @@ class HBasePartitionReader(
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
     wrappedConf: SerializableConfiguration,
-    readOptions: HBaseReadOptions)
+    readOptions: HBaseReadOptions,
+    hasNullCheck: Boolean)
     extends PartitionReader[InternalRow]
     with Logging {
 
@@ -74,8 +75,21 @@ class HBasePartitionReader(
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
   private val scanFields = (requiredFields ++ filterFields).distinct.filterNot(_.isRowKey)
-  private val hasNullCheck = pushedFilters.exists(containsNullCheck)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
+
+  // Resolve only for Scan, and log at most once per reader.
+  private lazy val scanBatchSize: Option[Int] = {
+    val batch = properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).filter(_ > 0)
+    if (hasNullCheck || pushDownFilter.nonEmpty) {
+      batch.foreach {
+        size =>
+          logInfo(
+            s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$size because " +
+              "predicate evaluation requires complete rows")
+      }
+      None
+    } else batch
+  }
 
   private val scanners = new ListBuffer[ResultScanner]()
 
@@ -165,9 +179,7 @@ class HBasePartitionReader(
     if (readOptions.cachedRows > 0) {
       scan.setCaching(readOptions.cachedRows)
     }
-    properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).foreach { batch =>
-      if (batch > 0) scan.setBatch(batch)
-    }
+    scanBatchSize.foreach(scan.setBatch)
     handleTimeSemantics(scan)
 
     if (!hasNullCheck) {
@@ -445,13 +457,5 @@ class HBasePartitionReader(
       result = if (result == null) expr else new AndLogicExpression(result, expr)
     }
     result
-  }
-
-  private def containsNullCheck(f: Filter): Boolean = f match {
-    case IsNull(_) => true
-    case IsNotNull(_) => true
-    case And(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case Or(left, right) => containsNullCheck(left) || containsNullCheck(right)
-    case _ => false
   }
 }
