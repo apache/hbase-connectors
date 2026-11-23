@@ -96,6 +96,7 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
       .master("local[2]")
       .appName("HBaseTableProviderSuite")
       .config("spark.hadoopRDD.ignoreEmptySplits", "false")
+      .config("spark.sql.optimizer.nestedSchemaPruning.enabled", "true")
       .getOrCreate()
   }
 
@@ -964,6 +965,16 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     assert(struct0.getAs[String]("name") == "name000")
     assert(struct0.getAs[Int]("favorite_number") == 0)
     assert(struct0.getAs[String]("favorite_color") == "color000")
+  }
+
+  test("read a non-leading Avro string field with nested schema pruning enabled") {
+    val colors = loadAvroTable().select("col1.favorite_color").collect().map(_.getString(0))
+    assert(colors.sorted.toSeq == (0 until 10).map(i => f"color$i%03d"))
+  }
+
+  test("read a non-leading Avro integer field with nested schema pruning enabled") {
+    val numbers = loadAvroTable().select("col1.favorite_number").collect().map(_.getInt(0))
+    assert(numbers.sorted.toSeq == (0 until 10))
   }
 
   test("write and read Avro fields round-trip") {
