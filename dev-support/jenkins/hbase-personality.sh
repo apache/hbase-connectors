@@ -30,6 +30,17 @@ function personality_modules
   local extra=""
   local MODULES=("${CHANGED_MODULES[@]}")
 
+  # spark4/hbase-spark-pushdown compiles the sources of spark/hbase-spark-pushdown,
+  # and spark4/hbase-spark4 depends on it, so changes there must also be validated
+  # against the spark4 modules.
+  if [[ " ${MODULES[*]} " == *" spark/hbase-spark-pushdown "* ]]; then
+    for m in spark4/hbase-spark-pushdown spark4/hbase-spark4; do
+      if [[ " ${MODULES[*]} " != *" ${m} "* ]]; then
+        MODULES+=("${m}")
+      fi
+    done
+  fi
+
   # When spark4 modules are in the changed set, activate the spark4 profile
   # so the full reactor (including hbase-spark-pushdown_2.13) is built.
   # The maven-enforcer-plugin in the spark4 profile requires JDK 17+.

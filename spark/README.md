@@ -88,3 +88,30 @@ and each row key must occur only once. Legacy DStream wrappers are not included.
 - The server-side configuration is needed for column filter pushdown
   - if you cannot perform the server-side configuration, consider using `.option("hbase.spark.pushdown.columnfilter", false)`
 - The Scala library version must match the Scala version (2.11 or 2.12) used for compiling the connector.
+
+## Predicate pushdown limits
+
+Spark 3 and Spark 4 evaluate predicates in Spark when the connector cannot safely
+encode both the comparison and any row-key bounds. This includes comparisons on
+date, timestamp, decimal, floating-point, Avro and custom-SerDes fields, and range
+comparisons on byte fields. A compound AND or OR is accepted only when both sides
+are supported; a residual predicate never supplies row-key bounds.
+
+Range comparisons are supported only with the exact built-in `NaiveEncoder`.
+Custom encoders, including subclasses of `NaiveEncoder`, may change comparison
+tags or range encoding, so their range predicates stay in Spark. Equality, string
+prefix and NULL checks are checked separately. Disabling
+`hbase.spark.pushdown.columnfilter` retains safe row-key pruning.
+
+In Spark 3, NULL checks in residual predicates prevent qualifier pruning for
+Scan and Get operations. Scans with NULL checks or a server-side SQL filter
+disable cell batching (`hbase.spark.query.batchsize`) so predicates can see
+complete rows. A message is logged at INFO when a positive batch size is ignored.
+
+Spark 4 Scan and Get operations read all visible cells to preserve sparse rows
+with missing projected qualifiers, at the cost of reading additional data.
+Spark 4 scans ignore `hbase.spark.query.batchsize` so each result is a complete row.
+
+The SQL pushdown filter declares that it needs complete rows, including when
+scanner limits or PREAD switching would otherwise produce partial results.
+Deploy the updated pushdown filter on the RegionServers as well.

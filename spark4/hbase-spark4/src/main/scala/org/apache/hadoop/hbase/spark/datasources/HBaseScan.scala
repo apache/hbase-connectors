@@ -55,7 +55,13 @@ class HBaseScan(
 
   override def toBatch: Batch = {
     val rowKeyFilter = buildRowKeyFilter()
-    new HBaseBatch(requiredSchema, properties, catalog, rowKeyFilter, pushedFilters, encoderClsName)
+    new HBaseBatch(
+      requiredSchema,
+      properties,
+      catalog,
+      rowKeyFilter,
+      pushedFilters,
+      encoderClsName)
   }
 
   private def buildRowKeyFilter(): RowKeyFilter = {
