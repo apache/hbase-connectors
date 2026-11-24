@@ -50,6 +50,9 @@ import scala.jdk.CollectionConverters._
  *
  * Ranges are executed as Scan operations, whilst points are executed as batched Get operations. This mirrors the spark3
  * HBaseTableScanRDD.compute() behavior.
+ *
+ * Scan and Get read all visible cells so rows without projected qualifiers are preserved.
+ * Projection happens in get(); scans do not use cell batches because each Result represents one Spark row.
  */
 @InterfaceAudience.Private
 class HBasePartitionReader(
@@ -61,8 +64,7 @@ class HBasePartitionReader(
     encoderClsName: String,
     usePushDownColumnFilter: Boolean,
     wrappedConf: SerializableConfiguration,
-    readOptions: HBaseReadOptions,
-    hasNullCheck: Boolean)
+    readOptions: HBaseReadOptions)
     extends PartitionReader[InternalRow]
     with Logging {
 
@@ -74,22 +76,7 @@ class HBasePartitionReader(
 
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
-  private val scanFields = (requiredFields ++ filterFields).distinct.filterNot(_.isRowKey)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
-
-  // Resolve only for Scan, and log at most once per reader.
-  private lazy val scanBatchSize: Option[Int] = {
-    val batch = properties.get(HBaseSparkConf.QUERY_BATCHSIZE).map(_.toInt).filter(_ > 0)
-    if (hasNullCheck || pushDownFilter.nonEmpty) {
-      batch.foreach {
-        size =>
-          logInfo(
-            s"Ignoring ${HBaseSparkConf.QUERY_BATCHSIZE}=$size because " +
-              "predicate evaluation requires complete rows")
-      }
-      None
-    } else batch
-  }
 
   private val scanners = new ListBuffer[ResultScanner]()
 
@@ -179,14 +166,7 @@ class HBasePartitionReader(
     if (readOptions.cachedRows > 0) {
       scan.setCaching(readOptions.cachedRows)
     }
-    scanBatchSize.foreach(scan.setBatch)
     handleTimeSemantics(scan)
-
-    if (!hasNullCheck) {
-      scanFields.foreach { f =>
-        scan.addColumn(f.cfBytes, f.colBytes)
-      }
-    }
     pushDownFilter.foreach(scan.setFilter(_))
 
     table.getScanner(scan)
@@ -198,11 +178,6 @@ class HBasePartitionReader(
       batch.foreach { point =>
         val g = new Get(point)
         handleTimeSemantics(g)
-        if (!hasNullCheck) {
-          scanFields.foreach { f =>
-            g.addColumn(f.cfBytes, f.colBytes)
-          }
-        }
         pushDownFilter.foreach(g.setFilter(_))
         gets.add(g)
       }

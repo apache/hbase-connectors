@@ -103,12 +103,14 @@ tags or range encoding, so their range predicates stay in Spark. Equality, strin
 prefix and NULL checks are checked separately. Disabling
 `hbase.spark.pushdown.columnfilter` retains safe row-key pruning.
 
-NULL checks in residual predicates also prevent qualifier pruning for Scan and
-Get operations. Reading all qualifiers preserves rows that exist only through
-cells outside the requested columns, at the cost of reading additional data.
-Cell batching (`hbase.spark.query.batchsize`) is disabled for scans with NULL
-checks or a server-side SQL filter, since predicate evaluation requires complete
-rows. A message is logged at INFO when a positive batch size is ignored.
+In Spark 3, NULL checks in residual predicates prevent qualifier pruning for
+Scan and Get operations. Scans with NULL checks or a server-side SQL filter
+disable cell batching (`hbase.spark.query.batchsize`) so predicates can see
+complete rows. A message is logged at INFO when a positive batch size is ignored.
+
+Spark 4 Scan and Get operations read all visible cells to preserve sparse rows
+with missing projected qualifiers, at the cost of reading additional data.
+Spark 4 scans ignore `hbase.spark.query.batchsize` so each result is a complete row.
 
 The SQL pushdown filter declares that it needs complete rows, including when
 scanner limits or PREAD switching would otherwise produce partial results.

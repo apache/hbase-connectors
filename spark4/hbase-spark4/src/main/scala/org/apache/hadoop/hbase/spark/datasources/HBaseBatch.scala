@@ -48,8 +48,7 @@ class HBaseBatch(
     catalog: HBaseTableCatalog,
     rowKeyFilter: RowKeyFilter,
     pushedFilters: Array[Filter],
-    encoderClsName: String,
-    hasNullCheck: Boolean)
+    encoderClsName: String)
     extends Batch
     with Logging {
 
@@ -122,7 +121,6 @@ class HBaseBatch(
       encoderClsName,
       usePushDownColumnFilter,
       wrappedConf,
-      readOptions,
-      hasNullCheck)
+      readOptions)
   }
 }

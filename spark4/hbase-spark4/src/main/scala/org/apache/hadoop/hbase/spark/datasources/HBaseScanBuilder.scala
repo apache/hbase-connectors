@@ -52,11 +52,9 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
 
   private var _pushedFilters: Array[Filter] = Array.empty
   private var _rowKeyFilters: Array[Filter] = Array.empty
-  private var hasNullCheck = false
   private var requiredSchema: StructType = schema
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
-    hasNullCheck = filters.exists(PredicatePushdownSupport.containsNullCheck)
     val hasCompositeRowKey = catalog.getRowKey.size > 1
 
     def dataTypeOf(attr: String): Option[DataType] =
@@ -111,7 +109,6 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
       _pushedFilters,
       _rowKeyFilters,
       encoderClsName,
-      encoder,
-      hasNullCheck)
+      encoder)
   }
 }

@@ -24,7 +24,7 @@ import java.util.TimeZone
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.hadoop.hbase.{HBaseTestingUtility, TableName}
-import org.apache.hadoop.hbase.client.{ColumnFamilyDescriptorBuilder, ConnectionFactory, Get, Put, TableDescriptorBuilder}
+import org.apache.hadoop.hbase.client.{ColumnFamilyDescriptorBuilder, ConnectionFactory, Delete, Get, Put, TableDescriptorBuilder}
 import org.apache.hadoop.hbase.spark.{AvroSerdes, Logging}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.sql.{Row, SparkSession}
@@ -162,6 +162,184 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
     val firstRow = df.orderBy("key").first()
     assert(firstRow.getString(0) == "row000")
     assert(firstRow.getString(1) == "Name0")
+  }
+
+  private def withSparseTable(test: Map[String, String] => Unit): Unit = {
+    val sparseTable = TableName.valueOf("sparse_projection")
+    val table =
+      TEST_UTIL.createTable(sparseTable, Array(Bytes.toBytes(columnFamily), Bytes.toBytes("other")))
+    try {
+      val cells = Seq(
+        ("r1", columnFamily, "name", "Alice", 1000L),
+        ("r2", columnFamily, "age", "20", 2000L),
+        ("r3", columnFamily, "unmapped", "exists", 2000L),
+        ("r4", "other", "unmapped", "exists", 2000L),
+        ("rw", columnFamily, "name", "Bob", 2000L),
+        ("rw", columnFamily, "age", "30", 2000L),
+        ("rw", columnFamily, "u0", "wide", 2000L),
+        ("rw", columnFamily, "u1", "wide", 2000L),
+        ("deleted", "other", "unmapped", "deleted", 2000L))
+      cells.foreach {
+        case (key, family, qualifier, value, timestamp) =>
+          val put = new Put(Bytes.toBytes(key))
+          put.addColumn(
+            Bytes.toBytes(family),
+            Bytes.toBytes(qualifier),
+            timestamp,
+            Bytes.toBytes(value))
+          table.put(put)
+      }
+      table.delete(new Delete(Bytes.toBytes("deleted")))
+      val json = s"""{
+        |"table":{"namespace":"default", "name":"${sparseTable.getNameAsString}"},
+        |"rowkey":"key",
+        |"columns":{
+        |"key":{"cf":"rowkey", "col":"key", "type":"string"},
+        |"name":{"cf":"$columnFamily", "col":"name", "type":"string"},
+        |"age":{"cf":"$columnFamily", "col":"age", "type":"string"}
+        |}}""".stripMargin
+      test(
+        Map(
+          HBaseTableCatalog.tableCatalog -> json,
+          HBaseSparkConf.HBASE_CONFIG_LOCATION -> configFile.getAbsolutePath,
+          HBaseSparkConf.BULKGET_SIZE -> "2"))
+    } finally {
+      table.close()
+      TEST_UTIL.deleteTable(sparseTable)
+    }
+  }
+
+  test("HBASE-30512 projections preserve sparse rows and complete wide rows") {
+    withSparseTable {
+      options =>
+        val expected = Seq(
+          Row("r1", "Alice"),
+          Row("r2", null),
+          Row("r3", null),
+          Row("r4", null),
+          Row("rw", "Bob"))
+        for (enabled <- Seq(true, false); batchSize <- Seq(None, Some(1), Some(2))) {
+          withClue(s"pushdown=$enabled batchSize=$batchSize: ") {
+            val reader = spark.read
+              .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+              .options(options)
+              .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+            batchSize.foreach(size => reader.option(HBaseSparkConf.QUERY_BATCHSIZE, size.toString))
+            val frame = reader.load()
+            val projected = frame.select("key", "name")
+            val rows = projected.collect().toSeq.sortBy(_.getString(0))
+            assert(rows == expected)
+            assert(projected.count() == rows.size)
+            assert(
+              frame.select("key").collect().map(_.getString(0)).sorted.toSeq ==
+                expected.map(_.getString(0)))
+            assert(
+              frame.select("name").collect().toSeq.groupBy(identity).view.mapValues(_.size).toMap ==
+                expected.map(row => Row(row.get(1))).groupBy(identity).view.mapValues(_.size).toMap)
+            assert(frame.selectExpr("1 AS marker").collect().toSeq == Seq.fill(5)(Row(1)))
+            assert(
+              frame.select("key", "name", "age").collect().toSeq.sortBy(_.getString(0)) == Seq(
+                Row("r1", "Alice", null),
+                Row("r2", null, "20"),
+                Row("r3", null, null),
+                Row("r4", null, null),
+                Row("rw", "Bob", "30")))
+            assert(
+              frame
+                .filter("name IS NULL")
+                .select("key", "name")
+                .collect()
+                .toSeq
+                .sortBy(_.getString(0)) == expected.slice(1, 4))
+            assert(
+              frame
+                .filter("key = 'r2' OR name = 'Alice'")
+                .select("key", "name")
+                .collect()
+                .toSeq
+                .sortBy(_.getString(0)) == expected.take(2))
+            assert(frame.filter("name = 'Bob'").select("key").collect().toSeq == Seq(Row("rw")))
+          }
+        }
+    }
+  }
+
+  test("HBASE-30512 Get batches preserve sparse rows without implicit NULL predicates") {
+    withSparseTable {
+      options =>
+        val required =
+          StructType(Seq(StructField("key", StringType), StructField("name", StringType)))
+        val points = Seq("r1", "r2", "r3", "r4", "rw", "missing")
+          .map(key => EqualTo("key", key))
+          .reduce[org.apache.spark.sql.sources.Filter]((left, right) => Or(left, right))
+        for (enabled <- Seq(true, false)) {
+          val readOptions = options + (HBaseSparkConf.PUSHDOWN_COLUMN_FILTER -> enabled.toString)
+          val builder = new HBaseScanBuilder(HBaseTableCatalog(readOptions).toDataType, readOptions)
+          builder.pushFilters(Array(points))
+          builder.pruneColumns(required)
+          val batch = builder.build().toBatch
+          val partitions = batch.planInputPartitions()
+          assert(partitions.nonEmpty)
+          assert(partitions.forall(_.asInstanceOf[HBaseInputPartition].scanRanges.isEmpty))
+          assert(partitions.map(_.asInstanceOf[HBaseInputPartition].points.size).sum == 6)
+          val factory = batch.createReaderFactory()
+          val rows = partitions.toSeq.flatMap {
+            partition =>
+              val reader = factory.createReader(partition)
+              val result = scala.collection.mutable.ArrayBuffer.empty[Row]
+              try {
+                while (reader.next()) {
+                  val row = reader.get()
+                  val name = if (row.isNullAt(1)) null else row.getUTF8String(1).toString
+                  result += Row(row.getUTF8String(0).toString, name)
+                }
+                result.toSeq
+              } finally {
+                reader.close()
+              }
+          }
+          assert(
+            rows.sortBy(_.getString(0)) == Seq(
+              Row("r1", "Alice"),
+              Row("r2", null),
+              Row("r3", null),
+              Row("r4", null),
+              Row("rw", "Bob")),
+            s"pushdown=$enabled")
+        }
+    }
+  }
+
+  test("HBASE-30512 row existence respects timestamps and time ranges") {
+    withSparseTable {
+      options =>
+        for (enabled <- Seq(true, false)) {
+          val reader = spark.read
+            .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+            .options(options)
+            .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+          val atTimestamp = reader.option(HBaseSparkConf.TIMESTAMP, "1000").load()
+          assert(atTimestamp.select("key", "name").collect().toSeq == Seq(Row("r1", "Alice")))
+          assert(atTimestamp.filter("key = 'r2'").select("key", "name").collect().isEmpty)
+          val inRange = spark.read
+            .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+            .options(options)
+            .option(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER, enabled.toString)
+            .option(HBaseSparkConf.TIMERANGE_START, "1500")
+            .option(HBaseSparkConf.TIMERANGE_END, "2500")
+            .load()
+          assert(
+            inRange.select("key", "name").collect().toSeq.sortBy(_.getString(0)) == Seq(
+              Row("r2", null),
+              Row("r3", null),
+              Row("r4", null),
+              Row("rw", "Bob")))
+          assert(inRange.filter("key = 'r1'").select("key", "name").collect().isEmpty)
+          assert(
+            inRange.filter("key = 'r2'").select("key", "name").collect().toSeq ==
+              Seq(Row("r2", null)))
+        }
+    }
   }
 
   test("filter with EqualTo on non-row-key column") {

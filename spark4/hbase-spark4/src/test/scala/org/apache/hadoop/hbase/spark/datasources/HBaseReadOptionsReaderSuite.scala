@@ -56,7 +56,7 @@ class HBaseReadOptionsReaderSuite extends AnyFunSuite {
       HBaseSparkConf.QUERY_CACHEDROWS -> "64",
       HBaseSparkConf.BULKGET_SIZE -> "3",
       HBaseSparkConf.QUERY_BATCHSIZE -> "2")
-    checkRead(globals, options, HBaseReadOptions(false, 64, 3), Seq(3, 2), expectedBatch = 2)
+    checkRead(globals, options, HBaseReadOptions(false, 64, 3), Seq(3, 2))
   }
 
   test("reader factory preserves defaults when global and per-read settings are absent") {
@@ -91,14 +91,12 @@ class HBaseReadOptionsReaderSuite extends AnyFunSuite {
     }
   }
 
-  test("invalid cell batch options still fail when opening a Scan") {
-    intercept[NumberFormatException] {
-      checkRead(
-        globals,
-        Map(HBaseSparkConf.QUERY_BATCHSIZE -> "invalid"),
-        HBaseReadOptions(true, 256, 2),
-        Seq.empty)
-    }
+  test("invalid per-read cell batch options are ignored when opening a Scan") {
+    checkRead(
+      globals,
+      Map(HBaseSparkConf.QUERY_BATCHSIZE -> "invalid"),
+      HBaseReadOptions(true, 256, 2),
+      Seq(2, 2, 1))
   }
 
   test("Get-only reads do not parse cell batch options") {
@@ -115,7 +113,6 @@ class HBaseReadOptionsReaderSuite extends AnyFunSuite {
       options: Map[String, String],
       expected: HBaseReadOptions,
       expectedGetSizes: Seq[Int],
-      expectedBatch: Int = -1,
       scanRanges: Seq[Range] = Seq(Range(None, None))): Unit = {
     val sparkConf = new SparkConf(false)
       .setMaster("local[1]")
@@ -189,7 +186,7 @@ class HBaseReadOptionsReaderSuite extends AnyFunSuite {
         scan =>
           assert(scan.getCacheBlocks == expected.cacheBlocks)
           assert(scan.getCaching == expected.cachedRows)
-          assert(scan.getBatch == expectedBatch)
+          assert(scan.getBatch == -1)
       }
       assert(getSizes.toSeq == expectedGetSizes)
     } finally {
