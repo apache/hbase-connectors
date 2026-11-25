@@ -22,13 +22,13 @@ import org.apache.spark.sql.connector.read.{Scan, ScanBuilder, SupportsPushDownF
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.yetus.audience.InterfaceAudience
-import scala.collection.mutable.ListBuffer
 
 /**
  * This is a new class in the spark4 module.
  * Implements ScanBuilder, SupportsPushDownFilters, and SupportsPushDownRequiredColumns.
  * This is where Catalyst negotiates with the connector. Spark calls pushFilters() with
- * candidate predicates and the builder accepts what it can handle and returns the rest.
+ * candidate predicates and the builder pushes what it can handle to HBase, but returns all of
+ * them so Spark still evaluates every predicate after the scan.
  * Spark calls pruneColumns() to say which columns it actually needs.
  * Then build() produces the final scan plan.
  *
@@ -66,32 +66,22 @@ class HBaseScanBuilder(schema: StructType, properties: Map[String, String])
               field.avroSchema.isEmpty && field.serdes.isEmpty)
         .map(_.dt)
 
-    val supported = new ListBuffer[Filter]()
-    val unsupported = new ListBuffer[Filter]()
+    val naiveEncoder = encoder.getClass == classOf[NaiveEncoder]
+    val supported =
+      filters.filter(PredicatePushdownSupport.isSupported(_, dataTypeOf, naiveEncoder))
 
-    filters.foreach {
-      f =>
-        if (PredicatePushdownSupport.isSupported(
-            f,
-            dataTypeOf,
-            encoder.getClass == classOf[NaiveEncoder])) supported += f
-        else unsupported += f
-    }
-
-    _rowKeyFilters = supported.toArray
+    _rowKeyFilters = supported
 
     val usePushDown = properties
       .get(HBaseSparkConf.PUSHDOWN_COLUMN_FILTER)
       .map(_.toBoolean)
       .getOrElse(HBaseSparkConf.DEFAULT_PUSHDOWN_COLUMN_FILTER)
 
-    if (!usePushDown) {
-      _pushedFilters = Array.empty
-      return filters
-    }
+    _pushedFilters = if (usePushDown) supported else Array.empty
 
-    _pushedFilters = supported.toArray
-    unsupported.toArray
+    // Pushed filters are best-effort: SparkSQLPushDownFilter keeps rows it fails to evaluate.
+    // Return every filter so Spark re-checks them after the scan, as the spark3 V1 relation does.
+    filters
   }
 
   override def pushedFilters(): Array[Filter] = _pushedFilters
