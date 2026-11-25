@@ -68,31 +68,40 @@ class HBasePartitionReader(
     extends PartitionReader[InternalRow]
     with Logging {
 
-  private val conf = wrappedConf.value
-
-  private val connection: SmartConnection = HBaseConnectionCache.getConnection(conf)
   private val tableName = s"${catalog.namespace}:${catalog.name}"
-  private val table: Table = connection.getTable(TableName.valueOf(tableName))
 
   private val requiredFields = requiredSchema.fieldNames.map(catalog.sMap.getField(_))
   private val filterFields = extractFilterFields(pushedFilters)
   private val pushDownFilter: Option[SparkSQLPushDownFilter] = buildPushDownFilter()
+  private val keyFields = catalog.getRowKey
 
+  // Spark registers close() only after createReader returns, so a constructor that throws must
+  // release what it acquired itself. Everything above fails without holding any resource.
   private val scanners = new ListBuffer[ResultScanner]()
+  private var table: Table = _
+  private var closed = false
+  private val connection: SmartConnection = HBaseConnectionCache.getConnection(wrappedConf.value)
 
-  private val resultIterator: Iterator[Result] = {
-    val scanIterators = partition.scanRanges.map { range =>
-      val scanner = buildScanner(range)
-      scanners += scanner
-      scannerToIterator(scanner)
+  private val resultIterator: Iterator[Result] =
+    try {
+      table = connection.getTable(TableName.valueOf(tableName))
+      val scanIterators = partition.scanRanges.map { range =>
+        val scanner = buildScanner(range)
+        scanners += scanner
+        scannerToIterator(scanner)
+      }
+      val getIterator = if (partition.points.nonEmpty) {
+        buildGets(partition.points)
+      } else {
+        Iterator.empty
+      }
+      scanIterators.foldLeft(Iterator.empty: Iterator[Result])(_ ++ _) ++ getIterator
+    } catch {
+      case e: Throwable =>
+        try close()
+        catch { case t: Throwable => e.addSuppressed(t) }
+        throw e
     }
-    val getIterator = if (partition.points.nonEmpty) {
-      buildGets(partition.points)
-    } else {
-      Iterator.empty
-    }
-    scanIterators.foldLeft(Iterator.empty: Iterator[Result])(_ ++ _) ++ getIterator
-  }
 
   private var currentResult: Result = _
 
@@ -104,8 +113,6 @@ class HBasePartitionReader(
       false
     }
   }
-
-  private val keyFields = catalog.getRowKey
 
   override def get(): InternalRow = {
     val rowKey = currentResult.getRow
@@ -134,10 +141,21 @@ class HBasePartitionReader(
     new GenericInternalRow(values)
   }
 
+  // Releases every resource even when one of them fails to close, then rethrows the first failure.
   override def close(): Unit = {
-    scanners.foreach(s => if (s != null) s.close())
-    if (table != null) table.close()
-    if (connection != null) connection.close()
+    if (!closed) {
+      closed = true
+      var error: Throwable = null
+      def release(resource: => Unit): Unit =
+        try resource
+        catch {
+          case t: Throwable => if (error == null) error = t else error.addSuppressed(t)
+        }
+      scanners.foreach(s => release(s.close()))
+      if (table != null) release(table.close())
+      if (connection != null) release(connection.close())
+      if (error != null) throw error
+    }
   }
 
   private def setStopRow(scan: Scan, bound: Bound): Scan = {
