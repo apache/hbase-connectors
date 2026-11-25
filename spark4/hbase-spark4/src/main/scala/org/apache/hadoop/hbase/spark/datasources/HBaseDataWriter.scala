@@ -50,10 +50,7 @@ class HBaseDataWriter(
     extends DataWriter[InternalRow]
     with Logging {
 
-  private val conf = wrappedConf.value
-  private val connection: SmartConnection = HBaseConnectionCache.getConnection(conf)
   private val tableName = TableName.valueOf(s"${catalog.namespace}:${catalog.name}")
-  private val table: Table = connection.getTable(tableName)
 
   private val timestamp = properties.get(HBaseSparkConf.TIMESTAMP).map(_.toLong)
 
@@ -71,6 +68,19 @@ class HBaseDataWriter(
     .getOrElse(HBaseSparkConf.DEFAULT_BULKGET_SIZE)
 
   private val putBuffer = new ArrayList[Put](batchSize)
+
+  // Spark calls createWriter outside its failure handling, so nothing releases resources taken
+  // by a constructor that throws. Validate above first, then take the connection and table last.
+  private val connection: SmartConnection = HBaseConnectionCache.getConnection(wrappedConf.value)
+  private val table: Table =
+    try {
+      connection.getTable(tableName)
+    } catch {
+      case e: Throwable =>
+        connection.close()
+        throw e
+    }
+  private var closed = false
 
   override def write(record: InternalRow): Unit = {
     val rowKeyBytes = buildRowKey(record)
@@ -91,17 +101,23 @@ class HBaseDataWriter(
 
   override def commit(): WriterCommitMessage = {
     flushPuts()
-    table.close()
-    connection.close()
     HBaseWriterCommitMessage()
   }
 
-  override def abort(): Unit = {
-    table.close()
-    connection.close()
-  }
+  override def abort(): Unit = putBuffer.clear()
 
-  override def close(): Unit = {}
+  // Spark always calls close() after commit() or abort(), including when commit() throws and
+  // abort() follows, so resources are released here exactly once.
+  override def close(): Unit = {
+    if (!closed) {
+      closed = true
+      try {
+        table.close()
+      } finally {
+        connection.close()
+      }
+    }
+  }
 
   private def flushPuts(): Unit = {
     if (!putBuffer.isEmpty) {
