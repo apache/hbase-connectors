@@ -423,7 +423,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         EqualTo("key", "z"))
       val schema = HBaseTableCatalog(options).toDataType
       val builder = new HBaseScanBuilder(schema, options)
-      assert(builder.pushFilters(Array(repeatedPoints)).isEmpty)
+      assert(builder.pushFilters(Array(repeatedPoints)).toSeq == Seq(repeatedPoints))
+      assert(builder.pushedFilters().toSeq == Seq(repeatedPoints))
       val batch = builder.build().toBatch
       val partitions = batch.planInputPartitions()
       assert(partitions.length == 2)
@@ -1619,7 +1620,8 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         val builder = new HBaseScanBuilder(
           HBaseTableCatalog(options).toDataType,
           options + (HBaseSparkConf.QUERY_BATCHSIZE -> batchSize))
-        assert(builder.pushFilters(Array(filter)).isEmpty)
+        assert(builder.pushFilters(Array(filter)).toSeq == Seq(filter))
+        assert(builder.pushedFilters().toSeq == Seq(filter))
         builder.pruneColumns(StructType(Seq(StructField("key", StringType))))
         val batch = builder.build().toBatch
         val factory = batch.createReaderFactory()

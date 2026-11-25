@@ -91,11 +91,13 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
     for ((dataType, value) <- values) {
       val builder = typedBuilder(dataType)
       val filters = Array[Filter](EqualTo("value", value), GreaterThan("value", value))
-      assert(builder.pushFilters(filters).isEmpty, dataType)
+      assert(builder.pushFilters(filters).toSeq == filters.toSeq, dataType)
       assert(builder.pushedFilters().toSeq == filters.toSeq)
     }
     val builder = typedBuilder("byte")
-    assert(builder.pushFilters(Array(EqualTo("key", 1.toByte))).isEmpty)
+    val byteKey = EqualTo("key", 1.toByte)
+    assert(builder.pushFilters(Array(byteKey)).toSeq == Seq(byteKey))
+    assert(builder.pushedFilters().toSeq == Seq(byteKey))
   }
 
   test("HBASE-30510 mixed compound filters are returned intact to Spark") {
@@ -103,7 +105,7 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
     val unsafe = GreaterThan("salary", 0.0d)
     for (compound <- Seq(And(safe, unsafe), Or(safe, unsafe), Or(And(safe, unsafe), safe))) {
       val builder = newBuilder()
-      assert(builder.pushFilters(Array(compound, safe)).toSeq == Seq(compound))
+      assert(builder.pushFilters(Array(compound, safe)).toSeq == Seq(compound, safe))
       assert(builder.pushedFilters().toSeq == Seq(safe))
     }
   }
@@ -123,7 +125,7 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
   test("HBASE-30510 null checks do not require comparison encoding") {
     val builder = typedBuilder("timestamp")
     val filters = Array[Filter](IsNull("value"), IsNotNull("value"))
-    assert(builder.pushFilters(filters).isEmpty)
+    assert(builder.pushFilters(filters).toSeq == filters.toSeq)
     assert(builder.pushedFilters().toSeq == filters.toSeq)
   }
 
@@ -148,100 +150,109 @@ class HBaseScanBuilderSuite extends AnyFunSuite {
 
   test("EqualTo on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(EqualTo("name", "Alice")))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(EqualTo("name", "Alice")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
     assert(builder.pushedFilters()(0) == EqualTo("name", "Alice"))
   }
 
   test("LessThan on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(LessThan("age", 30)))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(LessThan("age", 30)))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("GreaterThan on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(GreaterThan("age", 30)))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(GreaterThan("age", 30)))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("LessThanOrEqual on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(LessThanOrEqual("age", 25)))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(LessThanOrEqual("age", 25)))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("GreaterThanOrEqual on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(GreaterThanOrEqual("age", 18)))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(GreaterThanOrEqual("age", 18)))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("StringStartsWith on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(StringStartsWith("name", "A")))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(StringStartsWith("name", "A")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("IsNull on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(IsNull("name")))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(IsNull("name")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("IsNotNull on known column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(IsNotNull("name")))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(IsNotNull("name")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("filter on unknown column is not pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(EqualTo("unknown_col", "value")))
-    assert(unsupported.length == 1)
+    val postScan = builder.pushFilters(Array(EqualTo("unknown_col", "value")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().isEmpty)
   }
 
   test("Or compound filter is pushed") {
     val builder = newBuilder()
     val filter = Or(EqualTo("name", "Alice"), EqualTo("name", "Bob"))
-    val unsupported = builder.pushFilters(Array(filter))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(filter))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
   test("And compound filter is pushed") {
     val builder = newBuilder()
     val filter = And(GreaterThan("age", 20), LessThan("age", 40))
-    val unsupported = builder.pushFilters(Array(filter))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(filter))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
-  test("mixed supported and unsupported filters are separated") {
+  test("mixed supported and unsupported filters: only supported are pushed, all are returned") {
     val builder = newBuilder()
     val filters = Array[Filter](
       EqualTo("name", "Alice"),
       EqualTo("unknown", "value"),
       GreaterThan("age", 20))
-    val unsupported = builder.pushFilters(filters)
-    assert(unsupported.length == 1)
-    assert(unsupported(0) == EqualTo("unknown", "value"))
-    assert(builder.pushedFilters().length == 2)
+    assert(builder.pushFilters(filters).toSeq == filters.toSeq)
+    assert(builder.pushedFilters().toSeq == Seq(EqualTo("name", "Alice"), GreaterThan("age", 20)))
+  }
+
+  test("pushed filters are still returned for Spark to re-evaluate after the scan") {
+    val filters = Array[Filter](EqualTo("key", "row001"), EqualTo("name", "Alice"))
+    for (pushDown <- Seq(true, false)) {
+      val builder = new HBaseScanBuilder(
+        schema,
+        properties + (HBaseSparkConf.PUSHDOWN_COLUMN_FILTER -> pushDown.toString))
+      assert(builder.pushFilters(filters).toSeq == filters.toSeq, s"pushDown=$pushDown")
+      assert(builder.pushedFilters().toSeq == (if (pushDown) filters.toSeq else Seq.empty))
+    }
   }
 
   test("filter on row key column is pushed") {
     val builder = newBuilder()
-    val unsupported = builder.pushFilters(Array(EqualTo("key", "row001")))
-    assert(unsupported.isEmpty)
+    val postScan = builder.pushFilters(Array(EqualTo("key", "row001")))
+    assert(postScan.length == 1)
     assert(builder.pushedFilters().length == 1)
   }
 
