@@ -61,6 +61,7 @@ class HBaseDataWriter(
   private val rkIdxedFields = rkFields.map { f =>
     (schema.fieldIndex(f.colName), f)
   }
+  private val isCompositeKey = rkIdxedFields.length > 1
   private val colIdxedFields = schema.fieldNames
     .filter(name => !rkFields.map(_.colName).contains(name))
     .map(name => (schema.fieldIndex(name), catalog.sMap.getField(name)))
@@ -115,6 +116,11 @@ class HBaseDataWriter(
       case ((idx, field), index) =>
         require(!record.isNullAt(idx), s"Row key column '${field.colName}' must not be null")
         val bytes = getValueBytes(record, idx, field)
+        if (isCompositeKey && field.length != -1) {
+          require(
+            bytes.length == field.length,
+            s"Row key column '${field.colName}' expected ${field.length} bytes but got ${bytes.length}")
+        }
         if (field.length == -1 && field.dt == StringType && index < rkIdxedFields.length - 1) {
           require(
             !bytes.contains(HBaseTableCatalog.delimiter),

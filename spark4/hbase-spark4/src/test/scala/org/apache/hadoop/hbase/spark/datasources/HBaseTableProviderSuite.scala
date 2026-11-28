@@ -635,6 +635,83 @@ class HBaseTableProviderSuite extends AnyFunSuite with BeforeAndAfterAll with Lo
         .toSet)
   }
 
+  for ((scenario, tailLength, first, second, expectedMessage) <- Seq(
+      (
+        "short first component",
+        "",
+        Row("ab", "c", "first"),
+        Row("a", "bc", "second"),
+        "Row key column 'a' expected 2 bytes but got 1"),
+      (
+        "long final component",
+        ", \"length\":\"2\"",
+        Row("ab", "é", "first"),
+        Row("ab", "猫", "second"),
+        "Row key column 'b' expected 2 bytes but got 3"))) {
+    test(s"reject invalid fixed-length composite row key ($scenario)") {
+      val tableName = "fixed_key_" + scenario.replace(' ', '_')
+      val keyCatalog = s"""{
+        |"table":{"namespace":"default", "name":"$tableName"},
+        |"rowkey":"a:b",
+        |"columns":{
+        |"a":{"cf":"rowkey", "col":"a", "type":"string", "length":"2"},
+        |"b":{"cf":"rowkey", "col":"b", "type":"string"$tailLength},
+        |"value":{"cf":"$columnFamily", "col":"value", "type":"string"}
+        |}
+        |}""".stripMargin
+      val schema = StructType(
+        Seq(
+          StructField("a", StringType),
+          StructField("b", StringType),
+          StructField("value", StringType)))
+
+      def write(row: Row): Unit = {
+        spark
+          .createDataFrame(spark.sparkContext.parallelize(Seq(row), 1), schema)
+          .write
+          .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+          .option(HBaseTableCatalog.tableCatalog, keyCatalog)
+          .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+          .mode("append")
+          .save()
+      }
+
+      val family = Bytes.toBytes(columnFamily)
+      val qualifier = Bytes.toBytes("value")
+      val key = Bytes.toBytes(first.getString(0) + first.getString(1))
+      val table = TEST_UTIL.createTable(TableName.valueOf(tableName), family)
+      try {
+        write(first)
+        assert(Bytes.toString(table.get(new Get(key)).getValue(family, qualifier)) == "first")
+
+        val failure = intercept[Exception] {
+          write(second)
+        }
+        val causes = Iterator.iterate[Throwable](failure)(_.getCause).takeWhile(_ != null)
+        assert(
+          causes.exists {
+            cause =>
+              cause.isInstanceOf[IllegalArgumentException] &&
+              Option(cause.getMessage).exists(_.contains(expectedMessage))
+          },
+          failure)
+
+        assert(Bytes.toString(table.get(new Get(key)).getValue(family, qualifier)) == "first")
+      } finally {
+        table.close()
+      }
+
+      val rows = spark.read
+        .format("org.apache.hadoop.hbase.spark.datasources.HBaseTableProvider")
+        .option(HBaseTableCatalog.tableCatalog, keyCatalog)
+        .option(HBaseSparkConf.HBASE_CONFIG_LOCATION, configFile.getAbsolutePath)
+        .load()
+        .select("a", "b", "value")
+        .collect()
+      assert(rows.toSeq == Seq(first))
+    }
+  }
+
   test("write and read NUL in a single row key") {
     val tableName = "test_single_key_with_nul"
     TEST_UTIL.createTable(TableName.valueOf(tableName), Bytes.toBytes(columnFamily))

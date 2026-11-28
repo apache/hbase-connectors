@@ -219,6 +219,7 @@ case class HBaseRelation(
       case x =>
         (schema.fieldIndex(x.colName), x)
     }
+    val isCompositeKey = rkIdxedFields.length > 1
     val colsIdxedFields = schema.fieldNames
       .partition(x => rkFields.map(_.colName).contains(x))
       ._2
@@ -229,6 +230,11 @@ case class HBaseRelation(
       val rowBytes = rkIdxedFields.zipWithIndex.map {
         case ((x, field), index) =>
           val bytes = Utils.toBytes(row(x), field)
+          if (isCompositeKey && field.length != -1) {
+            require(
+              bytes.length == field.length,
+              s"Row key column '${field.colName}' expected ${field.length} bytes but got ${bytes.length}")
+          }
           if (field.length == -1 && field.dt == StringType && index < rkIdxedFields.length - 1) {
             require(
               !bytes.contains(HBaseTableCatalog.delimiter),
